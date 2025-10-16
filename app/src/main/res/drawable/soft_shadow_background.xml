@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Shadow -->
+    <item android:top="2dp" android:left="2dp" android:right="2dp" android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#14000000" />
+            <corners android:radius="@dimen/secondary_card_radius" />
+        </shape>
+    </item>
+    <!-- Main background -->
+    <item android:bottom="2dp" android:right="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card_bg_soft" />
+            <corners android:radius="@dimen/secondary_card_radius" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/text_muted" />
+        </shape>
+    </item>
+</layer-list>
+
+

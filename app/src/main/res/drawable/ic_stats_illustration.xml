@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    
+    <!-- Background circle -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M40,40m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0" />
+    
+    <!-- Chart background -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,50 L60,50 L60,60 L20,60 Z" />
+    
+    <!-- Chart bars -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M25,45 L30,45 L30,60 L25,60 Z" />
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M32,40 L37,40 L37,60 L32,60 Z" />
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M39,35 L44,35 L44,60 L39,60 Z" />
+    <path
+        android:fillColor="#9C27B0"
+        android:pathData="M46,30 L51,30 L51,60 L46,60 Z" />
+    
+    <!-- Upward trend arrow -->
+    <path
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="3"
+        android:pathData="M55,45 L65,35 M65,35 L60,30 M65,35 L60,40" />
+    
+    <!-- Chart title -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M25,25 L55,25 L55,30 L25,30 Z" />
+</vector>
+
+

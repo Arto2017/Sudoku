@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/parchment_background"
+    android:fillViewport="true"
+    tools:context=".RealmSelectionActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/responsive_padding">
+
+    <!-- Title Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginTop="@dimen/responsive_margin"
+        android:layout_marginBottom="@dimen/responsive_margin">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageButton
+                android:id="@+id/realmSelectionBackButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="start|center_vertical"
+                android:background="@drawable/back_button_gold"
+                android:padding="0dp"
+                android:src="@drawable/ic_arrow_left"
+                android:tint="#2D1810"
+                android:contentDescription="Back" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Sudoku Quest"
+                android:textSize="@dimen/text_size_title"
+                android:textStyle="bold"
+                android:textColor="#8B4513"
+                android:fontFamily="serif"
+                android:shadowColor="#D2B48C"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Book Illustration -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="@dimen/responsive_margin_large">
+
+        <ImageView
+                    android:layout_width="@dimen/icon_size_large"
+        android:layout_height="@dimen/icon_size_large"
+            android:src="@drawable/ic_ancient_book"
+            android:background="@drawable/book_background"
+            android:padding="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose Your Realm"
+            android:textSize="@dimen/text_size_subtitle"
+            android:textColor="#8B4513"
+            android:fontFamily="serif"
+            android:textStyle="italic" />
+    </LinearLayout>
+
+    <!-- Codex Progress Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/codex_progress_background"
+        android:padding="16dp"
+        android:layout_marginBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Progress"
+                android:textSize="12sp"
+                android:textColor="#8B4513"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/overallProgressText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0%"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#8B4513"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Realms"
+                android:textSize="12sp"
+                android:textColor="#8B4513"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/completedRealmsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0/4"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#8B4513"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fragments"
+                android:textSize="12sp"
+                android:textColor="#8B4513"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/fragmentsCollectedText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0/12"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#8B4513"
+                android:fontFamily="serif" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Tier Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <!-- Tier IV - Realm of Shadows -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/tierIVCard"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="#2C2C2C"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#4A4A4A"
+            app:strokeWidth="2dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp">
+
+                <!-- Lock Icon in top-right corner -->
+                <ImageView
+                    android:id="@+id/tierIVLockIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_lock"
+                    android:visibility="gone"
+                    app:tint="#FFFFFF" />
+
+                <!-- Centered content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tier IV"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="9×9 • Expert"
+                        android:textSize="10sp"
+                        android:textColor="#CCCCCC"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="1dp" />
+
+                    <TextView
+                        android:id="@+id/tierIVProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFD700"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/tierIVLockText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Complete previous tier to unlock"
+                        android:textSize="9sp"
+                        android:textColor="#CCCCCC"
+                        android:fontFamily="serif"
+                        android:visibility="gone"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </RelativeLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tier III - Realm of Flame -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/tierIIICard"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="#8B0000"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#DC143C"
+            app:strokeWidth="2dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp">
+
+                <!-- Lock Icon in top-right corner -->
+                <ImageView
+                    android:id="@+id/tierIIILockIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_lock"
+                    android:visibility="gone"
+                    app:tint="#FFFFFF" />
+
+                <!-- Centered content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tier III"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="9×9 • Intermediate"
+                        android:textSize="10sp"
+                        android:textColor="#FFE4E1"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="1dp" />
+
+                    <TextView
+                        android:id="@+id/tierIIIProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFD700"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/tierIIILockText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Complete previous tier to unlock"
+                        android:textSize="9sp"
+                        android:textColor="#FFE4E1"
+                        android:fontFamily="serif"
+                        android:visibility="gone"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </RelativeLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tier II - Realm of Trials -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/tierIICard"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="#696969"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#808080"
+            app:strokeWidth="2dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp">
+
+                <!-- Lock Icon in top-right corner -->
+                <ImageView
+                    android:id="@+id/tierIILockIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_lock"
+                    android:visibility="gone"
+                    app:tint="#FFFFFF" />
+
+                <!-- Centered content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tier II"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="6×6 • Intermediate"
+                        android:textSize="10sp"
+                        android:textColor="#F5F5F5"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="1dp" />
+
+                    <TextView
+                        android:id="@+id/tierIIProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFD700"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/tierIILockText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Complete previous tier to unlock"
+                        android:textSize="9sp"
+                        android:textColor="#F5F5F5"
+                        android:fontFamily="serif"
+                        android:visibility="gone"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </RelativeLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tier I - Realm of Echoes -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/tierICard"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            app:cardBackgroundColor="#4682B4"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#5F9EA0"
+            app:strokeWidth="2dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp">
+
+                <!-- Lock Icon in top-right corner -->
+                <ImageView
+                    android:id="@+id/tierILockIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:src="@drawable/ic_lock"
+                    android:visibility="gone"
+                    app:tint="#FFFFFF" />
+
+                <!-- Centered content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tier I"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="6×6 • Beginner"
+                        android:textSize="10sp"
+                        android:textColor="#E0F6FF"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="1dp" />
+
+                    <TextView
+                        android:id="@+id/tierIProgressText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFD700"
+                        android:fontFamily="serif"
+                        android:layout_marginTop="2dp" />
+
+                    <TextView
+                        android:id="@+id/tierILockText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Complete previous tier to unlock"
+                        android:textSize="9sp"
+                        android:textColor="#E0F6FF"
+                        android:fontFamily="serif"
+                        android:visibility="gone"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </RelativeLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+    </LinearLayout>
+</ScrollView>

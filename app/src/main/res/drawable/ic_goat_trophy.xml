@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    
+    <!-- Trophy Base (Bottom) -->
+    <path
+        android:fillColor="#B8860B"
+        android:pathData="M20,80 L76,80 L76,90 L20,90 Z" />
+    
+    <!-- Trophy Base Pattern -->
+    <path
+        android:fillColor="#DAA520"
+        android:pathData="M22,82 L26,82 L26,86 L22,86 Z M30,82 L34,82 L34,86 L30,86 Z M38,82 L42,82 L42,86 L38,86 Z M46,82 L50,82 L50,86 L46,86 Z M54,82 L58,82 L58,86 L54,86 Z M62,82 L66,82 L66,86 L62,86 Z M70,82 L74,82 L74,86 L70,86 Z" />
+    
+    <!-- Trophy Column -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M35,55 L61,55 L61,80 L35,80 Z" />
+    
+    <!-- Column Diamond Pattern -->
+    <path
+        android:fillColor="#FFF8DC"
+        android:pathData="M40,60 L44,64 L40,68 L36,64 Z M52,60 L56,64 L52,68 L48,64 Z M40,70 L44,74 L40,78 L36,74 Z M52,70 L56,74 L52,78 L48,74 Z" />
+    
+    <!-- GOAT Head Base -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M30,35 Q30,25 40,25 L56,25 Q66,25 66,35 L66,50 Q66,60 56,60 L40,60 Q30,60 30,50 Z" />
+    
+    <!-- GOAT Face Details -->
+    <path
+        android:fillColor="#DAA520"
+        android:pathData="M38,35 L42,35 L42,38 L38,38 Z M54,35 L58,35 L58,38 L54,38 Z" />
+    
+    <!-- GOAT Nose -->
+    <path
+        android:fillColor="#B8860B"
+        android:pathData="M46,42 L50,42 L50,45 L46,45 Z" />
+    
+    <!-- GOAT Mouth -->
+    <path
+        android:fillColor="#B8860B"
+        android:pathData="M44,47 Q48,50 52,47" />
+    
+    <!-- GOAT Ears -->
+    <path
+        android:fillColor="#DAA520"
+        android:pathData="M32,30 L36,28 L38,32 L34,34 Z M58,32 L62,28 L64,30 L60,34 Z" />
+    
+    <!-- GOAT Text on Glasses -->
+    <path
+        android:fillColor="#B8860B"
+        android:pathData="M35,40 L37,40 L37,42 L35,42 Z M38,40 L40,40 L40,42 L38,42 Z M42,40 L44,40 L44,42 L42,42 Z M45,40 L47,40 L47,42 L45,42 Z M52,40 L54,40 L54,42 L52,42 Z M55,40 L57,40 L57,42 L55,42 Z" />
+    
+    <!-- Crown -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M25,15 L71,15 L71,25 L25,25 Z" />
+    
+    <!-- Crown Points -->
+    <path
+        android:fillColor="#FFF8DC"
+        android:pathData="M30,10 L34,15 L26,15 Z M42,8 L46,15 L38,15 Z M54,8 L58,15 L50,15 Z M66,10 L70,15 L62,15 Z" />
+    
+    <!-- Crown Jewels -->
+    <path
+        android:fillColor="#FF4444"
+        android:pathData="M32,12 L32,14 L34,14 L34,12 Z M44,10 L44,12 L46,12 L46,10 Z M56,10 L56,12 L58,12 L58,10 Z M68,12 L68,14 L70,14 L70,12 Z" />
+    
+    <!-- Crown Base Band -->
+    <path
+        android:fillColor="#DAA520"
+        android:pathData="M25,20 L71,20 L71,25 L25,25 Z" />
+    
+    <!-- Trophy Shine Effect -->
+    <path
+        android:fillColor="#FFFFFF40"
+        android:pathData="M35,30 Q35,27 38,27 L45,27 Q48,27 48,30 L48,45 Q48,48 45,48 L38,48 Q35,48 35,45 Z" />
+</vector>
+

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    
+    <!-- Background circle -->
+    <path
+        android:fillColor="#FFF3E0"
+        android:pathData="M40,40m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0" />
+    
+    <!-- Treasure map -->
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M25,25 L55,25 L55,55 L25,55 Z" />
+    
+    <!-- Map grid lines -->
+    <path
+        android:strokeColor="#FF8A65"
+        android:strokeWidth="1"
+        android:pathData="M30,25 L30,55 M35,25 L35,55 M40,25 L40,55 M45,25 L45,55 M50,25 L50,55 M25,30 L55,30 M25,35 L55,35 M25,40 L55,40 M25,45 L55,45 M25,50 L55,50" />
+    
+    <!-- X marks the spot -->
+    <path
+        android:strokeColor="#FF5722"
+        android:strokeWidth="3"
+        android:pathData="M37,37 L43,43 M43,37 L37,43" />
+    
+    <!-- Golden trophy -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M50,20 L55,20 L55,25 L50,25 Z" />
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M52,15 L53,15 L53,20 L52,20 Z" />
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M51,10 L54,10 L54,15 L51,15 Z" />
+</vector>
+
+

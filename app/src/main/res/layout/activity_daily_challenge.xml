@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/parchment_background"
+    android:padding="16dp"
+    tools:context=".DailyChallengeActivity">
+
+    <!-- Ultra Compact Enhanced Top Bar with Fantasy Design -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        app:cardBackgroundColor="#FEFEFE"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="4dp"
+        app:strokeColor="#E0E0E0"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <!-- Ultra Compact Fantasy Banner Title Area with overlayed back button -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp">
+
+                <ImageButton
+                    android:id="@+id/btnDailyBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:background="@drawable/back_button_gold"
+                    android:padding="0dp"
+                    android:src="@drawable/ic_arrow_left"
+                    android:tint="#2D1810"
+                    android:contentDescription="Back" />
+
+                <!-- Decorative Fantasy Banner Background -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center|end"
+                    android:layout_marginEnd="13dp"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="@drawable/fantasy_banner_background"
+                    android:padding="8dp"
+                    android:elevation="3dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_calendar_daily"
+                        android:layout_marginEnd="6dp"
+                        app:tint="#6B4423" />
+
+                    <TextView
+                        android:id="@+id/dailyHeaderTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Daily Challenge • Sep 30"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#6B4423"
+                        android:fontFamily="serif"
+                        android:shadowColor="#8B7355"
+                        android:shadowDx="1"
+                        android:shadowDy="1"
+                        android:shadowRadius="1" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- Progress Bar and Difficulty Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+
+                <!-- Daily Challenge Difficulty with Icon -->
+                <LinearLayout
+                    android:id="@+id/difficultyContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="@drawable/fantasy_difficulty_background"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_difficulty"
+                        android:layout_marginEnd="8dp"
+                        app:tint="#8B4513" />
+
+                    <TextView
+                        android:id="@+id/dailyDifficultyText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Medium"
+                        android:textColor="#8B4513"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Small Timer and Status Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Small Timer Display -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="@drawable/fantasy_timer_background"
+                    android:padding="6dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/dailyTimerText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:00"
+                        android:textColor="#6B4423"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:fontFamily="monospace" />
+                </LinearLayout>
+
+                <!-- Mistakes HUD -->
+                <LinearLayout
+                    android:id="@+id/mistakesHud"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="@drawable/fantasy_timer_background"
+                    android:padding="6dp"
+                    android:layout_marginStart="8dp">
+
+                    <ImageView
+                        android:id="@+id/mistakesIcon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_heart_outline"
+                        android:layout_marginEnd="4dp"
+                        app:tint="#6B4C2A" />
+
+                    <TextView
+                        android:id="@+id/mistakesText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 / 4"
+                        android:textColor="#6B4C2A"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+
+                    <ImageButton
+                        android:id="@+id/mistakesHelp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="4dp"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/ic_help"
+                        android:contentDescription="Help"
+                        app:tint="#6B4C2A" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Sudoku Board Container -->
+    <FrameLayout
+        android:id="@+id/boardContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/fantasy_board_container_background">
+
+        <com.example.gamesudoku.SudokuBoardView
+            android:id="@+id/dailySudokuBoard"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+    </FrameLayout>
+
+    <!-- Compact Enhanced Control Panel with Fantasy Design -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/controlCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="#FEFEFE"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:strokeColor="#E0E0E0"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- Compact Number buttons container -->
+            <GridLayout
+                android:id="@+id/numberButtonsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="6"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Enhanced Control buttons with fantasy styling -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- All action buttons in one row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="6dp">
+
+                    <Button
+                        android:id="@+id/btnDailyClear"
+                        style="@style/ActionButtonStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="2dp"
+                        android:text="X"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+
+                    <Button
+                        android:id="@+id/btnDailyHint"
+                        style="@style/ActionButtonStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="2dp"
+                        android:layout_marginEnd="2dp"
+                        android:text="💡"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+
+                    <Button
+                        android:id="@+id/btnDailyNotes"
+                        style="@style/ActionButtonStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="2dp"
+                        android:text="📝"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+                </LinearLayout>
+
+                <!-- Compact Separator line -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@drawable/fantasy_separator_background"
+                    android:layout_marginVertical="6dp" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

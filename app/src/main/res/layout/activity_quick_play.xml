@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_cream"
+    android:fillViewport="true"
+    tools:context=".QuickPlayActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/horizontal_padding"
+        android:minHeight="0dp">
+
+        <!-- Top Bar with Back Button and Title -->
+        <FrameLayout
+            android:id="@+id/topBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/safe_top_area"
+            android:layout_marginBottom="@dimen/responsive_margin_large"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageButton
+                android:id="@+id/quickPlayBackButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="start|center_vertical"
+                android:background="@drawable/card_soft_background"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_left"
+                android:tint="@color/text_primary_warm"
+                android:contentDescription="Back" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Quick Play"
+                android:textSize="@dimen/text_size_headline"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary_warm"
+                android:fontFamily="sans-serif-medium" />
+        </FrameLayout>
+
+        <!-- Grid Size Selection -->
+        <LinearLayout
+            android:id="@+id/gridSizeContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="@dimen/responsive_margin_large"
+            app:layout_constraintTop_toBottomOf="@id/topBar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- 6x6 Pill -->
+            <LinearLayout
+                android:id="@+id/btn6x6"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/segmented_pill_unselected"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="@dimen/min_tap_target">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="6×6"
+                    android:textSize="@dimen/text_size_body"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_muted"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- 9x9 Pill -->
+            <LinearLayout
+                android:id="@+id/btn9x9"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/segmented_pill_selected"
+                android:padding="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="@dimen/min_tap_target">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="9×9"
+                    android:textSize="@dimen/text_size_body"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Difficulty List -->
+        <LinearLayout
+            android:id="@+id/difficultyContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="32dp"
+            app:layout_constraintTop_toBottomOf="@id/gridSizeContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Easy Row -->
+            <LinearLayout
+                android:id="@+id/easyRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/difficulty_easy_background"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="64dp">
+
+                <TextView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:text="😀"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Easy"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="▶"
+                    android:textSize="16sp"
+                    android:textColor="#666666"
+                    android:gravity="center" />
+            </LinearLayout>
+
+            <!-- Medium Row -->
+            <LinearLayout
+                android:id="@+id/mediumRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/difficulty_medium_background"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="64dp">
+
+                <TextView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:text="🧩"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Medium"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="▶"
+                    android:textSize="16sp"
+                    android:textColor="#666666"
+                    android:gravity="center" />
+            </LinearLayout>
+
+            <!-- Hard Row -->
+            <LinearLayout
+                android:id="@+id/hardRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/difficulty_hard_background"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="64dp">
+
+                <TextView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:text="🔥"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hard"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="▶"
+                    android:textSize="16sp"
+                    android:textColor="#666666"
+                    android:gravity="center" />
+            </LinearLayout>
+
+            <!-- Expert Row -->
+            <LinearLayout
+                android:id="@+id/expertRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/difficulty_expert_background"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:minHeight="64dp">
+
+                <TextView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:text="👑"
+                    android:textSize="24sp"
+                    android:gravity="center"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Expert"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="▶"
+                    android:textSize="16sp"
+                    android:textColor="#666666"
+                    android:gravity="center" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
+
+
+
+
+
+
+
+
+

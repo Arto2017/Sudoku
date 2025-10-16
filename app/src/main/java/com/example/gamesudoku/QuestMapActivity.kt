@@ -1,0 +1,158 @@
+package com.example.gamesudoku
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import android.widget.*
+import android.view.View
+import android.animation.ValueAnimator
+import android.graphics.Color
+import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.core.content.ContextCompat
+import com.google.android.material.card.MaterialCardView
+
+class QuestMapActivity : AppCompatActivity() {
+
+    private lateinit var questProgress: QuestProgress
+    private lateinit var currentWorld: QuestWorld
+    private lateinit var progressText: TextView
+    private lateinit var starsText: TextView
+    private lateinit var currentLevelText: TextView
+    private lateinit var continueButton: Button
+    private lateinit var resetButton: Button
+    private lateinit var mysticForestQuestView: MysticForestQuestView
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Get the world from intent
+        val worldName = intent.getStringExtra("world") ?: QuestWorld.MYSTIC_FOREST.name
+        currentWorld = QuestWorld.valueOf(worldName)
+        
+        // Set layout based on world
+        when (currentWorld) {
+            QuestWorld.MYSTIC_FOREST -> setContentView(R.layout.activity_quest_map_forest)
+            QuestWorld.ANCIENT_TEMPLE -> setContentView(R.layout.activity_quest_map_temple)
+        }
+
+        questProgress = QuestProgress(this)
+        
+        initializeViews()
+        setupQuestData()
+        setupContinueButton()
+        setupResetButton()
+    }
+
+    private fun initializeViews() {
+        progressText = findViewById(R.id.progressText)
+        starsText = findViewById(R.id.starsText)
+        currentLevelText = findViewById(R.id.currentLevelText)
+        continueButton = findViewById(R.id.continueButton)
+        resetButton = findViewById(R.id.resetButton)
+        
+        // Initialize Mystic Forest Quest View for forest world
+        if (currentWorld == QuestWorld.MYSTIC_FOREST) {
+            mysticForestQuestView = findViewById(R.id.mysticForestQuestView)
+            setupMysticForestQuestView()
+        }
+    }
+
+    private fun setupQuestData() {
+        val levels = questProgress.getLevelsForWorld(currentWorld)
+        val completedLevels = questProgress.getCompletedLevelsForWorld(currentWorld)
+        val totalStars = questProgress.getTotalStarsForWorld(currentWorld)
+        val progressPercentage = questProgress.getProgressPercentageForWorld(currentWorld)
+        val currentLevel = questProgress.getCurrentLevelForWorld(currentWorld)
+
+        // Update Mystic Forest Quest View
+        if (currentWorld == QuestWorld.MYSTIC_FOREST) {
+            mysticForestQuestView.setQuestData(levels)
+        }
+
+        // Update statistics
+        starsText.text = "⭐ $totalStars Stars"
+        progressText.text = "$progressPercentage%"
+
+        // Update current level
+        currentLevel?.let { level ->
+            currentLevelText.text = "Level ${level.id}"
+        } ?: run {
+            currentLevelText.text = "All Levels Completed!"
+        }
+
+        // Animate progress percentage
+        animateProgress(progressPercentage)
+    }
+
+    private fun setupMysticForestQuestView() {
+        mysticForestQuestView.setOnNodeClickListener { levelId ->
+            // Start the selected level
+            val level = questProgress.getLevelsForWorld(currentWorld).find { it.id == levelId }
+            level?.let {
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    putExtra("quest_level_id", it.id)
+                    putExtra("board_size", it.boardSize)
+                    putExtra("difficulty", it.difficulty.name)
+                }
+                startActivity(intent)
+                finish()
+            }
+        }
+    }
+
+    private fun animateProgress(targetPercentage: Int) {
+        val animator = ValueAnimator.ofInt(0, targetPercentage)
+        animator.duration = 1500
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Int
+            progressText.text = "$value%"
+        }
+        animator.start()
+    }
+
+    private fun setupContinueButton() {
+        val currentLevel = questProgress.getCurrentLevelForWorld(currentWorld)
+        
+        if (currentLevel != null) {
+            continueButton.text = "Continue Quest"
+            continueButton.setOnClickListener {
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    putExtra("quest_level_id", currentLevel.id)
+                    putExtra("board_size", currentLevel.boardSize)
+                    putExtra("difficulty", currentLevel.difficulty.name)
+                }
+                startActivity(intent)
+            }
+        } else {
+            continueButton.text = "World Complete!"
+            continueButton.isEnabled = false
+            continueButton.setBackgroundColor(Color.parseColor("#9E9E9E"))
+        }
+    }
+
+    private fun setupResetButton() {
+        resetButton.setOnClickListener {
+            // Reset only current world progress
+            val levels = questProgress.getLevelsForWorld(currentWorld)
+            levels.forEach { level ->
+                val resetLevel = level.copy(
+                    isUnlocked = level.id == levels.first().id, // Only first level unlocked
+                    isCompleted = false,
+                    gamesCompleted = 0,
+                    bestTime = 0,
+                    stars = 0
+                )
+                questProgress.resetAllProgress() // For now, reset all progress
+            }
+            setupQuestData() // Refresh UI after reset
+            Toast.makeText(this, "Quest progress reset!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh quest data when returning from game
+        setupQuestData()
+    }
+}

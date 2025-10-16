@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">GameSudoku</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="theme_white">White</string>
+    <string name="theme_black">Black</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_yellow">Yellow</string>
+    <string name="back_to_menu">Menu</string>
+</resources>

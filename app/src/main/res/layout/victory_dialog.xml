@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/victory_dialog_background"
+    android:gravity="center">
+
+    <!-- Celebration Icon -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎉"
+        android:textSize="48sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Puzzle Complete!"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#2E7D32"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Well Done!"
+        android:textSize="16sp"
+        android:textColor="#4CAF50"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Stats Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/stats_background"
+        android:padding="16dp"
+        android:layout_marginBottom="24dp">
+
+        <!-- Time -->
+        <TextView
+            android:id="@+id/timeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Time: 00:00"
+            android:textSize="18sp"
+            android:textColor="#333333"
+            android:layout_gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Difficulty -->
+        <TextView
+            android:id="@+id/difficultyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Difficulty: Beginner"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:layout_gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Board Size -->
+        <TextView
+            android:id="@+id/boardSizeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Board: 9x9"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:layout_gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Performance Rating -->
+        <TextView
+            android:id="@+id/starsText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="★★★★★"
+            android:textSize="24sp"
+            android:textColor="#FFD700"
+            android:layout_gravity="center" />
+
+    </LinearLayout>
+
+    <!-- Buttons Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <!-- New Game Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/newGameButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="New Game"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp"
+            app:cornerRadius="20dp"
+            android:backgroundTint="#4CAF50"
+            android:textColor="#FFFFFF" />
+
+        <!-- Share Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/shareButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Share"
+            android:textSize="14sp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            app:cornerRadius="20dp"
+            android:backgroundTint="#2196F3"
+            android:textColor="#FFFFFF" />
+
+        <!-- Main Menu Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/mainMenuButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Menu"
+            android:textSize="14sp"
+            android:layout_marginStart="8dp"
+            app:cornerRadius="20dp"
+            android:backgroundTint="#9E9E9E"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+
+</LinearLayout>
+
+
+
+

@@ -1,0 +1,45 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Grid lines -->
+    <path
+        android:strokeColor="#7A4A26"
+        android:strokeWidth="1"
+        android:pathData="M4,4 L20,4 M4,8 L20,8 M4,12 L20,12 M4,16 L20,16 M4,20 L20,20" />
+    
+    <path
+        android:strokeColor="#7A4A26"
+        android:strokeWidth="1"
+        android:pathData="M4,4 L4,20 M8,4 L8,20 M12,4 L12,20 M16,4 L16,20 M20,4 L20,20" />
+    
+    <!-- Thick borders for 3x3 blocks -->
+    <path
+        android:strokeColor="#B4793C"
+        android:strokeWidth="2"
+        android:pathData="M4,4 L20,4 M4,12 L20,12 M4,20 L20,20" />
+    
+    <path
+        android:strokeColor="#B4793C"
+        android:strokeWidth="2"
+        android:pathData="M4,4 L4,20 M12,4 L12,20 M20,4 L20,20" />
+    
+    <!-- Sample dots to represent numbers -->
+    <path
+        android:fillColor="#7A4A26"
+        android:pathData="M6,6 A1,1 0 1,1 8,6 A1,1 0 1,1 6,6" />
+    
+    <path
+        android:fillColor="#7A4A26"
+        android:pathData="M14,6 A1,1 0 1,1 16,6 A1,1 0 1,1 14,6" />
+    
+    <path
+        android:fillColor="#7A4A26"
+        android:pathData="M6,14 A1,1 0 1,1 8,14 A1,1 0 1,1 6,14" />
+    
+    <path
+        android:fillColor="#7A4A26"
+        android:pathData="M14,14 A1,1 0 1,1 16,14 A1,1 0 1,1 14,14" />
+</vector>

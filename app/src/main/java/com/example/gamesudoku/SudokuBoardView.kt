@@ -1,0 +1,1443 @@
+package com.example.gamesudoku
+
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+import android.content.Context
+import android.graphics.*
+import android.util.AttributeSet
+import android.util.Log
+import android.view.MotionEvent
+import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.core.content.withStyledAttributes
+import kotlin.math.min
+
+class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, attrs) {
+
+    interface OnCellSelectedListener {
+        fun onCellSelected(row: Int, col: Int, isEditable: Boolean)
+    }
+
+    interface OnConflictListener {
+        fun onConflictDetected()
+    }
+
+    enum class ColorTheme {
+        WHITE, BLACK, STIFF_BLUE, LIGHT_YELLOW,
+        REALM_ECHOES, REALM_TRIALS, REALM_FLAME, REALM_SHADOWS
+    }
+
+    private var boardSize = 9
+    private var board: Array<IntArray> = Array(9) { IntArray(9) }
+    private var initialBoard: Array<IntArray> = Array(9) { IntArray(9) }
+    private var fixed: Array<BooleanArray> = Array(9) { BooleanArray(9) }
+    
+    // Function to set board size and reinitialize arrays
+    fun setBoardSize(size: Int) {
+        boardSize = size
+        board = Array(size) { IntArray(size) }
+        initialBoard = Array(size) { IntArray(size) }
+        fixed = Array(size) { BooleanArray(size) }
+        resetPuzzle()
+        requestLayout() // Request new layout measurement
+        invalidate() // Redraw the board
+    }
+    private var selectedRow = -1
+    private var selectedCol = -1
+    private var onCellSelectedListener: OnCellSelectedListener? = null
+    private var onConflictListener: OnConflictListener? = null
+    private var currentTheme = ColorTheme.WHITE
+
+    // Conflict detection and animation
+    private var conflictingCells = mutableSetOf<Pair<Int, Int>>()
+    private var conflictAnimationProgress = 0f
+    private var conflictAnimator: ValueAnimator? = null
+    private var lastPlacedNumber = 0
+    private var lastPlacedRow = -1
+    private var lastPlacedCol = -1
+    
+    // Success animation
+    private var successAnimationProgress = 0f
+    private var successAnimator: ValueAnimator? = null
+    private var successCells = mutableSetOf<Pair<Int, Int>>()
+    
+    // Number highlighting - clean implementation
+    private var highlightedNumber = 0
+    private var highlightedCells = mutableSetOf<Pair<Int, Int>>()
+    
+    // Hint system data structures
+    private var solutionBoard: Array<IntArray>? = null
+    private var candidates: Array<Array<MutableSet<Int>>> = Array(9) { Array(9) { mutableSetOf() } }
+    private var isRevealedByHint: Array<BooleanArray> = Array(9) { BooleanArray(9) }
+    private var hintsUsed = 0
+    private var hintsRemaining = 10 // Configurable limit
+    private var autoPencilEnabled = false
+    private var pencilMarksVisible = false
+
+    // Colors with theme support - Pure white background
+    private var bgColor = Color.parseColor("#FFFFFF") // Pure white background
+    private var boardColor = Color.parseColor("#FFFFFF") // Pure white board
+    private var accentColor = Color.parseColor("#8B7355") // Fantasy brown accent
+    private var textColor = Color.parseColor("#6B4423") // Enhanced dark brown text
+    private var fixedNumberColor = Color.parseColor("#6B4423") // Enhanced dark brown numbers
+    private var userNumberColor = Color.parseColor("#8B7355") // Enhanced lighter for user numbers
+    private var conflictColor = Color.parseColor("#D2691E") // Fantasy error color
+
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = 48f
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    }
+    
+    // Function to update text size based on cell size
+    private fun updateTextSize() {
+        // Adjust text size based on board size for better readability
+        val textScale = when (boardSize) {
+            6 -> 0.7f  // 6x6: larger text for better visibility
+            9 -> 0.6f  // 9x9: standard text size
+            else -> 0.6f
+        }
+        paint.textSize = cellSize * textScale
+    }
+
+    private var cellSize = 0f
+    private var boardLeft = 0f
+    private var boardTop = 0f
+
+    init {
+        context.withStyledAttributes(attrs, R.styleable.SudokuBoardView) {
+            bgColor = getColor(R.styleable.SudokuBoardView_backgroundColor, bgColor)
+            accentColor = getColor(R.styleable.SudokuBoardView_accentColor, accentColor)
+        }
+        resetPuzzle()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // Ensure the Sudoku board is always square
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        val height = MeasureSpec.getSize(heightMeasureSpec)
+        
+        // Take the smaller dimension to maintain square aspect ratio
+        val size = min(width, height)
+        
+        // Set both dimensions to the same size (square)
+        setMeasuredDimension(size, size)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+
+        // Draw background with pure white color
+        val backgroundWhite = Color.parseColor("#FFFFFF") // Pure white background
+        canvas.drawColor(backgroundWhite)
+
+        // Calculate cell size based on the measured dimensions
+        cellSize = min(width, height) / boardSize.toFloat()
+        
+        // Update text size to be responsive to cell size
+        updateTextSize()
+        
+        // Calculate board dimensions
+        val boardWidth = boardSize * cellSize
+        val boardHeight = boardSize * cellSize
+        
+        // Center the board
+        boardLeft = (width - boardWidth) / 2f
+        boardTop = (height - boardHeight) / 2f
+
+        // Draw the Sudoku board background (light beige)
+        drawBoardBackground(canvas)
+        
+        // Draw highlights and numbers
+        drawHighlights(canvas)
+        drawNumberHighlights(canvas)
+        drawConflictHighlights(canvas)
+        drawSuccessHighlights(canvas)
+        drawGridLines(canvas)
+        drawNumbers(canvas)
+    }
+
+    private fun drawBoardBackground(canvas: Canvas) {
+        // Draw pure white background for the Sudoku board
+        
+        // 1. Draw main board with pure white color
+        paint.color = Color.parseColor("#FFFFFF") // Pure white
+        paint.alpha = 255 // Full opacity
+        canvas.drawRoundRect(
+            boardLeft,
+            boardTop,
+            boardLeft + boardSize * cellSize,
+            boardTop + boardSize * cellSize,
+            12f, 12f, paint
+        )
+        
+        // 2. Draw subtle border for definition
+        paint.color = Color.parseColor("#E0E0E0") // Light gray border
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 2f
+        canvas.drawRoundRect(
+            boardLeft,
+            boardTop,
+            boardLeft + boardSize * cellSize,
+            boardTop + boardSize * cellSize,
+            12f, 12f, paint
+        )
+        paint.style = Paint.Style.FILL
+    }
+
+    private fun drawHighlights(canvas: Canvas) {
+        if (selectedRow == -1 || selectedCol == -1) return
+        
+        // Don't draw row/column highlights when number highlighting is active
+        if (highlightedNumber != 0) return
+
+        // Use theme accent color for highlights
+        val highlightColor = accentColor
+
+        // Highlight entire row (light)
+        paint.color = Color.argb(20, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+        canvas.drawRect(
+            boardLeft,
+            boardTop + selectedRow * cellSize,
+            boardLeft + boardSize * cellSize,
+            boardTop + (selectedRow + 1) * cellSize,
+            paint
+        )
+
+        // Highlight entire column (light)
+        canvas.drawRect(
+            boardLeft + selectedCol * cellSize,
+            boardTop,
+            boardLeft + (selectedCol + 1) * cellSize,
+            boardTop + boardSize * cellSize,
+            paint
+        )
+
+        // Highlight current box (medium)
+        paint.color = Color.argb(40, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        val boxRow = (selectedRow / boxRows) * boxRows
+        val boxCol = (selectedCol / boxCols) * boxCols
+        canvas.drawRoundRect(
+            boardLeft + boxCol * cellSize,
+            boardTop + boxRow * cellSize,
+            boardLeft + (boxCol + boxCols) * cellSize,
+            boardTop + (boxRow + boxRows) * cellSize,
+            12f, 12f, paint
+        )
+
+        // Highlight selected cell (strongest)
+        paint.color = Color.argb(80, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+        canvas.drawRoundRect(
+            boardLeft + selectedCol * cellSize,
+            boardTop + selectedRow * cellSize,
+            boardLeft + (selectedCol + 1) * cellSize,
+            boardTop + (selectedRow + 1) * cellSize,
+            8f, 8f, paint
+        )
+    }
+
+    private fun drawNumberHighlights(canvas: Canvas) {
+        if (highlightedNumber == 0 || highlightedCells.isEmpty()) return
+
+        // Use darker green color for all same numbers
+        val highlightColor = Color.parseColor("#2E7D32") // Darker green
+        val pulseAlpha = (120 + 60 * Math.sin(System.currentTimeMillis() * 0.003).toFloat()).toInt()
+        
+        for ((row, col) in highlightedCells) {
+            val cellLeft = boardLeft + col * cellSize
+            val cellTop = boardTop + row * cellSize
+            val cellRight = cellLeft + cellSize
+            val cellBottom = cellTop + cellSize
+            
+            // Draw highlight with pulsing effect
+            paint.color = Color.argb(pulseAlpha, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            canvas.drawRoundRect(
+                cellLeft + 2f, cellTop + 2f,
+                cellRight - 2f, cellBottom - 2f,
+                6f, 6f, paint
+            )
+            
+            // Draw border
+            paint.color = Color.argb(200, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3f
+            canvas.drawRoundRect(
+                cellLeft + 2f, cellTop + 2f,
+                cellRight - 2f, cellBottom - 2f,
+                6f, 6f, paint
+            )
+            paint.style = Paint.Style.FILL
+        }
+    }
+
+    private fun drawConflictHighlights(canvas: Canvas) {
+        if (conflictingCells.isEmpty()) return
+
+        // Create pulsing effect for conflict animation with multiple frequencies
+        val pulseAlpha1 = (100 + 80 * Math.sin(conflictAnimationProgress * Math.PI * 3).toFloat()).toInt()
+        val pulseAlpha2 = (60 + 40 * Math.sin(conflictAnimationProgress * Math.PI * 6).toFloat()).toInt()
+        
+        // Draw conflict highlights with enhanced pulsing animation
+        for ((row, col) in conflictingCells) {
+            val cellLeft = boardLeft + col * cellSize
+            val cellTop = boardTop + row * cellSize
+            val cellRight = cellLeft + cellSize
+            val cellBottom = cellTop + cellSize
+            
+            // Draw outer glow effect (larger, more transparent)
+            paint.color = Color.argb(pulseAlpha2 / 4, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
+            canvas.drawRoundRect(
+                cellLeft - 12f, cellTop - 12f,
+                cellRight + 12f, cellBottom + 12f,
+                16f, 16f, paint
+            )
+            
+            // Draw middle glow effect
+            paint.color = Color.argb(pulseAlpha1 / 2, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
+            canvas.drawRoundRect(
+                cellLeft - 6f, cellTop - 6f,
+                cellRight + 6f, cellBottom + 6f,
+                12f, 12f, paint
+            )
+            
+            // Draw main conflict highlight
+            paint.color = Color.argb(pulseAlpha1, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
+            canvas.drawRoundRect(
+                cellLeft + 1f, cellTop + 1f,
+                cellRight - 1f, cellBottom - 1f,
+                8f, 8f, paint
+            )
+            
+            // Draw inner highlight for extra emphasis
+            paint.color = Color.argb(pulseAlpha2, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
+            canvas.drawRoundRect(
+                cellLeft + 4f, cellTop + 4f,
+                cellRight - 4f, cellBottom - 4f,
+                4f, 4f, paint
+            )
+        }
+        
+        // Special highlight for the last placed number (stronger effect with different animation)
+        if (lastPlacedRow != -1 && lastPlacedCol != -1) {
+            val cellLeft = boardLeft + lastPlacedCol * cellSize
+            val cellTop = boardTop + lastPlacedRow * cellSize
+            val cellRight = cellLeft + cellSize
+            val cellBottom = cellTop + cellSize
+            
+            // Draw stronger glow for the problematic number with faster pulsing
+            val strongPulse = (150 + 100 * Math.sin(conflictAnimationProgress * Math.PI * 8).toFloat()).toInt()
+            
+            // Outer glow
+            paint.color = Color.argb(strongPulse / 3, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
+            canvas.drawRoundRect(
+                cellLeft - 8f, cellTop - 8f,
+                cellRight + 8f, cellBottom + 8f,
+                12f, 12f, paint
+            )
+            
+            // Inner glow
+            paint.color = Color.argb(strongPulse, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
+            canvas.drawRoundRect(
+                cellLeft - 2f, cellTop - 2f,
+                cellRight + 2f, cellBottom + 2f,
+                8f, 8f, paint
+            )
+        }
+    }
+
+    private fun drawSuccessHighlights(canvas: Canvas) {
+        if (successCells.isEmpty()) return
+
+        // Create gentle glow effect for success animation
+        val glow = (80 + 40 * Math.sin(successAnimationProgress * Math.PI * 2).toFloat()).toInt()
+        
+        for ((row, col) in successCells) {
+            val cellLeft = boardLeft + col * cellSize
+            val cellTop = boardTop + row * cellSize
+            val cellRight = cellLeft + cellSize
+            val cellBottom = cellTop + cellSize
+            
+            // Draw gentle green glow around successful cells
+            val successColor = Color.parseColor("#4CAF50") // Green success color
+            paint.color = Color.argb(glow, Color.red(successColor), Color.green(successColor), Color.blue(successColor))
+            canvas.drawRoundRect(
+                cellLeft - 3f, cellTop - 3f,
+                cellRight + 3f, cellBottom + 3f,
+                6f, 6f, paint
+            )
+        }
+    }
+
+    private fun drawGridLines(canvas: Canvas) {
+        // Beautiful design: very prominent and visible grid lines on light background
+        // Box sizes for different Sudoku variants
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        
+        // Use theme colors for grid lines with enhanced visual separation
+        val outerBorderColor = textColor // Outer border using theme text color
+        val thickGridColor = Color.argb(200, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)) // Thicker grid lines using theme accent
+        val thinGridColor = Color.argb(100, Color.red(textColor), Color.green(textColor), Color.blue(textColor)) // Thinner grid lines using theme text color
+        
+        // Draw thin lines for all cells first - enhanced with 3D effect
+        paint.color = thinGridColor // Use theme-based thin grid color
+        paint.strokeWidth = 1.5f // Slightly thicker lines for better visibility
+        
+        // Draw shadow lines first (slightly offset)
+        paint.color = Color.parseColor("#5D4037") // Enhanced dark shadow
+        paint.alpha = 80
+        for (i in 1 until boardSize) {
+            // Vertical shadow lines
+            val x = boardLeft + i * cellSize + 1.5f
+            canvas.drawLine(x, boardTop, x, boardTop + boardSize * cellSize, paint)
+            
+            // Horizontal shadow lines
+            val y = boardTop + i * cellSize + 1.5f
+            canvas.drawLine(boardLeft, y, boardLeft + boardSize * cellSize, y, paint)
+        }
+        
+        // Draw main lines
+        paint.color = thinGridColor
+        paint.alpha = 255
+        for (i in 1 until boardSize) {
+            // Vertical lines
+            val x = boardLeft + i * cellSize
+            canvas.drawLine(x, boardTop, x, boardTop + boardSize * cellSize, paint)
+            
+            // Horizontal lines
+            val y = boardTop + i * cellSize
+            canvas.drawLine(boardLeft, y, boardLeft + boardSize * cellSize, y, paint)
+        }
+        
+        // Draw thick borders for boxes - much thicker with 3D effect
+        paint.strokeWidth = 8f // Thicker lines for block borders
+        
+        // Draw shadow lines first (slightly offset)
+        paint.color = Color.parseColor("#5D4037") // Darker shadow
+        paint.alpha = 80
+        
+        // Draw vertical box borders
+        for (i in 0..boardSize step boxCols) {
+            val x = boardLeft + i * cellSize + 2f
+            canvas.drawLine(x, boardTop, x, boardTop + boardSize * cellSize, paint)
+        }
+        
+        // Draw horizontal box borders
+        for (i in 0..boardSize step boxRows) {
+            val y = boardTop + i * cellSize + 2f
+            canvas.drawLine(boardLeft, y, boardLeft + boardSize * cellSize, y, paint)
+        }
+        
+        // Draw main thick lines
+        paint.color = thickGridColor
+        paint.alpha = 255
+        
+        // Draw vertical box borders
+        for (i in 0..boardSize step boxCols) {
+            val x = boardLeft + i * cellSize
+            canvas.drawLine(x, boardTop, x, boardTop + boardSize * cellSize, paint)
+        }
+        
+        // Draw horizontal box borders
+        for (i in 0..boardSize step boxRows) {
+            val y = boardTop + i * cellSize
+            canvas.drawLine(boardLeft, y, boardLeft + boardSize * cellSize, y, paint)
+        }
+        
+        // Draw outer border last (dark brown) - most prominent with enhanced 3D effect
+        paint.strokeWidth = 16f // Enhanced thick outer border
+        paint.style = Paint.Style.STROKE // Only draw the stroke, not fill
+        
+        // Draw shadow border first
+        paint.color = Color.parseColor("#3E2723") // Enhanced darker shadow
+        paint.alpha = 120
+        canvas.drawRoundRect(
+            boardLeft - 6f, boardTop - 6f, 
+            boardLeft + boardSize * cellSize + 6f, 
+            boardTop + boardSize * cellSize + 6f, 18f, 18f, paint
+        )
+        
+        // Draw main outer border
+        paint.color = outerBorderColor
+        paint.alpha = 255
+        canvas.drawRoundRect(
+            boardLeft - 8f, boardTop - 8f, 
+            boardLeft + boardSize * cellSize + 8f, 
+            boardTop + boardSize * cellSize + 8f, 20f, 20f, paint
+        )
+        
+        paint.style = Paint.Style.FILL // Reset to fill style
+    }
+
+    private fun drawNumbers(canvas: Canvas) {
+        // Optimized text size based on board size for better readability, especially for 9x9
+        val textSizeMultiplier = when (boardSize) {
+            6 -> 0.6f   // Medium text for 6x6
+            9 -> 0.5f   // Smaller but still readable text for 9x9
+            else -> 0.5f
+        }
+        paint.textSize = cellSize * textSizeMultiplier
+        paint.strokeWidth = 0f
+
+        // Enhanced colors for different types of numbers
+        val fixedNumberColor = Color.parseColor("#6B4423") // Enhanced darker for pre-filled numbers
+        val userNumberColor = Color.parseColor("#8B7355")  // Enhanced lighter for user numbers
+
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    val x = boardLeft + col * cellSize + cellSize / 2
+                    val y = boardTop + row * cellSize + cellSize / 2 + paint.textSize / 3
+
+                    // Enhanced styling for fixed vs user numbers
+                    if (fixed[row][col]) {
+                        // Pre-filled numbers: enhanced darker and bold with shadow
+                        paint.color = fixedNumberColor
+                        paint.isFakeBoldText = true
+                        
+                        // Draw shadow for fixed numbers
+                        paint.color = Color.argb(60, 0, 0, 0)
+                        canvas.drawText(board[row][col].toString(), x + 1f, y + 1f, paint)
+                        
+                        // Draw main text
+                        paint.color = fixedNumberColor
+                        canvas.drawText(board[row][col].toString(), x, y, paint)
+                    } else {
+                        // User numbers: enhanced lighter and normal weight
+                        paint.color = userNumberColor
+                        paint.isFakeBoldText = false
+                        
+                        // Draw subtle shadow for user numbers
+                        paint.color = Color.argb(40, 0, 0, 0)
+                        canvas.drawText(board[row][col].toString(), x + 0.5f, y + 0.5f, paint)
+                        
+                        // Draw main text
+                        paint.color = userNumberColor
+                        canvas.drawText(board[row][col].toString(), x, y, paint)
+                    }
+                }
+            }
+        }
+        
+        // Draw pencil marks for empty cells if enabled
+        if (pencilMarksVisible) {
+            drawPencilMarks(canvas)
+        }
+        
+        // Reset paint properties
+        paint.isFakeBoldText = false
+    }
+    
+    private fun drawPencilMarks(canvas: Canvas) {
+        val pencilMarkSize = cellSize * 0.25f // Bigger text for pencil marks - more readable
+        paint.textSize = pencilMarkSize
+        paint.color = Color.parseColor("#666666") // Darker gray for better visibility
+        paint.isFakeBoldText = false
+        
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] == 0 && candidates[row][col].isNotEmpty()) {
+                    val cellLeft = boardLeft + col * cellSize
+                    val cellTop = boardTop + row * cellSize
+                    
+                    // Arrange candidates in a 3x3 mini-grid
+                    val candidatesList = candidates[row][col].sorted()
+                    val gridSize = 3
+                    val markSpacing = cellSize / (gridSize + 1)
+                    
+                    for ((index, candidate) in candidatesList.withIndex()) {
+                        if (index >= 9) break // Max 9 candidates
+                        
+                        val gridRow = index / gridSize
+                        val gridCol = index % gridSize
+                        
+                        val x = cellLeft + (gridCol + 1) * markSpacing
+                        val y = cellTop + (gridRow + 1) * markSpacing + pencilMarkSize / 3
+                        
+                        canvas.drawText(candidate.toString(), x, y, paint)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                val x = event.x
+                val y = event.y
+                
+                if (x >= boardLeft && x <= boardLeft + boardSize * cellSize &&
+                    y >= boardTop && y <= boardTop + boardSize * cellSize) {
+                    selectedRow = ((y - boardTop) / cellSize).toInt()
+                    selectedCol = ((x - boardLeft) / cellSize).toInt()
+                    
+                    // Notify listener about cell selection
+                    onCellSelectedListener?.onCellSelected(
+                        selectedRow, 
+                        selectedCol, 
+                        !fixed[selectedRow][selectedCol]
+                    )
+                    
+                    // Highlight the number if the clicked cell contains a number
+                    val clickedNumber = board[selectedRow][selectedCol]
+                    if (clickedNumber != 0) {
+                        highlightNumber(clickedNumber)
+                    } else {
+                        clearNumberHighlight()
+                    }
+                    
+                    invalidate()
+                    return true
+                }
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        
+        // Calculate cell size based on available space with optimized size-specific adjustments
+        val availableWidth = w - 24f  // Reduced padding for more space
+        val availableHeight = h - 24f
+        
+        // Optimized cell size based on board size to maximize 9x9 visibility
+        val sizeMultiplier = when (boardSize) {
+            6 -> 0.95f  // Almost full size for 6x6
+            9 -> 1.0f   // Full size for 9x9 to maximize visibility
+            else -> 1.0f
+        }
+        
+        // Calculate optimal cell size that fits within available space
+        val maxCellSize = min(availableWidth, availableHeight) / boardSize.toFloat()
+        cellSize = maxCellSize * sizeMultiplier
+        
+        // Ensure the board doesn't exceed available space with better handling for 9x9
+        val totalBoardSize = boardSize * cellSize
+        if (totalBoardSize > availableWidth || totalBoardSize > availableHeight) {
+            // Recalculate with optimized conservative multipliers
+            val conservativeMultiplier = when (boardSize) {
+                3 -> 0.75f
+                6 -> 0.85f
+                9 -> 0.95f  // Keep 9x9 as large as possible
+                else -> 0.9f
+            }
+            cellSize = maxCellSize * conservativeMultiplier
+        }
+        
+        // Center the board
+        boardLeft = (w - boardSize * cellSize) / 2
+        boardTop = (h - boardSize * cellSize) / 2
+    }
+
+
+
+    fun resetPuzzle(difficulty: SudokuGenerator.Difficulty = SudokuGenerator.Difficulty.EASY) {
+        Log.d("SudokuBoardView", "Resetting puzzle: size=$boardSize, difficulty=$difficulty")
+        
+        val puzzle = SudokuGenerator.generatePuzzle(boardSize, difficulty)
+        Log.d("SudokuBoardView", "Generated puzzle with ${puzzle.board.sumOf { it.count { cell -> cell != 0 } }} filled cells")
+        
+        board = puzzle.board
+        initialBoard = puzzle.board.map { it.clone() }.toTypedArray() // Store initial state
+        fixed = puzzle.fixed
+        selectedRow = -1
+        selectedCol = -1
+        // Clear any existing conflicts when resetting
+        clearConflicts()
+        
+        // Initialize hint system for new puzzle
+        initializeHintSystem()
+        
+        invalidate()
+        
+        Log.d("SudokuBoardView", "Puzzle reset complete")
+    }
+
+    fun setNumber(number: Int) {
+        if (selectedRow != -1 && selectedCol != -1 && !fixed[selectedRow][selectedCol]) {
+            // Store the previous value for conflict detection
+            val previousValue = board[selectedRow][selectedCol]
+            
+            // Set the number
+            board[selectedRow][selectedCol] = number
+            
+            // Update candidates for affected cells
+            updateCandidatesAfterPlacement(selectedRow, selectedCol, number)
+            
+            // Check for conflicts
+            if (number != 0) {
+                val conflicts = findConflicts(selectedRow, selectedCol, number)
+                if (conflicts.isNotEmpty()) {
+                    // Start conflict animation
+                    startConflictAnimation(conflicts)
+                    lastPlacedNumber = number
+
+                    lastPlacedRow = selectedRow
+                    lastPlacedCol = selectedCol
+                    onConflictListener?.onConflictDetected()
+                } else {
+                    // Clear any existing conflicts when placing a valid number
+                    clearConflicts()
+                    // Start success animation for correct placement
+                    startSuccessAnimation(selectedRow, selectedCol)
+                }
+            } else {
+                // Clear conflicts when removing a number
+                clearConflicts()
+            }
+            
+            invalidate()
+        }
+    }
+
+    fun clearSelected() {
+        if (selectedRow != -1 && selectedCol != -1 && !fixed[selectedRow][selectedCol]) {
+            val previousValue = board[selectedRow][selectedCol]
+            board[selectedRow][selectedCol] = 0
+            
+            // Update candidates for affected cells
+            updateCandidatesAfterPlacement(selectedRow, selectedCol, previousValue)
+            
+            // Clear conflicts when clearing a cell
+            clearConflicts()
+            invalidate()
+        }
+    }
+    
+
+    fun isValidSolution(): Boolean {
+        // Check rows
+        for (row in 0 until boardSize) {
+            val seen = mutableSetOf<Int>()
+            for (col in 0 until boardSize) {
+                if (board[row][col] == 0 || !seen.add(board[row][col])) return false
+            }
+        }
+
+        // Check columns
+        for (col in 0 until boardSize) {
+            val seen = mutableSetOf<Int>()
+            for (row in 0 until boardSize) {
+                if (board[row][col] == 0 || !seen.add(board[row][col])) return false
+            }
+        }
+
+        // Check boxes based on Sudoku rules
+        when (boardSize) {
+            6 -> {
+                // 6x6 Sudoku: check 2x3 boxes
+                for (boxRow in 0 until 3) { // 3 rows of boxes
+                    for (boxCol in 0 until 2) { // 2 columns of boxes
+                        val seen = mutableSetOf<Int>()
+                        for (row in boxRow * 2 until (boxRow + 1) * 2) {
+                            for (col in boxCol * 3 until (boxCol + 1) * 3) {
+                                if (board[row][col] == 0 || !seen.add(board[row][col])) return false
+                            }
+                        }
+                    }
+                }
+            }
+            9 -> {
+                // 9x9 Sudoku: check 3x3 boxes
+                for (boxRow in 0 until 3) {
+                    for (boxCol in 0 until 3) {
+                        val seen = mutableSetOf<Int>()
+                        for (row in boxRow * 3 until (boxRow + 1) * 3) {
+                            for (col in boxCol * 3 until (boxCol + 1) * 3) {
+                                if (board[row][col] == 0 || !seen.add(board[row][col])) return false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true
+    }
+
+    fun getHint(): String {
+        if (selectedRow == -1 || selectedCol == -1) {
+            return "Select a cell first"
+        }
+        if (fixed[selectedRow][selectedCol]) {
+            return "This is a fixed number"
+        }
+        if (board[selectedRow][selectedCol] != 0) {
+            return "Cell already has a number"
+        }
+        
+        // Simple hint: find a valid number for the selected cell
+        for (num in 1..boardSize) {
+            if (isValidMove(selectedRow, selectedCol, num)) {
+                return "Try placing $num in this cell"
+            }
+        }
+        return "No valid numbers for this cell"
+    }
+    
+    fun getFilledCellCount(): Int {
+        var count = 0
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    count++
+                }
+            }
+        }
+        return count
+    }
+    
+    fun getUserFilledCellCount(): Int {
+        var count = 0
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0 && !fixed[row][col]) {
+                    count++
+                }
+            }
+        }
+        return count
+    }
+    
+    fun getEmptyCellCount(): Int {
+        var count = 0
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] == 0) {
+                    count++
+                }
+            }
+        }
+        return count
+    }
+    
+    fun getOriginalEmptyCellCount(): Int {
+        var count = 0
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (fixed[row][col] == false) {
+                    count++
+                }
+            }
+        }
+        return count
+    }
+
+    private fun isValidMove(row: Int, col: Int, num: Int): Boolean {
+        // Check row
+        for (c in 0 until boardSize) {
+            if (c != col && board[row][c] == num) return false
+        }
+
+        // Check column
+        for (r in 0 until boardSize) {
+            if (r != row && board[r][col] == num) return false
+        }
+
+        // Check box based on Sudoku rules
+        when (boardSize) {
+            6 -> {
+                // 6x6 Sudoku: check 2x3 boxes
+                val boxRow = (row / 2) * 2
+                val boxCol = (col / 3) * 3
+                for (r in boxRow until boxRow + 2) {
+                    for (c in boxCol until boxCol + 3) {
+                        if ((r != row || c != col) && board[r][c] == num) return false
+                    }
+                }
+            }
+            9 -> {
+                // 9x9 Sudoku: check 3x3 boxes
+                val boxRow = (row / 3) * 3
+                val boxCol = (col / 3) * 3
+                for (r in boxRow until boxRow + 3) {
+                    for (c in boxCol until boxCol + 3) {
+                        if ((r != row || c != col) && board[r][c] == num) return false
+                    }
+                }
+            }
+        }
+        return true
+    }
+
+    fun getBoardState(): Array<IntArray> = board.map { it.clone() }.toTypedArray()
+    fun getFixedState(): Array<BooleanArray> = fixed.map { it.clone() }.toTypedArray()
+
+    fun setBoardState(boardState: Array<IntArray>, fixedState: Array<BooleanArray>) {
+        board = boardState.map { it.clone() }.toTypedArray()
+        fixed = fixedState.map { it.clone() }.toTypedArray()
+        // Clear conflicts when loading a new board state
+        clearConflicts()
+        invalidate()
+    }
+
+    fun setOnCellSelectedListener(listener: OnCellSelectedListener) {
+        onCellSelectedListener = listener
+    }
+
+    fun setOnConflictListener(listener: OnConflictListener) {
+        onConflictListener = listener
+    }
+
+
+    
+    fun getInitialBoardState(): Array<IntArray> = initialBoard.map { it.clone() }.toTypedArray()
+    
+    fun isBoardComplete(): Boolean {
+        // First check if all cells are filled
+        for (i in 0 until boardSize) {
+            for (j in 0 until boardSize) {
+                if (board[i][j] == 0) return false
+            }
+        }
+        
+        // Then verify the solution is valid (no conflicts)
+        return isSolutionValid()
+    }
+    
+    private fun isSolutionValid(): Boolean {
+        // Check each row
+        for (row in 0 until boardSize) {
+            val numbers = mutableSetOf<Int>()
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    if (!numbers.add(board[row][col])) {
+                        return false // Duplicate found in row
+                    }
+                }
+            }
+        }
+        
+        // Check each column
+        for (col in 0 until boardSize) {
+            val numbers = mutableSetOf<Int>()
+            for (row in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    if (!numbers.add(board[row][col])) {
+                        return false // Duplicate found in column
+                    }
+                }
+            }
+        }
+        
+        // Check boxes based on Sudoku rules
+        when (boardSize) {
+            6 -> {
+                // 6x6 Sudoku: check 2x3 boxes
+                for (boxRow in 0 until 3) { // 3 rows of boxes
+                    for (boxCol in 0 until 2) { // 2 columns of boxes
+                        val numbers = mutableSetOf<Int>()
+                        for (r in boxRow * 2 until boxRow * 2 + 2) {
+                            for (c in boxCol * 3 until boxCol * 3 + 3) {
+                                if (board[r][c] != 0) {
+                                    if (!numbers.add(board[r][c])) {
+                                        return false // Duplicate found in box
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            9 -> {
+                // 9x9 Sudoku: check 3x3 boxes
+                for (boxRow in 0 until 3) {
+                    for (boxCol in 0 until 3) {
+                        val numbers = mutableSetOf<Int>()
+                        for (r in boxRow * 3 until boxRow * 3 + 3) {
+                            for (c in boxCol * 3 until boxCol * 3 + 3) {
+                                if (board[r][c] != 0) {
+                                    if (!numbers.add(board[r][c])) {
+                                        return false // Duplicate found in box
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true
+    }
+
+    // Conflict detection methods
+    private fun findConflicts(row: Int, col: Int, number: Int): Set<Pair<Int, Int>> {
+        val conflicts = mutableSetOf<Pair<Int, Int>>()
+        
+        // Check row conflicts
+        for (c in 0 until boardSize) {
+            if (c != col && board[row][c] == number) {
+                conflicts.add(Pair(row, c))
+            }
+        }
+        
+        // Check column conflicts
+        for (r in 0 until boardSize) {
+            if (r != row && board[r][col] == number) {
+                conflicts.add(Pair(r, col))
+            }
+        }
+        
+        // Check box conflicts based on Sudoku rules
+        when (boardSize) {
+            6 -> {
+                // 6x6 Sudoku: check 2x3 boxes
+                val boxRow = (row / 2) * 2
+                val boxCol = (col / 3) * 3
+                for (r in boxRow until boxRow + 2) {
+                    for (c in boxCol until boxCol + 3) {
+                        if ((r != row || c != col) && board[r][c] == number) {
+                            conflicts.add(Pair(r, c))
+                        }
+                    }
+                }
+            }
+            9 -> {
+                // 9x9 Sudoku: check 3x3 boxes
+                val boxRow = (row / 3) * 3
+                val boxCol = (col / 3) * 3
+                for (r in boxRow until boxRow + 3) {
+                    for (c in boxCol until boxCol + 3) {
+                        if ((r != row || c != col) && board[r][c] == number) {
+                            conflicts.add(Pair(r, c))
+                        }
+                    }
+                }
+            }
+        }
+        
+        return conflicts
+    }
+    
+    private fun startConflictAnimation(conflicts: Set<Pair<Int, Int>>) {
+        // Stop any existing animation
+        conflictAnimator?.cancel()
+        
+        // Set conflicting cells
+        conflictingCells.clear()
+        conflictingCells.addAll(conflicts)
+        
+        // Create pulsing animation
+        conflictAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 2000 // 2 seconds for one complete cycle
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            
+            addUpdateListener { animator ->
+                conflictAnimationProgress = animator.animatedValue as Float
+                invalidate()
+            }
+        }
+        
+        conflictAnimator?.start()
+    }
+    
+    private fun clearConflicts() {
+        conflictAnimator?.cancel()
+        conflictingCells.clear()
+        lastPlacedRow = -1
+        lastPlacedCol = -1
+        lastPlacedNumber = 0
+        conflictAnimationProgress = 0f
+    }
+
+    private fun startSuccessAnimation(row: Int, col: Int) {
+        // Stop any existing success animation
+        successAnimator?.cancel()
+        
+        // Set success cell
+        successCells.clear()
+        successCells.add(Pair(row, col))
+        
+        // Create pulsing glow animation
+        successAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 1000 // 1 second for one complete cycle
+            repeatCount = 1 // Only play once
+            
+            addUpdateListener { animator ->
+                successAnimationProgress = animator.animatedValue as Float
+                invalidate()
+            }
+        }
+        
+        successAnimator?.start()
+    }
+
+    private fun clearSuccessAnimation() {
+        successAnimator?.cancel()
+        successCells.clear()
+        successAnimationProgress = 0f
+    }
+    
+    fun hasConflicts(): Boolean {
+        return conflictingCells.isNotEmpty()
+    }
+    
+    fun getConflictingCells(): Set<Pair<Int, Int>> {
+        return conflictingCells.toSet()
+    }
+    
+    // Method to manually check for conflicts in the entire board (for debugging/testing)
+    fun checkAllConflicts() {
+        val allConflicts = mutableSetOf<Pair<Int, Int>>()
+        
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    val conflicts = findConflicts(row, col, board[row][col])
+                    allConflicts.addAll(conflicts)
+                }
+            }
+        }
+        
+        if (allConflicts.isNotEmpty()) {
+            startConflictAnimation(allConflicts)
+        } else {
+            clearConflicts()
+        }
+    }
+
+    // Number highlighting methods - clean implementation
+    fun highlightNumber(number: Int) {
+        highlightedNumber = number
+        highlightedCells.clear()
+        
+        // Find all cells containing this number
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] == number) {
+                    highlightedCells.add(Pair(row, col))
+                }
+            }
+        }
+        
+        invalidate()
+    }
+    
+    fun clearNumberHighlight() {
+        highlightedNumber = 0
+        highlightedCells.clear()
+        invalidate()
+    }
+
+    fun setTheme(theme: ColorTheme) {
+        currentTheme = theme
+        updateColors()
+        invalidate()
+    }
+
+    fun setRealmTheme(realmId: String) {
+        val theme = when (realmId) {
+            "echoes" -> ColorTheme.REALM_ECHOES
+            "trials" -> ColorTheme.REALM_TRIALS
+            "flame" -> ColorTheme.REALM_FLAME
+            "shadows" -> ColorTheme.REALM_SHADOWS
+            else -> ColorTheme.WHITE
+        }
+        setTheme(theme)
+    }
+
+    private fun updateColors() {
+        when (currentTheme) {
+            ColorTheme.WHITE -> {
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown accent
+                textColor = Color.parseColor("#6B4423") // Dark brown text
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown numbers
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown numbers
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error color
+            }
+            ColorTheme.BLACK -> {
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown accent
+                textColor = Color.parseColor("#6B4423") // Dark brown text
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown numbers
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown numbers
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error color
+            }
+            ColorTheme.STIFF_BLUE -> {
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown accent
+                textColor = Color.parseColor("#6B4423") // Dark brown text
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown numbers
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown numbers
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error color
+            }
+            ColorTheme.LIGHT_YELLOW -> {
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown accent
+                textColor = Color.parseColor("#6B4423") // Dark brown text
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown numbers
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown numbers
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error color
+            }
+            ColorTheme.REALM_ECHOES -> {
+                // Pure white and bright
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Gentle brown
+                textColor = Color.parseColor("#6B4423") // Dark brown
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown
+                conflictColor = Color.parseColor("#D2691E") // Warm error
+            }
+            ColorTheme.REALM_TRIALS -> {
+                // Pure white and bright
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown
+                textColor = Color.parseColor("#6B4423") // Dark brown
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error
+            }
+            ColorTheme.REALM_FLAME -> {
+                // Pure white and bright
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown
+                textColor = Color.parseColor("#6B4423") // Dark brown
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error
+            }
+            ColorTheme.REALM_SHADOWS -> {
+                // Pure white and bright
+                bgColor = Color.parseColor("#FFFFFF") // Pure white background
+                boardColor = Color.parseColor("#FFFFFF") // Pure white board
+                accentColor = Color.parseColor("#8B7355") // Fantasy brown
+                textColor = Color.parseColor("#6B4423") // Dark brown
+                fixedNumberColor = Color.parseColor("#6B4423") // Dark brown
+                userNumberColor = Color.parseColor("#8B7355") // Lighter brown
+                conflictColor = Color.parseColor("#D2691E") // Fantasy error
+            }
+        }
+    }
+    
+    // ===== HINT SYSTEM METHODS =====
+    
+    /**
+     * Initialize hint system - compute solution and initial candidates
+     */
+    fun initializeHintSystem() {
+        // Generate solution if not present
+        if (solutionBoard == null) {
+            solutionBoard = generateSolution()
+        }
+        
+        // Clear previous hint data
+        hintsUsed = 0
+        isRevealedByHint = Array(boardSize) { BooleanArray(boardSize) }
+        
+        // Compute initial candidates for all empty cells
+        computeAllCandidates()
+    }
+    
+    /**
+     * Generate solution board using the existing solver
+     */
+    private fun generateSolution(): Array<IntArray>? {
+        val solution = Array(boardSize) { IntArray(boardSize) }
+        
+        // Copy current board to solution
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                solution[row][col] = board[row][col]
+            }
+        }
+        
+        // Use existing solver to complete the solution
+        if (SudokuGenerator.solveBoard(solution, boardSize)) {
+            return solution
+        }
+        return null
+    }
+    
+    /**
+     * Compute candidates for a specific cell using elimination
+     */
+    private fun computeCandidatesForCell(row: Int, col: Int): MutableSet<Int> {
+        val candidates = mutableSetOf<Int>()
+        
+        // Start with all possible numbers
+        for (num in 1..boardSize) {
+            candidates.add(num)
+        }
+        
+        // Remove numbers present in same row
+        for (c in 0 until boardSize) {
+            if (board[row][c] != 0) {
+                candidates.remove(board[row][c])
+            }
+        }
+        
+        // Remove numbers present in same column
+        for (r in 0 until boardSize) {
+            if (board[r][col] != 0) {
+                candidates.remove(board[r][col])
+            }
+        }
+        
+        // Remove numbers present in same box
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        val boxRow = (row / boxRows) * boxRows
+        val boxCol = (col / boxCols) * boxCols
+        for (r in boxRow until boxRow + boxRows) {
+            for (c in boxCol until boxCol + boxCols) {
+                if (board[r][c] != 0) {
+                    candidates.remove(board[r][c])
+                }
+            }
+        }
+        
+        return candidates
+    }
+    
+    /**
+     * Compute candidates for all empty cells
+     */
+    fun computeAllCandidates() {
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] == 0) {
+                    candidates[row][col] = computeCandidatesForCell(row, col)
+                } else {
+                    candidates[row][col].clear()
+                }
+            }
+        }
+    }
+    
+    /**
+     * Update candidates after a number is placed or removed
+     */
+    private fun updateCandidatesAfterPlacement(row: Int, col: Int, value: Int) {
+        // Update candidates for cells in same row
+        for (c in 0 until boardSize) {
+            if (c != col && board[row][c] == 0) {
+                candidates[row][c] = computeCandidatesForCell(row, c)
+            }
+        }
+        
+        // Update candidates for cells in same column
+        for (r in 0 until boardSize) {
+            if (r != row && board[r][col] == 0) {
+                candidates[r][col] = computeCandidatesForCell(r, col)
+            }
+        }
+        
+        // Update candidates for cells in same box
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        val boxRow = (row / boxRows) * boxRows
+        val boxCol = (col / boxCols) * boxCols
+        for (r in boxRow until boxRow + boxRows) {
+            for (c in boxCol until boxCol + boxCols) {
+                if ((r != row || c != col) && board[r][c] == 0) {
+                    candidates[r][c] = computeCandidatesForCell(r, c)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Reveal hint for selected cell
+     */
+    fun revealHint(): Boolean {
+        if (selectedRow == -1 || selectedCol == -1) {
+            return false // No cell selected
+        }
+        
+        if (board[selectedRow][selectedCol] != 0) {
+            return false // Cell is not empty
+        }
+        
+        if (solutionBoard == null) {
+            return false // No solution available
+        }
+        
+        if (hintsRemaining <= 0) {
+            return false // No hints remaining
+        }
+        
+        val correctValue = solutionBoard!![selectedRow][selectedCol]
+        
+        // Apply the hint
+        board[selectedRow][selectedCol] = correctValue
+        isRevealedByHint[selectedRow][selectedCol] = true
+        hintsUsed++
+        hintsRemaining--
+        
+        // Update candidates for affected cells
+        updateCandidatesAfterPlacement(selectedRow, selectedCol, correctValue)
+        
+        // Clear candidates for this cell
+        candidates[selectedRow][selectedCol].clear()
+        
+        invalidate()
+        return true
+    }
+    
+    /**
+     * Toggle pencil marks visibility
+     */
+    fun togglePencilMarks() {
+        pencilMarksVisible = !pencilMarksVisible
+        if (pencilMarksVisible) {
+            computeAllCandidates()
+        }
+        invalidate()
+    }
+    
+    /**
+     * Get hints remaining count
+     */
+    fun getHintsRemaining(): Int = hintsRemaining
+    
+    /**
+     * Get hints used count
+     */
+    fun getHintsUsed(): Int = hintsUsed
+    
+    /**
+     * Check if pencil marks are visible
+     */
+    fun isPencilMarksVisible(): Boolean = pencilMarksVisible
+    
+    /**
+     * Get selected row (for external access)
+     */
+    fun getSelectedRow(): Int = selectedRow
+    
+    /**
+     * Get selected column (for external access)
+     */
+    fun getSelectedCol(): Int = selectedCol
+    
+    /**
+     * Get board value at specific position (for external access)
+     */
+    fun getBoardValue(row: Int, col: Int): Int = board[row][col]
+}

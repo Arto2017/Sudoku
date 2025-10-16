@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+
+    <!-- Drop shadow -->
+    <path
+        android:fillColor="#20000000"
+        android:pathData="M12,10 L68,10 A2,2 0 0,1 70,12 L70,68 A2,2 0 0,1 68,70 L12,70 A2,2 0 0,1 10,68 L10,12 A2,2 0 0,1 12,10 Z" />
+
+    <!-- Main rounded square with gradient effect -->
+    <path
+        android:fillColor="#F8F4E8"
+        android:pathData="M12,8 L68,8 A4,4 0 0,1 72,12 L72,68 A4,4 0 0,1 68,72 L12,72 A4,4 0 0,1 8,68 L8,12 A4,4 0 0,1 12,8 Z" />
+
+    <!-- 3x3 Sudoku Grid -->
+    <!-- Vertical lines -->
+    <path
+        android:strokeColor="#424242"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M32,20 L32,60" />
+    <path
+        android:strokeColor="#424242"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M48,20 L48,60" />
+
+    <!-- Horizontal lines -->
+    <path
+        android:strokeColor="#424242"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M20,32 L60,32" />
+    <path
+        android:strokeColor="#424242"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M20,48 L60,48" />
+
+    <!-- Outer border -->
+    <path
+        android:strokeColor="#424242"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M20,20 L60,20 L60,60 L20,60 Z" />
+
+    <!-- Number 5 (top-left) -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M24,24 L28,24 L28,26 L26,26 L26,28 L28,28 L28,30 L24,30 L24,28 L26,28 L26,26 L24,26 Z" />
+
+    <!-- Number 7 (middle) -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M40,40 L44,40 L44,42 L42,42 L42,44 L44,44 L44,46 L40,46 L40,44 L42,44 L42,42 L40,42 Z" />
+
+    <!-- Number 9 (bottom-right) -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M56,56 L60,56 L60,58 L58,58 L58,60 L60,60 L60,62 L56,62 L56,60 L58,60 L58,58 L56,58 Z" />
+
+</vector>

@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient_warm"
+    android:fillViewport="true"
+    tools:context=".MainMenuActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/horizontal_padding"
+        android:minHeight="0dp">
+
+        <!-- App Header Section -->
+        <LinearLayout
+            android:id="@+id/appHeader"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/safe_top_area"
+            android:layout_marginBottom="@dimen/responsive_margin_large"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Logo/Icon -->
+            <ImageView
+                android:id="@+id/appLogo"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_sudoku_pro_icon"
+                android:layout_marginBottom="@dimen/responsive_margin"
+                android:elevation="4dp" />
+
+            <!-- App Title -->
+            <TextView
+                android:id="@+id/appTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sudoku Pro"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:fontFamily="sans-serif-medium"
+                android:shadowColor="#8B7355"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4" />
+
+            <!-- Tagline -->
+            <TextView
+                android:id="@+id/appTagline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Master the Art of Numbers"
+                android:textSize="16sp"
+                android:textStyle="italic"
+                android:textColor="#757575"
+                android:layout_marginTop="@dimen/responsive_margin_small"
+                android:fontFamily="sans-serif-light" />
+        </LinearLayout>
+
+        <!-- Horizontal Carousel -->
+        <HorizontalScrollView
+            android:id="@+id/carouselContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/responsive_margin_large"
+            android:scrollbars="none"
+            android:overScrollMode="never"
+            app:layout_constraintTop_toBottomOf="@id/appHeader"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <LinearLayout
+                android:id="@+id/carouselContent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/horizontal_padding"
+                android:paddingEnd="@dimen/horizontal_padding">
+
+                <!-- Daily Challenge Card -->
+                <LinearLayout
+                    android:id="@+id/dailyChallengeCard"
+                    android:layout_width="280dp"
+                    android:layout_height="200dp"
+                    android:layout_marginEnd="@dimen/responsive_margin"
+                    android:orientation="vertical"
+                    android:background="@drawable/daily_challenge_gradient"
+                    android:padding="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:elevation="6dp">
+
+                    <!-- Top row: Icon + Content -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Left: Daily Challenge Icon -->
+                        <FrameLayout
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="16dp">
+
+                            <!-- Calendar Icon Background -->
+                            <ImageView
+                                android:layout_width="80dp"
+                                android:layout_height="80dp"
+                                android:src="@drawable/ic_calendar_daily"
+                                android:background="@drawable/daily_challenge_icon_bg"
+                                android:scaleType="centerCrop" />
+
+                            <!-- Streak Badge -->
+                            <TextView
+                                android:id="@+id/dailyStreakBadge"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="top|end"
+                                android:layout_marginTop="-4dp"
+                                android:layout_marginEnd="-4dp"
+                                android:background="@drawable/streak_badge_background"
+                                android:gravity="center"
+                                android:text="4"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFFFFF" />
+                        </FrameLayout>
+
+                        <!-- Right: Title and Info -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="end">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Daily Challenge"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="#333333"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:id="@+id/dailyChallengeDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sep 30 • Medium"
+                                android:textSize="13sp"
+                                android:textColor="#6B6B6B"
+                                android:fontFamily="sans-serif"
+                                android:layout_marginTop="2dp"
+                                android:layout_marginBottom="8dp" />
+
+                            <!-- Status Badge -->
+                            <LinearLayout
+                                android:id="@+id/dailyStatusBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:background="@drawable/daily_status_badge"
+                                android:padding="4dp"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:id="@+id/dailyStatusText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="You solved today"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold"
+                                    android:textColor="#4CAF50" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Bottom: Progress + Timer -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp">
+
+                        <!-- Timer -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="8dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Next challenge in:"
+                                android:textSize="12sp"
+                                android:textColor="#757575"
+                                android:fontFamily="sans-serif-light" />
+
+                            <TextView
+                                android:id="@+id/dailyTimerText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="12:30:45"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#FF6B35"
+                                android:fontFamily="sans-serif-medium" />
+                        </LinearLayout>
+
+                        <!-- CTA Button -->
+                        <Button
+                            android:id="@+id/btnDailyChallenge"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:text="Play"                
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#333333"
+                            android:background="@drawable/daily_challenge_button_bg"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:paddingVertical="8dp"
+                            android:paddingHorizontal="12dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Redesigned Sudoku Quest Card -->
+                <LinearLayout
+                    android:id="@+id/questCard"
+                    android:layout_width="280dp"
+                    android:layout_height="200dp"
+                        android:layout_marginEnd="@dimen/responsive_margin"
+                    android:orientation="vertical"
+                    android:background="@drawable/quest_card_gradient"
+                    android:padding="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:elevation="6dp">
+
+                    <!-- Top row: Progress ring + Content -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Left: Progress Ring with Trophy -->
+                        <FrameLayout
+                            android:layout_width="80dp"
+                            android:layout_height="80dp"
+                            android:layout_marginEnd="16dp">
+
+                            <!-- Progress Ring Background -->
+                            <ProgressBar
+                                android:id="@+id/questProgressRing"
+                                style="?android:attr/progressBarStyleHorizontal"
+                                android:layout_width="80dp"
+                                android:layout_height="80dp"
+                                android:progress="65"
+                                android:max="100"
+                                android:progressDrawable="@drawable/quest_progress_ring"
+                                android:background="@android:color/transparent" />
+
+                            <!-- Trophy Icon in Center -->
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/golden_icon"
+                                android:scaleType="centerCrop" />
+
+                            <!-- New Badge Overlay -->
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="top|start"
+                                android:src="@drawable/ic_badge_new"
+                                android:layout_marginTop="-4dp"
+                                android:layout_marginStart="-4dp" />
+                        </FrameLayout>
+
+                        <!-- Right: Title and Info -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="start">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                                android:text="Sudoku Quest"
+                                android:textSize="20sp"
+                            android:textStyle="bold"
+                                android:textColor="#333333"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                                android:text="Adventure • 24 levels unlocked"
+                                android:textSize="13sp"
+                                android:textColor="#6B6B6B"
+                                android:fontFamily="sans-serif"
+                                android:layout_marginTop="2dp"
+                                android:layout_marginBottom="8dp" />
+
+                            <!-- Mini Grid Preview -->
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_mini_grid_preview"
+                                android:alpha="0.65" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Bottom: Progress Bar + Reward Chip -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp">
+
+                        <!-- Level Progress Bar -->
+                        <ProgressBar
+                            android:id="@+id/questLevelProgressBar"
+                            style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="0dp"
+                            android:layout_height="4dp"
+                        android:layout_weight="1"
+                            android:progress="75"
+                            android:max="100"
+                            android:progressTint="#FF7A59"
+                            android:progressBackgroundTint="#E0E0E0"
+                            android:layout_marginEnd="12dp" />
+
+                        <!-- Reward Chip -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:background="@drawable/reward_chip_background"
+                            android:padding="6dp"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="⭐"
+                                android:textSize="12sp"
+                                android:layout_marginEnd="2dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                                android:text="25"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#FF8A65" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Bottom: CTA Button -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                        <!-- Single CTA Button -->
+                        <Button
+                            android:id="@+id/btnChooseLevel"
+                            android:layout_width="match_parent"
+                            android:layout_height="36dp"
+                            android:text="Choose Level"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#333333"
+                            android:background="@drawable/choose_level_background"
+                            android:fontFamily="sans-serif-medium" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Statistics Card -->
+                <LinearLayout
+                    android:id="@+id/statisticsCard"
+                    android:layout_width="220dp"
+                    android:layout_height="180dp"
+                    android:layout_marginEnd="@dimen/responsive_margin"
+                    android:orientation="vertical"
+                    android:background="@drawable/carousel_card_background"
+                    android:padding="@dimen/responsive_padding"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:elevation="4dp">
+
+                    <ImageView
+                        android:layout_width="96dp"
+                        android:layout_height="96dp"
+                        android:src="@drawable/ic_stats_illustration"
+                        android:layout_marginBottom="@dimen/responsive_margin"
+                        android:elevation="2dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                        android:text="Statistics"
+                        android:textSize="18sp"
+                            android:textStyle="bold"
+                        android:textColor="#333333"
+                        android:fontFamily="sans-serif-medium"
+                        android:layout_marginBottom="4dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Big Quick Play CTA Button -->
+        <LinearLayout
+            android:id="@+id/quickPlayContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="48dp"
+            android:layout_marginBottom="32dp"
+            app:layout_constraintTop_toBottomOf="@id/carouselContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Quick Play CTA -->
+            <LinearLayout
+                android:id="@+id/btnQuickPlay"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/cta_gradient_background"
+                android:padding="20dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:elevation="6dp"
+                android:minHeight="64dp">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_play"
+                    android:layout_marginEnd="16dp"
+                    app:tint="@android:color/white"
+                    android:elevation="2dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Quick Play"
+                    android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:fontFamily="sans-serif-medium" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_arrow_right"
+                    app:tint="@android:color/white" />
+            </LinearLayout>
+
+            <!-- CTA Subtext -->
+                        <TextView
+                android:id="@+id/ctaSubtext"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                android:text="Choose your challenge"
+                android:textSize="14sp"
+                android:textColor="#9E9E9E"
+                android:layout_marginTop="@dimen/responsive_margin_small"
+                android:fontFamily="sans-serif-light" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
+

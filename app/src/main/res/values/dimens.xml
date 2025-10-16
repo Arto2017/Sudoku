@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Responsive padding and margins -->
+    <dimen name="responsive_padding">16dp</dimen>
+    <dimen name="responsive_margin">16dp</dimen>
+    <dimen name="responsive_margin_large">32dp</dimen>
+    <dimen name="responsive_margin_small">8dp</dimen>
+
+    
+    <!-- Responsive text sizes -->
+    <dimen name="text_size_title">24sp</dimen>
+    <dimen name="text_size_subtitle">14sp</dimen>
+    <dimen name="text_size_button">16sp</dimen>
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_number_button">18sp</dimen>
+    
+    <!-- Sudoku Pro Typography -->
+    <!-- Headline (app name): 22-24sp -->
+    <dimen name="text_size_headline">22sp</dimen>
+    <!-- Subhead / tagline: 12-14sp -->
+    <dimen name="text_size_subhead">12sp</dimen>
+    <!-- Buttons / CTA label: 16-18sp -->
+    <dimen name="text_size_cta">16sp</dimen>
+    <!-- Body / card labels: 14sp -->
+    <dimen name="text_size_body">14sp</dimen>
+    
+    <!-- Responsive icon sizes -->
+    <dimen name="icon_size_large">64dp</dimen>
+    <dimen name="icon_size_medium">32dp</dimen>
+    <dimen name="icon_size_small">24dp</dimen>
+    
+    <!-- Responsive button heights -->
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="button_height_small">40dp</dimen>
+    <dimen name="number_button_height">48dp</dimen>
+    <dimen name="number_button_min_width">56dp</dimen>
+    
+    <!-- Responsive card properties -->
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    
+    <!-- Sudoku Pro Spacing & Sizing -->
+    <!-- Safe top area: 24-28dp from top -->
+    <dimen name="safe_top_area">24dp</dimen>
+    <!-- Left/right padding: 16dp -->
+    <dimen name="horizontal_padding">16dp</dimen>
+    <!-- Big Quick Play height: 64-72dp -->
+    <dimen name="cta_height">64dp</dimen>
+    <!-- CTA corner radius: 28-36dp -->
+    <dimen name="cta_corner_radius">28dp</dimen>
+    <!-- Secondary card height: 56dp -->
+    <dimen name="secondary_card_height">56dp</dimen>
+    <!-- Secondary card corner radius: 18dp -->
+    <dimen name="secondary_card_radius">18dp</dimen>
+    <!-- Hit / tap target: at least 44-48dp -->
+    <dimen name="min_tap_target">44dp</dimen>
+    <!-- Icon size in cards: 22-28dp -->
+    <dimen name="card_icon_size">24dp</dimen>
+    <!-- Soft shadow elevation -->
+    <dimen name="soft_shadow_elevation">6dp</dimen>
+    <dimen name="soft_shadow_blur">18dp</dimen>
+</resources>

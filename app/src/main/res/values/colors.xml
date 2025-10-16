@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Color System -->
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+
+    <!-- Custom Colors - Warm Earthy Theme -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="dark_bg">#8D6E63</color>
+    <color name="card_bg">#FFF8E1</color>
+    <color name="accent">#FF8C42</color>
+    <color name="text_primary">#3E2723</color>
+    <color name="text_secondary">#8D6E63</color>
+
+    <!-- Color Themes - All Warm Earthy -->
+    <!-- White Theme -->
+    <color name="theme_white_bg">#FFF8E1</color>
+    <color name="theme_white_card">#FFF3E0</color>
+    <color name="theme_white_accent">#FF8C42</color>
+    <color name="theme_white_text">#3E2723</color>
+
+    <!-- Black Theme -->
+    <color name="theme_black_bg">#3E2723</color>
+    <color name="theme_black_card">#5D4037</color>
+    <color name="theme_black_accent">#FF8C42</color>
+    <color name="theme_black_text">#FFF8E1</color>
+
+    <!-- Very Dark Blue Theme -->
+    <color name="theme_stiff_blue_bg">#8D6E63</color>
+    <color name="theme_stiff_blue_card">#A1887F</color>
+    <color name="theme_stiff_blue_accent">#FF8C42</color>
+    <color name="theme_stiff_blue_text">#FFF8E1</color>
+
+    <!-- Very Light Yellow Theme -->
+    <color name="theme_light_yellow_bg">#FFF8E1</color>
+    <color name="theme_light_yellow_card">#FFF3E0</color>
+    <color name="theme_light_yellow_accent">#FF8C42</color>
+    <color name="theme_light_yellow_text">#3E2723</color>
+    
+    <!-- Additional Warm Colors -->
+    <color name="warm_beige">#FFF8E1</color>
+    <color name="warm_brown">#8D6E63</color>
+    <color name="warm_orange">#FF8C42</color>
+    <color name="dark_brown">#3E2723</color>
+    <color name="light_beige">#FFF3E0</color>
+    
+    <!-- Sudoku Pro Design Tokens -->
+    <!-- Background cream: #FBF6EE (base canvas) -->
+    <color name="bg_cream">#FBF6EE</color>
+    <!-- Primary text (warm dark): #3E2B2B -->
+    <color name="text_primary_warm">#3E2B2B</color>
+    <!-- CTA gradient start: #FF7A66 -->
+    <color name="cta_gradient_start">#FF7A66</color>
+    <!-- CTA gradient end: #FFB88C -->
+    <color name="cta_gradient_end">#FFB88C</color>
+    <!-- Card background (soft beige): #FFF6EC -->
+    <color name="card_bg_soft">#FFF6EC</color>
+    <!-- Alternative card background: #F7EFE7 -->
+    <color name="card_bg_alt">#F7EFE7</color>
+    <!-- Muted icon/text: #A88F80 -->
+    <color name="text_muted">#A88F80</color>
+    <!-- Accent red (danger/reset): #FF6B6B -->
+    <color name="accent_red">#FF6B6B</color>
+    <!-- Frosted glass overlay: white with 14% opacity -->
+    <color name="frosted_overlay">#24FFFFFF</color>
+    
+    <!-- Statistics Colors -->
+    <color name="text_dark_brown">#3E2723</color>
+    <color name="text_medium_brown">#7A4A26</color>
+    <color name="text_light_brown">#B4793C</color>
+    <color name="accent_orange">#FF8C42</color>
+    <color name="success_green">#4CAF50</color>
+    <color name="error_red">#CF6679</color>
+    <color name="background_beige">#FFF3E0</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_background_light">#FAFAFA</color>
+</resources>

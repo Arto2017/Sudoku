@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".RealmQuestActivity">
+
+    <!-- Realm Header -->
+    <LinearLayout
+        android:id="@+id/realmBackground"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:background="@drawable/echoes_background">
+
+        <!-- Back button above the title, aligned top-left (icon-only circle) -->
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="start"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/back_button_gold"
+            android:contentDescription="Back"
+            android:padding="8dp"
+            app:tint="#3B2A1A"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_arrow_left" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/realmTitleText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Realm of Echoes"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="#2D1810"
+                android:fontFamily="serif"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:gravity="center"
+                android:textAlignment="center"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_gravity="center" />
+
+            <!-- back button moved out of title block -->
+        </FrameLayout>
+
+        <!-- Subtitle intentionally removed for a cleaner, minimal header -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp"
+            android:weightSum="9"
+            android:gravity="center_vertical">
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="26dp"
+                android:layout_weight="7">
+                <ProgressBar
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:id="@+id/realmProgressBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:progressDrawable="@drawable/quest_progress_bar"
+                    android:progress="0" />
+                <TextView
+                    android:id="@+id/realmProgressText"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical|end"
+                    android:paddingEnd="10dp"
+                    android:text="0%"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:shadowColor="#40000000"
+                    android:shadowDx="1"
+                    android:shadowDy="1"
+                    android:shadowRadius="1" />
+            </FrameLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Tabs removed -->
+
+    <!-- Puzzles Content -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/puzzleRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp"
+        android:background="#FFFFFF" />
+
+    <!-- Codex removed -->
+</LinearLayout>
+
+
+
+
+
+
+
+

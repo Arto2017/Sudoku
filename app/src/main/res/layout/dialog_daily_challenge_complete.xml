@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/fantasy_dialog_background"
+    android:padding="24dp">
+
+    <!-- Fantasy Header with Trophy Icon -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_golden_trophy"
+            android:layout_marginEnd="12dp"
+            app:tint="#FFD700" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Daily Challenge Complete!"
+            android:textColor="#6B4423"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:shadowColor="#8B7355"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="1" />
+    </LinearLayout>
+
+    <!-- Congratulations Message -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Congratulations! You completed today's challenge!"
+        android:textColor="#6B4423"
+        android:textSize="16sp"
+        android:fontFamily="serif"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center" />
+
+    <!-- Stats Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/fantasy_timer_background"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <!-- Time Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_timer"
+                android:layout_marginEnd="8dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Time:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/completionTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <!-- Moves Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_pen"
+                android:layout_marginEnd="8dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Moves:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/completionMoves"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <!-- Hints Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_hint"
+                android:layout_marginEnd="8dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Hints used:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/completionHints"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <!-- Streak Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_calendar_daily"
+                android:layout_marginEnd="8dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Streak:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/completionStreak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 days"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <!-- Coins Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:text="⭐"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Coins earned:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/completionCoins"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#FFD700"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Decorative Separator -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@drawable/fantasy_separator_background"
+        android:layout_marginVertical="8dp" />
+
+    <!-- Buttons Container -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <!-- Share Button -->
+        <Button
+            android:id="@+id/btnShare"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Share Achievement"
+            android:textColor="#6B4423"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:background="@drawable/fantasy_continue_button"
+            android:elevation="2dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:paddingHorizontal="4dp" />
+
+        <!-- Done Button -->
+        <Button
+            android:id="@+id/btnDone"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Done"
+            android:textColor="#6B4423"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:background="@drawable/fantasy_exit_button"
+            android:elevation="2dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:paddingHorizontal="4dp" />
+    </LinearLayout>
+</LinearLayout>

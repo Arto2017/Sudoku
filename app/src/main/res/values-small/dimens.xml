@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Responsive padding and margins for small screens -->
+    <dimen name="responsive_padding">12dp</dimen>
+    <dimen name="responsive_margin">12dp</dimen>
+    <dimen name="responsive_margin_large">24dp</dimen>
+    <dimen name="responsive_margin_small">6dp</dimen>
+
+    
+    <!-- Responsive text sizes for small screens -->
+    <dimen name="text_size_title">20sp</dimen>
+    <dimen name="text_size_subtitle">12sp</dimen>
+    <dimen name="text_size_button">14sp</dimen>
+    <dimen name="text_size_small">10sp</dimen>
+    <dimen name="text_size_number_button">16sp</dimen>
+    
+    <!-- Responsive icon sizes for small screens -->
+    <dimen name="icon_size_large">56dp</dimen>
+    <dimen name="icon_size_medium">28dp</dimen>
+    <dimen name="icon_size_small">20dp</dimen>
+    
+    <!-- Responsive button heights for small screens -->
+    <dimen name="button_height">44dp</dimen>
+    <dimen name="button_height_small">36dp</dimen>
+    <dimen name="number_button_height">40dp</dimen>
+    <dimen name="number_button_min_width">48dp</dimen>
+    
+    <!-- Responsive card properties for small screens -->
+    <dimen name="card_corner_radius">8dp</dimen>
+    <dimen name="card_elevation">2dp</dimen>
+</resources>

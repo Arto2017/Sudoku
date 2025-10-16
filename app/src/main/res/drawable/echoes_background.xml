@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    
+    <gradient
+        android:startColor="#F5F0E6"
+        android:centerColor="#F8F4E8"
+        android:endColor="#F0E6D2"
+        android:angle="45" />
+    
+    <corners android:radius="8dp" />
+    
+    <stroke
+        android:width="2dp"
+        android:color="#8B7355" />
+    
+    <!-- Subtle texture effect -->
+    <solid android:color="#F5F0E6" />
+    
+</shape>
+
+

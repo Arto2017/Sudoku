@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/forest_background_gradient"
+    tools:context=".QuestMapActivity">
+
+    <!-- Title Banner -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🌲 MYSTIC FOREST"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#2D1810"
+            android:fontFamily="sans-serif-medium"
+            android:background="@drawable/wooden_banner_background"
+            android:padding="12dp"
+            android:layout_marginHorizontal="20dp"
+            android:shadowColor="#E6C17A"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Journey through enchanted woods"
+            android:textSize="14sp"
+            android:textColor="#1B5E20"
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-light" />
+    </LinearLayout>
+
+    <!-- Stats Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#E8F5E8"
+        android:padding="12dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/starsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⭐ 0 Stars"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#1B5E20"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Progress:"
+                android:textSize="12sp"
+                android:textColor="#1B5E20"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:id="@+id/progressText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0%"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#1B5E20"
+                android:fontFamily="sans-serif-bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/currentLevelText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Level 1"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#1B5E20"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Mystic Forest Quest View -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginHorizontal="8dp">
+
+        <com.example.gamesudoku.MysticForestQuestView
+            android:id="@+id/mysticForestQuestView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <!-- Bottom Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/continueButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Continue Quest"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/forest_button_background"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/resetButton"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="🔄 Reset Forest Progress"
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/reset_button_background" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Base parchment background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#F8F4E8" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+    
+    <!-- Subtle texture overlay -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#00000000"
+                android:centerColor="#10FFFFFF"
+                android:endColor="#00000000"
+                android:angle="45" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+    
+    <!-- Inner shadow for depth -->
+    <item android:left="1dp" android:top="1dp" android:right="1dp" android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#00000000"
+                android:endColor="#20FFFFFF"
+                android:angle="90" />
+            <corners android:radius="3dp" />
+        </shape>
+    </item>
+    
+</layer-list>
+
+
+
+
+
+
+
+
+
+

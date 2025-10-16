@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="@color/card_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Game Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/gameDateText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Aug 21, 2025"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_dark_brown"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/gameInfoText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="6x6 • Medium"
+                android:textSize="14sp"
+                android:textColor="@color/text_medium_brown" />
+
+        </LinearLayout>
+
+        <!-- Star Rating -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/starRatingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⭐⭐⭐"
+                android:textSize="20sp"
+                android:textColor="#FFD700" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
