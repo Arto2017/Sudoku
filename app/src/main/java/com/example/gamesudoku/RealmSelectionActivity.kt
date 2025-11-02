@@ -23,11 +23,57 @@ class RealmSelectionActivity : AppCompatActivity() {
 
         setupRealmButtons()
         updateCodexProgress()
+        setupResetButton()
 
         // Back button in header
         findViewById<View>(R.id.realmSelectionBackButton)?.setOnClickListener {
             finish()
         }
+    }
+    
+    private fun setupResetButton() {
+        val resetButton = findViewById<Button>(R.id.resetQuestHistoryButton)
+        resetButton.setOnClickListener {
+            showResetConfirmationDialog()
+        }
+    }
+    
+    private fun showResetConfirmationDialog() {
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        builder.setTitle("Reset Quest History")
+        builder.setMessage("Are you sure you want to reset all quest progress? This will:\n\n" +
+                "• Clear all puzzle completions\n" +
+                "• Reset all realm progress\n" +
+                "• Lock all realms except Tier I\n" +
+                "• Clear all codex fragments\n" +
+                "• Clear all puzzle attempt states\n\n" +
+                "This action cannot be undone.")
+        
+        builder.setPositiveButton("Reset") { _, _ ->
+            questCodex.resetAllProgress()
+            
+            // Also clear attempt states for all quest puzzles
+            val attemptStore = AttemptStateStore(this)
+            val realms = questCodex.getRealms()
+            realms.forEach { realm ->
+                val puzzleChain = questCodex.getPuzzleChain(realm.id)
+                puzzleChain?.puzzles?.forEach { puzzle ->
+                    attemptStore.clear(puzzle.id)
+                }
+            }
+            
+            Toast.makeText(this, "Quest history has been reset", Toast.LENGTH_SHORT).show()
+            setupRealmButtons()
+            updateCodexProgress()
+        }
+        
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+        
+        val dialog = builder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
     }
 
     private fun setupRealmButtons() {

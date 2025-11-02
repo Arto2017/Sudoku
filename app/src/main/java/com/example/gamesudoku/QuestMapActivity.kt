@@ -19,7 +19,6 @@ class QuestMapActivity : AppCompatActivity() {
     private lateinit var starsText: TextView
     private lateinit var currentLevelText: TextView
     private lateinit var continueButton: Button
-    private lateinit var resetButton: Button
     private lateinit var mysticForestQuestView: MysticForestQuestView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +39,6 @@ class QuestMapActivity : AppCompatActivity() {
         initializeViews()
         setupQuestData()
         setupContinueButton()
-        setupResetButton()
     }
 
     private fun initializeViews() {
@@ -48,7 +46,6 @@ class QuestMapActivity : AppCompatActivity() {
         starsText = findViewById(R.id.starsText)
         currentLevelText = findViewById(R.id.currentLevelText)
         continueButton = findViewById(R.id.continueButton)
-        resetButton = findViewById(R.id.resetButton)
         
         // Initialize Mystic Forest Quest View for forest world
         if (currentWorld == QuestWorld.MYSTIC_FOREST) {
@@ -131,24 +128,6 @@ class QuestMapActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupResetButton() {
-        resetButton.setOnClickListener {
-            // Reset only current world progress
-            val levels = questProgress.getLevelsForWorld(currentWorld)
-            levels.forEach { level ->
-                val resetLevel = level.copy(
-                    isUnlocked = level.id == levels.first().id, // Only first level unlocked
-                    isCompleted = false,
-                    gamesCompleted = 0,
-                    bestTime = 0,
-                    stars = 0
-                )
-                questProgress.resetAllProgress() // For now, reset all progress
-            }
-            setupQuestData() // Refresh UI after reset
-            Toast.makeText(this, "Quest progress reset!", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     override fun onResume() {
         super.onResume()

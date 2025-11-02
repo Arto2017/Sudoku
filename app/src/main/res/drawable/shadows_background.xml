@@ -3,19 +3,19 @@
     android:shape="rectangle">
     
     <gradient
-        android:startColor="#1A1A1A"
-        android:centerColor="#2D2D2D"
-        android:endColor="#0F0F0F"
+        android:startColor="#6A6A6A"
+        android:centerColor="#7A7A7A"
+        android:endColor="#5A5A5A"
         android:angle="135" />
     
     <corners android:radius="8dp" />
     
     <stroke
         android:width="2dp"
-        android:color="#9370DB" />
+        android:color="#B886DB" />
     
-    <!-- Deep obsidian texture effect -->
-    <solid android:color="#1A1A1A" />
+    <!-- Lighter shadow texture effect -->
+    <solid android:color="#6A6A6A" />
     
 </shape>
 

@@ -67,7 +67,7 @@
                         android:id="@+id/dailyHeaderTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Daily Challenge • Sep 30"
+                        android:text="Nov 02"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="#6B4423"
@@ -79,7 +79,7 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- Progress Bar and Difficulty Row -->
+            <!-- Timer, Difficulty, and Status Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -87,52 +87,14 @@
                 android:gravity="center_vertical"
                 android:layout_marginBottom="12dp">
 
-
-                <!-- Daily Challenge Difficulty with Icon -->
+                <!-- Small Timer Display - Left -->
                 <LinearLayout
-                    android:id="@+id/difficultyContainer"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/fantasy_difficulty_background"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:src="@drawable/ic_difficulty"
-                        android:layout_marginEnd="8dp"
-                        app:tint="#8B4513" />
-
-                    <TextView
-                        android:id="@+id/dailyDifficultyText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Medium"
-                        android:textColor="#8B4513"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:fontFamily="serif" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Small Timer and Status Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <!-- Small Timer Display -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/fantasy_timer_background"
-                    android:padding="6dp"
-                    android:layout_marginEnd="8dp">
+                    android:gravity="start|center_vertical"
+                    android:padding="6dp">
 
                     <TextView
                         android:id="@+id/dailyTimerText"
@@ -145,44 +107,48 @@
                         android:fontFamily="monospace" />
                 </LinearLayout>
 
-                <!-- Mistakes HUD -->
+                <!-- Difficulty Display - Center -->
                 <LinearLayout
-                    android:id="@+id/mistakesHud"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/difficultyContainer"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:background="@drawable/fantasy_timer_background"
                     android:padding="6dp"
-                    android:layout_marginStart="8dp">
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp">
 
-                    <ImageView
-                        android:id="@+id/mistakesIcon"
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_heart_outline"
-                        android:layout_marginEnd="4dp"
-                        app:tint="#6B4C2A" />
+                    <TextView
+                        android:id="@+id/dailyDifficultyText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Medium"
+                        android:textColor="#6B4423"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+                </LinearLayout>
+
+                <!-- Mistakes HUD - Right -->
+                <LinearLayout
+                    android:id="@+id/mistakesHud"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="end|center_vertical"
+                    android:padding="6dp">
 
                     <TextView
                         android:id="@+id/mistakesText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0 / 4"
+                        android:text="0 / ∞"
                         android:textColor="#6B4C2A"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         android:fontFamily="serif" />
-
-                    <ImageButton
-                        android:id="@+id/mistakesHelp"
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_marginStart="4dp"
-                        android:background="@android:color/transparent"
-                        android:src="@drawable/ic_help"
-                        android:contentDescription="Help"
-                        app:tint="#6B4C2A" />
                 </LinearLayout>
 
             </LinearLayout>

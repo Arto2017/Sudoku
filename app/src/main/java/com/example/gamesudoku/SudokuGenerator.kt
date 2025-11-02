@@ -13,45 +13,94 @@ object SudokuGenerator {
     }
 
     fun generatePuzzle(boardSize: Int, difficulty: Difficulty = Difficulty.MEDIUM): Puzzle {
-        Log.d("SudokuGenerator", "Generating puzzle: size=$boardSize, difficulty=$difficulty")
+        return generatePuzzle(boardSize, difficulty, null)
+    }
+    
+    /**
+     * Generate a deterministic puzzle based on a seed (puzzle ID)
+     * Same seed = same puzzle every time
+     */
+    fun generatePuzzle(boardSize: Int, difficulty: Difficulty, seed: String?): Puzzle {
+        Log.d("SudokuGenerator", "Generating puzzle: size=$boardSize, difficulty=$difficulty, seed=${seed ?: "random"}")
         
-        val solution = generateValidSolution(boardSize)
-        Log.d("SudokuGenerator", "Generated solution successfully")
+        // Use seeded random if seed provided
+        val rng = if (seed != null) {
+            kotlin.random.Random(seed.hashCode().toLong())
+        } else {
+            kotlin.random.Random.Default
+        }
         
-        val (board, fixed) = removeNumbersFromSolution(solution, boardSize, difficulty)
-        Log.d("SudokuGenerator", "Removed numbers. Board has ${board.sumOf { it.count { cell -> cell != 0 } }} filled cells")
+        // Try multiple times to generate a puzzle with unique solution
+        var attempts = 0
+        val maxAttempts = 10
         
-        return Puzzle(board, fixed)
+        while (attempts < maxAttempts) {
+            attempts++
+            Log.d("SudokuGenerator", "Attempt $attempts to generate puzzle")
+            
+            val solution = if (seed != null) {
+                generateSeededSolution(boardSize, rng)
+            } else {
+                generateValidSolution(boardSize)
+            }
+            Log.d("SudokuGenerator", "Generated solution successfully")
+            
+            val (board, fixed) = removeNumbersFromSolution(solution, boardSize, difficulty, rng)
+            val filledCells = board.sumOf { it.count { cell -> cell != 0 } }
+            Log.d("SudokuGenerator", "Removed numbers. Board has $filledCells filled cells")
+            
+            // Verify the puzzle has a unique solution
+            if (hasUniqueSolution(board, boardSize)) {
+                Log.d("SudokuGenerator", "Puzzle has unique solution after $attempts attempts")
+                // Store the complete solution so hints can use it directly
+                return Puzzle(board, fixed, solution)
+            } else {
+                Log.w("SudokuGenerator", "Puzzle does not have unique solution, retrying...")
+            }
+        }
+        
+        // If we couldn't generate a unique puzzle, return the last attempt
+        Log.w("SudokuGenerator", "Failed to generate unique puzzle after $maxAttempts attempts, using last attempt")
+        val solution = if (seed != null) {
+            generateSeededSolution(boardSize, rng)
+        } else {
+            generateValidSolution(boardSize)
+        }
+        val (board, fixed) = removeNumbersFromSolution(solution, boardSize, difficulty, rng)
+        // Store the complete solution even for fallback case
+        return Puzzle(board, fixed, solution)
     }
 
     private fun generateValidSolution(boardSize: Int): Array<IntArray> {
         val board = Array(boardSize) { IntArray(boardSize) }
         
-        // For 6x6, generate a random valid solution
-        if (boardSize == 6) {
-            return generateRandom6x6Solution()
-        }
-        
-        // For other sizes, use the solver
-        solveSudoku(board, boardSize)
-        return board
+        // Generate a random valid solution for any board size
+        return generateRandomSolution(boardSize)
     }
 
-    private fun generateRandom6x6Solution(): Array<IntArray> {
-        val board = Array(6) { IntArray(6) }
+    private fun generateRandomSolution(boardSize: Int): Array<IntArray> {
+        return generateSeededSolution(boardSize, kotlin.random.Random.Default)
+    }
+    
+    private fun generateSeededSolution(boardSize: Int, rng: kotlin.random.Random): Array<IntArray> {
+        val board = Array(boardSize) { IntArray(boardSize) }
         
-        // Start with a random first row
-        val firstRow = (1..6).toMutableList()
-        firstRow.shuffle()
+        // Start with a random first row using seeded random
+        val firstRow = (1..boardSize).toMutableList()
+        firstRow.shuffle(rng)
         
         // Fill the first row
-        for (col in 0 until 6) {
+        for (col in 0 until boardSize) {
             board[0][col] = firstRow[col]
         }
         
         // Generate the rest of the solution using the solver
-        solveSudoku(board, 6)
-        return board
+        if (solveSudoku(board, boardSize)) {
+            return board
+        } else {
+            // If failed, try again with different first row
+            return generateSeededSolution(boardSize, rng)
+        }
     }
 
     private fun solveSudoku(board: Array<IntArray>, boardSize: Int): Boolean {
@@ -75,7 +124,8 @@ object SudokuGenerator {
     private fun removeNumbersFromSolution(
         solution: Array<IntArray>,
         boardSize: Int,
-        difficulty: Difficulty
+        difficulty: Difficulty,
+        rng: kotlin.random.Random = kotlin.random.Random.Default
     ): Pair<Array<IntArray>, Array<BooleanArray>> {
         val board = Array(boardSize) { r -> solution[r].clone() }
         val fixed = Array(boardSize) { BooleanArray(boardSize) }
@@ -128,13 +178,16 @@ object SudokuGenerator {
         val targetToRemove = totalCells - cellsToKeep
         var removedCount = 0
         var attempts = 0
-        val maxAttempts = totalCells * 3 // Prevent infinite loops
+        val maxAttempts = totalCells * 5 // Increased attempts for better results
+        
+        // Shuffle positions for better randomness using seeded random
+        positions.shuffle(rng)
         
         while (removedCount < targetToRemove && attempts < maxAttempts) {
             attempts++
             
-            // Try to remove a random number
-            val randomPosition = positions.random()
+            // Try to remove a random number using seeded random
+            val randomPosition = positions.random(rng)
             val (row, col) = randomPosition
             
             if (board[row][col] != 0) {
@@ -274,4 +327,4 @@ object SudokuGenerator {
     }
 }
 
-data class Puzzle(val board: Array<IntArray>, val fixed: Array<BooleanArray>)
+data class Puzzle(val board: Array<IntArray>, val fixed: Array<BooleanArray>, val solution: Array<IntArray>? = null)

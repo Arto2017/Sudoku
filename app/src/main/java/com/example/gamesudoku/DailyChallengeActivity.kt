@@ -14,8 +14,12 @@ import android.os.Vibrator
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.view.Gravity
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
+import android.widget.PopupWindow
+import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AppCompatActivity
 import java.text.SimpleDateFormat
 import java.util.*
@@ -24,7 +28,6 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     private lateinit var sudokuBoardView: SudokuBoardView
     private lateinit var dailyChallengeManager: DailyChallengeManager
-    private lateinit var cursorAI: CursorAI
     private lateinit var currentPuzzle: DailyChallengeGenerator.DailyPuzzle
     
     // UI Elements
@@ -47,9 +50,8 @@ class DailyChallengeActivity : AppCompatActivity() {
     private var totalMistakes = 0
     private lateinit var attemptStore: AttemptStateStore
     
-    // Cursor AI integration
-    private var isCursorAIEnabled = true
-    private var currentHint: CursorAI.HintResult? = null
+    // Tooltip management
+    private var currentTooltip: PopupWindow? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,7 +82,6 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     private fun initializeGame() {
         dailyChallengeManager = DailyChallengeManager(this)
-        cursorAI = CursorAI(sudokuBoardView)
         attemptStore = AttemptStateStore(this)
         
         // Generate today's puzzle
@@ -89,9 +90,6 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Setup Sudoku board
         sudokuBoardView.setBoardSize(9)
         loadPuzzleToBoard()
-        
-        // Setup Cursor AI
-        setupCursorAI()
         
         // Load mistakes from store for daily challenge
         val dailyChallengeId = "daily_${currentPuzzle.date}"
@@ -117,28 +115,35 @@ class DailyChallengeActivity : AppCompatActivity() {
         }
         
         sudokuBoardView.setBoardState(board, fixed)
+        
+        // IMPORTANT: Set solution board BEFORE initializing hint system
+        // This ensures the solution is preserved and used for hints
+        Log.d("DailyChallenge", "Setting solution board. Solution size: ${currentPuzzle.solution.size}")
+        sudokuBoardView.setSolutionBoard(currentPuzzle.solution)
+        
+        // Initialize hint system (won't overwrite explicitly set solution)
         sudokuBoardView.initializeHintSystem()
-    }
-    
-    private fun setupCursorAI() {
-        cursorAI.setOnCursorMoveListener(object : CursorAI.OnCursorMoveListener {
-            override fun onCursorMoveTo(cell: CursorAI.Cell, onComplete: () -> Unit) {
-                // Move cursor to cell with animation
-                moveCursorToCell(cell.row, cell.col, onComplete)
-            }
-            
-            override fun onHintSuggestion(hint: CursorAI.HintResult, onAccept: () -> Unit, onCancel: () -> Unit) {
-                showHintDialog(hint, onAccept, onCancel)
-            }
-        })
+        
+        // Verify solution was set correctly
+        Log.d("DailyChallenge", "Hint system initialized")
     }
     
     private fun setupClickListeners() {
         hintButton.setOnClickListener {
-            if (isCursorAIEnabled) {
-                requestCursorAIHint()
+            if (sudokuBoardView.revealHint()) {
+                hintsUsed++
+                showTooltip(hintButton, "Hint! (${sudokuBoardView.getHintsRemaining()} left)")
             } else {
-                requestBasicHint()
+                // Show error message
+                val errorMsg = sudokuBoardView.getLastHintErrorMessage()
+                val message = when {
+                    errorMsg != null -> errorMsg
+                    sudokuBoardView.getHintsRemaining() <= 0 -> "No hints left"
+                    sudokuBoardView.getSelectedRow() == -1 || sudokuBoardView.getSelectedCol() == -1 -> "Select cell first"
+                    sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol()) != 0 -> "Cell not empty"
+                    else -> "Cannot hint"
+                }
+                showTooltip(hintButton, message)
             }
         }
         
@@ -148,22 +153,16 @@ class DailyChallengeActivity : AppCompatActivity() {
         }
         
         notesButton.setOnClickListener {
-            sudokuBoardView.togglePencilMarks()
+            sudokuBoardView.togglePencilMode()
             updateNotesButton()
+            if (sudokuBoardView.isPencilModeActive()) {
+                notesButton.text = "📝✓"
+                showTooltip(notesButton, "Select number, tap cell")
+            } else {
+                notesButton.text = "📝"
+                showTooltip(notesButton, "Pencil mode off")
+            }
         }
-        
-        // One-time tooltip explaining mistakes
-        val help = findViewById<ImageButton>(R.id.mistakesHelp)
-        val prefs = getSharedPreferences("attempt_state", Context.MODE_PRIVATE)
-        val tooltipShownKey = "tooltip_daily_mistakes_shown"
-        if (!prefs.getBoolean(tooltipShownKey, false)) {
-            Toast.makeText(this, "You may make up to 4 mistakes. On the 4th the puzzle fails.", Toast.LENGTH_LONG).show()
-            prefs.edit().putBoolean(tooltipShownKey, true).apply()
-        }
-        help?.setOnClickListener {
-            Toast.makeText(this, "You can make 4 mistakes. On the 4th the puzzle fails.", Toast.LENGTH_LONG).show()
-        }
-        
         
         // Board completion listener with mistake tracking
         sudokuBoardView.setOnConflictListener(object : SudokuBoardView.OnConflictListener {
@@ -235,43 +234,91 @@ class DailyChallengeActivity : AppCompatActivity() {
     }
     
     private fun updateHeader() {
-        val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+        val dateFormatter = SimpleDateFormat("MMM dd", Locale.US)
         dateFormatter.timeZone = TimeZone.getTimeZone("UTC")
         val formattedDate = dateFormatter.format(Date())
-        headerTitle.text = "Daily Challenge • $formattedDate"
+        headerTitle.text = formattedDate
     }
     
     private fun updateDifficulty() {
-        difficultyText.text = "Difficulty: ${currentPuzzle.difficulty.name}"
+        difficultyText.text = currentPuzzle.difficulty.name
     }
     
     
     
     private fun updateNotesButton() {
-        val isPencilMarksVisible = sudokuBoardView.isPencilMarksVisible()
-        notesButton.text = if (isPencilMarksVisible) "📝" else "📝"
+        val isPencilModeActive = sudokuBoardView.isPencilModeActive()
+        notesButton.text = if (isPencilModeActive) "📝✓" else "📝"
+    }
+    
+    private fun showTooltip(anchorView: View, message: String) {
+        // Dismiss previous tooltip if exists
+        currentTooltip?.dismiss()
+        
+        val inflater = LayoutInflater.from(this)
+        val tooltipView = inflater.inflate(R.layout.tooltip_small, null)
+        val tooltipText = tooltipView.findViewById<TextView>(R.id.tooltipText)
+        tooltipText.text = message
+        
+        val popup = PopupWindow(
+            tooltipView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            false
+        ).apply {
+            isOutsideTouchable = true
+            elevation = 8f
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
+        
+        // Measure tooltip to get actual width
+        tooltipView.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val tooltipWidth = tooltipView.measuredWidth
+        
+        // Calculate position - center above button
+        val offsetX = -(tooltipWidth / 2) + (anchorView.width / 2)
+        val offsetY = -anchorView.height - 20 // Above button
+        
+        // Try to show above, fallback to below if no space
+        try {
+            popup.showAsDropDown(anchorView, offsetX, offsetY, Gravity.CENTER)
+        } catch (e: Exception) {
+            // Fallback: show below if not enough space above
+            popup.showAsDropDown(anchorView, offsetX, 10, Gravity.CENTER)
+        }
+        
+        currentTooltip = popup
+        
+        // Auto-dismiss after 1.5 seconds (shorter for tooltips)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (popup.isShowing) {
+                popup.dismiss()
+            }
+            if (currentTooltip == popup) {
+                currentTooltip = null
+            }
+        }, 1500)
     }
     
     private fun updateMistakesHud(count: Int) {
         val text = findViewById<TextView>(R.id.mistakesText)
-        val icon = findViewById<ImageView>(R.id.mistakesIcon)
-        text?.text = "$count / 4"
+        text?.text = "$count / ∞"
         when {
             count >= 4 -> {
                 text?.setTextColor(Color.parseColor("#C62828"))
-                icon?.setColorFilter(Color.parseColor("#C62828"))
             }
             count >= 1 -> {
                 text?.setTextColor(Color.parseColor("#FF8F00"))
-                icon?.setColorFilter(Color.parseColor("#FF8F00"))
             }
             else -> {
                 text?.setTextColor(Color.parseColor("#6B4C2A"))
-                icon?.setColorFilter(Color.parseColor("#6B4C2A"))
             }
         }
         // Content description for accessibility
-        text?.contentDescription = "Mistakes: $count of 4"
+        text?.contentDescription = "Mistakes: $count of infinity"
     }
     
     private fun showPuzzleFailedDialog() {
@@ -294,7 +341,7 @@ class DailyChallengeActivity : AppCompatActivity() {
             attemptStore.clear(dailyChallengeId)
             totalMistakes = 0
             updateMistakesHud(0)
-            sudokuBoardView.resetPuzzle()
+            loadPuzzleToBoard() // Reload the daily puzzle
             sudokuBoardView.clearNumberHighlight()
             gameStartTime = System.currentTimeMillis()
             isGameActive = true
@@ -373,89 +420,6 @@ class DailyChallengeActivity : AppCompatActivity() {
         }
     }
     
-    private fun requestCursorAIHint() {
-        if (hintsUsed >= 3) {
-            Toast.makeText(this, "Maximum hints reached (3)", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        val hint = cursorAI.suggestHint()
-        if (hint != null) {
-            currentHint = hint
-            hintsUsed++
-            
-            // Move cursor through path
-            cursorAI.moveCursorToPath(hint.cursorPath) {
-                // Show hint dialog after cursor movement
-                showHintDialog(hint, 
-                    onAccept = {
-                        applyHint(hint)
-                    },
-                    onCancel = {
-                        // User cancelled hint
-                    }
-                )
-            }
-        } else {
-            Toast.makeText(this, "No hints available at this time", Toast.LENGTH_SHORT).show()
-        }
-    }
-    
-    private fun requestBasicHint() {
-        if (hintsUsed >= 3) {
-            Toast.makeText(this, "Maximum hints reached (3)", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        val hintText = sudokuBoardView.getHint()
-        if (hintText.isNotEmpty()) {
-            hintsUsed++
-            Toast.makeText(this, hintText, Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(this, "No hints available", Toast.LENGTH_SHORT).show()
-        }
-    }
-    
-    private fun moveCursorToCell(row: Int, col: Int, onComplete: () -> Unit) {
-        // Animate cursor movement to cell
-        // This would integrate with SudokuBoardView to highlight the cell
-        // For now, we'll simulate the movement
-        Handler(Looper.getMainLooper()).postDelayed({
-            onComplete()
-        }, 500)
-    }
-    
-    private fun showHintDialog(hint: CursorAI.HintResult, onAccept: () -> Unit, onCancel: () -> Unit) {
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Hint: ${hint.technique.name}")
-            .setMessage(hint.explanation)
-            .setPositiveButton("Apply") { _, _ ->
-                onAccept()
-            }
-            .setNegativeButton("Cancel") { _, _ ->
-                onCancel()
-            }
-            .setCancelable(false)
-            .create()
-        
-        dialog.show()
-    }
-    
-    private fun applyHint(hint: CursorAI.HintResult) {
-        val success = cursorAI.applyHint(hint)
-        if (success) {
-            movesCount++
-            
-            // Check if puzzle is complete
-            if (sudokuBoardView.isBoardComplete()) {
-                completeGame()
-            }
-        } else {
-            Toast.makeText(this, "Could not apply hint", Toast.LENGTH_SHORT).show()
-        }
-    }
-    
-    
     
     private fun completeGame() {
         isGameActive = false
@@ -481,16 +445,13 @@ class DailyChallengeActivity : AppCompatActivity() {
     private fun showCompletionDialog(record: DailyChallengeManager.DailyRecord) {
         val stats = dailyChallengeManager.getUserStats()
         val timeFormatted = String.format("%02d:%02d", record.timeSeconds / 60, record.timeSeconds % 60)
-        val coinsEarned = getCoinsEarned(record.difficulty, stats.streakDays)
         
         val dialogView = layoutInflater.inflate(R.layout.dialog_daily_challenge_complete, null)
         
         // Set the stats data
         dialogView.findViewById<TextView>(R.id.completionTime).text = timeFormatted
-        dialogView.findViewById<TextView>(R.id.completionMoves).text = record.moves.toString()
         dialogView.findViewById<TextView>(R.id.completionHints).text = record.hintsUsed.toString()
         dialogView.findViewById<TextView>(R.id.completionStreak).text = "${stats.streakDays} days"
-        dialogView.findViewById<TextView>(R.id.completionCoins).text = coinsEarned.toString()
         
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)

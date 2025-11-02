@@ -5,7 +5,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
+import android.widget.PopupWindow
 import android.widget.*
+import android.view.Gravity
+import android.util.DisplayMetrics
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
 import android.view.LayoutInflater
@@ -16,9 +20,13 @@ import android.content.Context
 import android.content.Intent
 import android.animation.ObjectAnimator
 import android.util.TypedValue
-import android.view.Gravity
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.OvershootInterpolator
+import android.view.animation.LinearInterpolator
 import android.graphics.Typeface
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ImageView
 import kotlinx.coroutines.*
 
 
@@ -40,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private var gameResultSaved = false // Flag to prevent duplicate saves
     private var questPuzzleId: String? = null // Current quest puzzle ID
     private var realmId: String? = null // Current realm ID
+    private var isQuickPlay = false // Flag to indicate if this is Quick Play mode
     
 
     companion object {
@@ -63,16 +72,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun updateProgress() {
-        val progressText = findViewById<TextView>(R.id.progressText)
-        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
-        
-        val originalEmptyCells = sudokuBoard.getOriginalEmptyCellCount()
-        val currentEmptyCells = sudokuBoard.getEmptyCellCount()
-        val filledCells = originalEmptyCells - currentEmptyCells
-        val percentage = if (originalEmptyCells > 0) (filledCells * 100) / originalEmptyCells else 0
-        
-        progressText.text = "$percentage%"
-        progressBar.progress = percentage
+        // Progress bar removed, do nothing
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,7 +86,7 @@ class MainActivity : AppCompatActivity() {
         
         // Set difficulty from intent (for Quick Play) or quest puzzle
         val difficultyString = intent.getStringExtra("difficulty") ?: intent.getStringExtra(QuickPlayActivity.EXTRA_DIFFICULTY)
-        val isQuickPlay = difficultyString != null
+        isQuickPlay = difficultyString != null && questPuzzleId == null
         if (difficultyString != null) {
             currentDifficulty = when (difficultyString) {
                 "EASY" -> SudokuGenerator.Difficulty.EASY
@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         sudokuBoard = findViewById(R.id.sudokuBoard)
         timerText = findViewById(R.id.timerText)
         titleText = findViewById(R.id.titleText)
-        val progressText = findViewById<TextView>(R.id.progressText)
+        val titleBanner = findViewById<LinearLayout>(R.id.titleBanner)
 
         // Set board size and generate initial puzzle
         sudokuBoard.setBoardSize(boardSize)
@@ -114,21 +114,19 @@ class MainActivity : AppCompatActivity() {
         if (questPuzzleId != null && realmId != null) {
             val currentRealmId = realmId!! // Force non-null since we checked it
             sudokuBoard.setRealmTheme(currentRealmId)
-            
-            // Update title with realm information
-            titleText?.text = "6×6 Realm of Echoes"
+            // Hide title banner for quest puzzles
+            titleBanner?.visibility = View.GONE
+        } else if (isQuickPlay) {
+            // Hide title banner for Quick Play
+            titleBanner?.visibility = View.GONE
         }
         
-        // Add banner animation
-        titleText?.alpha = 0f
-        titleText?.animate()
-            ?.alpha(1f)
-            ?.setDuration(1000)
-            ?.setInterpolator(AccelerateDecelerateInterpolator())
-            ?.start()
-        
         // Generate puzzle with appropriate difficulty
-        if (questPuzzleId != null || isQuickPlay) {
+        // For quest puzzles, use puzzle ID as seed to ensure same puzzle every time
+        if (questPuzzleId != null) {
+            // Use puzzle ID as seed for deterministic generation
+            sudokuBoard.resetPuzzle(currentDifficulty, questPuzzleId)
+        } else if (isQuickPlay) {
             sudokuBoard.resetPuzzle(currentDifficulty)
         } else {
             sudokuBoard.resetPuzzle()
@@ -189,18 +187,22 @@ class MainActivity : AppCompatActivity() {
 
         // Set up difficulty spinner with custom styling
         val difficultySpinner = findViewById<Spinner>(R.id.difficultySpinner)
+        val difficultyText = findViewById<TextView>(R.id.difficultyText)
         val difficultyContainer = findViewById<LinearLayout>(R.id.difficultyContainer)
         
         // Hide difficulty settings if this is a quest puzzle or Quick Play
         if (questPuzzleId != null) {
-            difficultyContainer.visibility = View.GONE
-            // Update title to show quest information
-            titleText?.text = "Quest Puzzle"
+            difficultySpinner.visibility = View.GONE
+            difficultyText.visibility = View.VISIBLE
+            difficultyText.text = currentDifficulty.name
+            // Don't update title
         } else if (isQuickPlay) {
-            difficultyContainer.visibility = View.GONE
-            // Update title to show Quick Play information
-            titleText?.text = "Quick Play"
+            difficultySpinner.visibility = View.GONE
+            difficultyText.visibility = View.VISIBLE
+            difficultyText.text = currentDifficulty.name
         } else {
+            difficultySpinner.visibility = View.VISIBLE
+            difficultyText.visibility = View.GONE
             // Only show difficulty settings for regular games
             val difficultyAdapter = ArrayAdapter.createFromResource(
                 this,
@@ -243,6 +245,16 @@ class MainActivity : AppCompatActivity() {
             showBackToMenuDialog()
         }
 
+        // Settings button - show for Quick Play only
+        val settingsButton = findViewById<TextView>(R.id.settingsButton)
+        if (isQuickPlay) {
+            settingsButton?.visibility = View.VISIBLE
+            settingsButton?.setOnClickListener {
+                val intent = Intent(this, QuickPlayActivity::class.java)
+                startActivity(intent)
+            }
+        }
+
         // Start timer
         startTimer()
         updateProgress()
@@ -252,17 +264,7 @@ class MainActivity : AppCompatActivity() {
         }
         updateMistakesHud(totalMistakes)
 
-        // One-time tooltip explaining mistakes
-        val help = findViewById<ImageButton>(R.id.mistakesHelp)
-        val prefs = getSharedPreferences("attempt_state", Context.MODE_PRIVATE)
-        val tooltipShownKey = "tooltip_mistakes_shown"
-        if (!prefs.getBoolean(tooltipShownKey, false)) {
-            Toast.makeText(this, "You may make up to 4 mistakes. On the 4th the puzzle fails.", Toast.LENGTH_LONG).show()
-            prefs.edit().putBoolean(tooltipShownKey, true).apply()
-        }
-        help.setOnClickListener {
-            Toast.makeText(this, "You can make 4 mistakes. On the 4th the puzzle fails.", Toast.LENGTH_LONG).show()
-        }
+        // Mistake help removed
     }
 
     private fun setupNumberButtons() {
@@ -344,43 +346,46 @@ class MainActivity : AppCompatActivity() {
 
 
         // Reveal Hint button
-        findViewById<Button>(R.id.revealHintButton).setOnClickListener {
+        val hintButton = findViewById<Button>(R.id.revealHintButton)
+        hintButton.setOnClickListener {
             if (sudokuBoard.revealHint()) {
                 startTimer() // Start timer when hint is used (player is playing)
                 updateProgress()
                 // Show success feedback
-                Toast.makeText(this, "Hint revealed! (${sudokuBoard.getHintsRemaining()} remaining)", Toast.LENGTH_SHORT).show()
+                showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
             } else {
                 // Show error message
+                val errorMsg = sudokuBoard.getLastHintErrorMessage()
                 val message = when {
-                    sudokuBoard.getHintsRemaining() <= 0 -> "No hints remaining!"
-                    sudokuBoard.getSelectedRow() == -1 || sudokuBoard.getSelectedCol() == -1 -> "Select an empty cell first"
-                    sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol()) != 0 -> "Cell is not empty"
-                    else -> "Cannot provide hint - puzzle may be unsolvable"
+                    errorMsg != null -> errorMsg
+                    sudokuBoard.getHintsRemaining() <= 0 -> "No hints left"
+                    sudokuBoard.getSelectedRow() == -1 || sudokuBoard.getSelectedCol() == -1 -> "Select cell first"
+                    sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol()) != 0 -> "Cell not empty"
+                    else -> "Cannot hint"
                 }
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                showTooltip(hintButton, message)
             }
         }
 
-        // Pencil Marks button
-        findViewById<Button>(R.id.pencilMarksButton).setOnClickListener {
+        // Pencil Mode button - manual pencil mark entry
+        val pencilButton = findViewById<Button>(R.id.pencilMarksButton)
+        pencilButton.setOnClickListener {
             startTimer() // Start timer when pencil marks are used (player is playing)
-            sudokuBoard.togglePencilMarks()
-            val button = findViewById<Button>(R.id.pencilMarksButton)
-            if (sudokuBoard.isPencilMarksVisible()) {
-                button.text = "📝✓"
-                Toast.makeText(this, "Pencil marks enabled", Toast.LENGTH_SHORT).show()
+            sudokuBoard.togglePencilMode()
+            if (sudokuBoard.isPencilModeActive()) {
+                pencilButton.text = "📝✓"
+                showTooltip(pencilButton, "Select number, tap cell")
             } else {
-                button.text = "📝"
-                Toast.makeText(this, "Pencil marks disabled", Toast.LENGTH_SHORT).show()
+                pencilButton.text = "📝"
+                showTooltip(pencilButton, "Pencil mode off")
             }
         }
 
 
-        // Reset button - hide in quest mode
+        // Reset button - hide in quest mode and Quick Play
         val resetButton = findViewById<Button>(R.id.resetButton)
-        if (questPuzzleId != null) {
-            // Hide reset button in quest mode
+        if (questPuzzleId != null || isQuickPlay) {
+            // Hide reset button in quest mode and Quick Play
             resetButton.visibility = View.GONE
         } else {
             // Show reset button only in regular mode
@@ -397,10 +402,69 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Back to menu button
-        findViewById<Button>(R.id.backToMenuButton).setOnClickListener {
-            showBackToMenuDialog()
+        // Back to menu button - hide for quest puzzles and Quick Play
+        val backToMenuButton = findViewById<Button>(R.id.backToMenuButton)
+        if (questPuzzleId != null || isQuickPlay) {
+            backToMenuButton.visibility = View.GONE
+        } else {
+            backToMenuButton.setOnClickListener {
+                showBackToMenuDialog()
+            }
         }
+    }
+
+    private var currentTooltip: PopupWindow? = null
+    
+    private fun showTooltip(anchorView: View, message: String) {
+        // Dismiss previous tooltip if exists
+        currentTooltip?.dismiss()
+        
+        val inflater = LayoutInflater.from(this)
+        val tooltipView = inflater.inflate(R.layout.tooltip_small, null)
+        val tooltipText = tooltipView.findViewById<TextView>(R.id.tooltipText)
+        tooltipText.text = message
+        
+        val popup = PopupWindow(
+            tooltipView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            false
+        ).apply {
+            isOutsideTouchable = true
+            elevation = 8f
+            setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+        
+        // Measure tooltip to get actual width
+        tooltipView.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val tooltipWidth = tooltipView.measuredWidth
+        
+        // Calculate position - center above button
+        val offsetX = -(tooltipWidth / 2) + (anchorView.width / 2)
+        val offsetY = -anchorView.height - 20 // Above button
+        
+        // Try to show above, fallback to below if no space
+        try {
+            popup.showAsDropDown(anchorView, offsetX, offsetY, Gravity.CENTER)
+        } catch (e: Exception) {
+            // Fallback: show below if not enough space above
+            popup.showAsDropDown(anchorView, offsetX, 10, Gravity.CENTER)
+        }
+        
+        currentTooltip = popup
+        
+        // Auto-dismiss after 1.5 seconds (shorter for tooltips)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (popup.isShowing) {
+                popup.dismiss()
+            }
+            if (currentTooltip == popup) {
+                currentTooltip = null
+            }
+        }, 1500)
     }
 
     private fun showBackToMenuDialog() {
@@ -422,6 +486,12 @@ class MainActivity : AppCompatActivity() {
             dialog.dismiss()
             // Clear attempt state so starting later is fresh
             questPuzzleId?.let { id -> attemptStore.clear(id) }
+            // Always go to main menu explicitly, especially for Quick Play mode
+            // This ensures we go to main menu and not back to difficulty menu
+            val intent = Intent(this, MainMenuActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
             finish()
         }
 
@@ -438,24 +508,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateMistakesHud(count: Int) {
         val text = findViewById<TextView>(R.id.mistakesText)
-        val icon = findViewById<ImageView>(R.id.mistakesIcon)
-        text.text = "$count / 4"
+        text.text = "$count / ∞"
         when {
             count >= 4 -> {
                 text.setTextColor(Color.parseColor("#C62828"))
-                icon.setColorFilter(Color.parseColor("#C62828"))
             }
             count >= 1 -> {
                 text.setTextColor(Color.parseColor("#FF8F00"))
-                icon.setColorFilter(Color.parseColor("#FF8F00"))
             }
             else -> {
                 text.setTextColor(Color.parseColor("#6B4C2A"))
-                icon.setColorFilter(Color.parseColor("#6B4C2A"))
             }
         }
         // Content description for accessibility
-        text.contentDescription = "Mistakes: $count of 4"
+        text.contentDescription = "Mistakes: $count of infinity"
     }
 
     private fun showPuzzleFailedDialog() {
@@ -552,10 +618,14 @@ class MainActivity : AppCompatActivity() {
             // Record quest progress if this is a quest puzzle
             questPuzzleId?.let { puzzleId ->
                 val questCodex = QuestCodex(this)
+                
+                // Clear saved board state when puzzle is completed
+                questCodex.clearPuzzleBoardState(puzzleId)
+                
                 questCodex.recordPuzzleCompletion(realmId ?: "", puzzleId, secondsElapsed.toLong(), totalMistakes)
                 
-                // Show quest completion dialog
-                showQuestCompletionDialog(puzzleId, realmId ?: "", timeText, totalMistakes)
+                // Show animated quest victory dialog
+                showQuestVictoryDialog(timeText, totalMistakes)
             } ?: run {
                 // Show regular victory dialog for non-quest games
                 showVictoryDialog(timeText, totalMistakes)
@@ -587,74 +657,222 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showQuestCompletionDialog(puzzleId: String, realmId: String, timeText: String, mistakes: Int) {
+    private fun showQuestVictoryDialog(time: String, mistakes: Int) {
+        // Record quest completion
         val questCodex = QuestCodex(this)
-        val realm = questCodex.getRealmById(realmId)
-        val puzzleChain = questCodex.getPuzzleChain(realmId)
+        val timeSeconds = secondsElapsed.toLong()
         
-        val currentPuzzle = puzzleChain?.puzzles?.find { it.id == puzzleId }
-        val nextPuzzle = currentPuzzle?.let { puzzle ->
-            puzzleChain.puzzles.find { it.puzzleNumber == puzzle.puzzleNumber + 1 }
+        questPuzzleId?.let { puzzleId ->
+            realmId?.let { realmId ->
+                questCodex.recordPuzzleCompletion(realmId, puzzleId, timeSeconds, totalMistakes)
+                
+                // Clear saved board state when puzzle is completed
+                questCodex.clearPuzzleBoardState(puzzleId)
+                android.util.Log.d("MainActivity", "Cleared quest puzzle state after completion: $puzzleId")
+            }
         }
         
-        val message = if (nextPuzzle?.isUnlocked == true) {
-            "🎉 Puzzle ${currentPuzzle?.puzzleNumber} Completed!\n\n" +
-            "⭐ Stars earned: ${currentPuzzle?.stars}/3\n" +
-            "⏱️ Time: $timeText\n" +
-            "❌ Mistakes: $mistakes\n\n" +
-            "🔓 Next Puzzle: ${nextPuzzle.puzzleNumber}\n" +
-            "📏 Board: ${nextPuzzle.boardSize}×${nextPuzzle.boardSize}\n" +
-            "🎯 Difficulty: ${nextPuzzle.difficulty.name}\n\n" +
-            "Continue to next puzzle?"
-        } else {
-            "🎉 Puzzle ${currentPuzzle?.puzzleNumber} Completed!\n\n" +
-            "⭐ Stars earned: ${currentPuzzle?.stars}/3\n" +
-            "⏱️ Time: $timeText\n" +
-            "❌ Mistakes: $mistakes\n\n" +
-            "🏆 Congratulations! You've completed this realm!\n" +
-            "Return to Realm Selection to see your progress."
+        val dialogView = layoutInflater.inflate(R.layout.dialog_quest_victory, null)
+        
+        // Get puzzle to know board size
+        val puzzle = questCodex.getSavedPuzzle(questPuzzleId ?: "")
+        val boardSize = puzzle?.boardSize ?: 9
+        
+        // Calculate stars earned
+        val starsEarned = questCodex.calculateStars(timeSeconds, mistakes, boardSize)
+        
+        // Update stats
+        dialogView.findViewById<TextView>(R.id.questTime)?.text = time
+        dialogView.findViewById<TextView>(R.id.questMistakes)?.text = mistakes.toString()
+        
+        // Dynamic star display: ⭐ for earned, ☆ for unearned
+        val starsText = dialogView.findViewById<TextView>(R.id.questStars)
+        val starDisplay = "⭐".repeat(starsEarned) + "☆".repeat(3 - starsEarned)
+        starsText?.text = starDisplay
+        
+        // Check if next puzzle is unlocked
+        val puzzleChain = questCodex.getPuzzleChain(realmId ?: "")
+        val nextPuzzleUnlocked = puzzle?.let { p ->
+            val nextPuzzle = puzzleChain?.puzzles?.find { it.puzzleNumber == p.puzzleNumber + 1 }
+            nextPuzzle?.isUnlocked == true
+        } ?: false
+        
+        if (nextPuzzleUnlocked) {
+            dialogView.findViewById<TextView>(R.id.nextPuzzleMessage)?.visibility = android.view.View.VISIBLE
         }
         
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.dialog_quest_completed, null)
-
         val dialog = AlertDialog.Builder(this)
-            .setView(view)
+            .setView(dialogView)
             .setCancelable(false)
             .create()
-
-        // Match ornate dialog style with transparent window background
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
-        // Populate UI
-        view.findViewById<TextView>(R.id.dialogTitle)?.text = "Puzzle Complete! 🎯"
-        view.findViewById<TextView>(R.id.dialogMessage)?.text = message
-
-        // Actions
-        view.findViewById<Button>(R.id.dialogContinue)?.setOnClickListener {
+        
+        // Make background transparent
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        
+        // Setup button click listener
+        dialogView.findViewById<Button>(R.id.btnRealmMap)?.setOnClickListener {
             dialog.dismiss()
-            // Open the specific realm window for the current tier (e.g., Echoes for Tier I)
-            val intent = Intent(this, RealmQuestActivity::class.java).apply {
-                putExtra("realm_id", realmId)
+            // Return to realm quest
+            if (realmId != null) {
+                val intent = Intent(this, RealmQuestActivity::class.java).apply {
+                    putExtra("realm_id", realmId)
+                }
+                startActivity(intent)
+                finish()
             }
-            startActivity(intent)
-            finish()
         }
-
-        view.findViewById<Button>(R.id.dialogRealmMap)?.setOnClickListener {
-            dialog.dismiss()
-            // Open Sudoku Quest (realm selection) window
-            val intent = Intent(this, RealmSelectionActivity::class.java)
-            startActivity(intent)
-            finish()
+        
+        // Animate dialog entrance
+        dialog.setOnShowListener {
+            animateQuestVictoryDialog(dialogView)
         }
-
+        
         dialog.show()
+    }
+    
+    private fun animateQuestVictoryDialog(dialogView: android.view.View) {
+        val overlay = dialogView.findViewById<android.view.View>(R.id.victoryOverlay)
+        val card = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.victoryCard)
+        val trophyContainer = dialogView.findViewById<FrameLayout>(R.id.trophyContainer)
+        val trophyIcon = dialogView.findViewById<ImageView>(R.id.trophyIcon)
+        val trophyGlow = dialogView.findViewById<android.view.View>(R.id.trophyGlow)
+        val title = dialogView.findViewById<TextView>(R.id.congratulationsTitle)
+        val message = dialogView.findViewById<TextView>(R.id.congratulationsMessage)
+        val statsContainer = dialogView.findViewById<LinearLayout>(R.id.statsContainer)
+        val button = dialogView.findViewById<Button>(R.id.btnRealmMap)
+        val nextMessage = dialogView.findViewById<TextView>(R.id.nextPuzzleMessage)
+        
+        // Animate overlay fade in
+        overlay?.animate()?.alpha(1f)?.setDuration(300)?.start()
+        
+        // Animate card entrance (scale + fade)
+        card?.animate()
+            ?.alpha(1f)
+            ?.scaleX(1f)
+            ?.scaleY(1f)
+            ?.setDuration(400)
+            ?.setInterpolator(android.view.animation.OvershootInterpolator())
+            ?.start()
+        
+        // Animate trophy with bounce
+        trophyIcon?.animate()
+            ?.alpha(1f)
+            ?.scaleX(1f)
+            ?.scaleY(1f)
+            ?.setStartDelay(200)
+            ?.setDuration(600)
+            ?.setInterpolator(android.view.animation.OvershootInterpolator())
+            ?.withEndAction {
+                // Pulsing glow effect
+                trophyGlow?.animate()
+                    ?.alpha(0.6f)
+                    ?.scaleX(1.2f)
+                    ?.scaleY(1.2f)
+                    ?.setDuration(1000)
+                    ?.setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
+                    ?.withEndAction {
+                        trophyGlow?.animate()
+                            ?.alpha(0.3f)
+                            ?.scaleX(1f)
+                            ?.scaleY(1f)
+                            ?.setDuration(1000)
+                            ?.withEndAction {
+                                // Loop back
+                                trophyGlow?.animate()
+                                    ?.alpha(0.6f)
+                                    ?.scaleX(1.2f)
+                                    ?.scaleY(1.2f)
+                                    ?.setDuration(1000)
+                                    ?.start()
+                            }
+                            ?.start()
+                    }
+                    ?.start()
+                
+                // Trophy rotation animation
+                trophyIcon?.animate()
+                    ?.rotation(360f)
+                    ?.setDuration(2000)
+                    ?.setInterpolator(android.view.animation.LinearInterpolator())
+                    ?.start()
+                
+                // Confetti stars animation
+                animateConfettiStars(trophyContainer)
+            }
+        
+        // Animate text elements (staggered)
+        title?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(400)
+            ?.setDuration(400)
+            ?.start()
+        
+        message?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(500)
+            ?.setDuration(400)
+            ?.start()
+        
+        statsContainer?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(600)
+            ?.setDuration(400)
+            ?.start()
+        
+        if (nextMessage?.visibility == android.view.View.VISIBLE) {
+            nextMessage?.animate()
+                ?.alpha(1f)
+                ?.setStartDelay(700)
+                ?.setDuration(400)
+                ?.start()
+        }
+        
+        button?.animate()
+            ?.alpha(1f)
+            ?.setStartDelay(800)
+            ?.setDuration(400)
+            ?.start()
+    }
+    
+    private fun animateConfettiStars(container: FrameLayout?) {
+        container ?: return
+        
+        val star1 = container.findViewById<TextView>(R.id.confettiStar1)
+        val star2 = container.findViewById<TextView>(R.id.confettiStar2)
+        val star3 = container.findViewById<TextView>(R.id.confettiStar3)
+        val star4 = container.findViewById<TextView>(R.id.confettiStar4)
+        
+        val stars = listOfNotNull(star1, star2, star3, star4)
+        
+        stars.forEachIndexed { index, star ->
+            val delay = 800 + (index * 100).toLong()
+            
+            star.animate()
+                ?.alpha(1f)
+                ?.scaleX(1.5f)
+                ?.scaleY(1.5f)
+                ?.rotation(720f)
+                ?.setStartDelay(delay)
+                ?.setDuration(1000)
+                ?.withEndAction {
+                    star.animate()
+                        ?.alpha(0f)
+                        ?.scaleX(0.5f)
+                        ?.scaleY(0.5f)
+                        ?.setDuration(500)
+                        ?.start()
+                }
+                ?.start()
+        }
     }
 
     // Disable phone back button - use UI back button instead
     override fun onBackPressed() {
-        // Do nothing - phone back button is disabled
+        // Show dialog when back button is pressed
+        showBackToMenuDialog()
     }
     
 }

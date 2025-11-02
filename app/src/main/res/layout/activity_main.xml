@@ -44,8 +44,23 @@
                     android:tint="#2D1810"
                     android:contentDescription="Back" />
 
+                <TextView
+                    android:id="@+id/settingsButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="@drawable/back_button_gold"
+                    android:text="🧩"
+                    android:textSize="20sp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Change Difficulty"
+                    android:visibility="gone" />
+
                 <!-- Decorative Fantasy Banner Background -->
                 <LinearLayout
+                    android:id="@+id/titleBanner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -78,7 +93,7 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- Progress Bar and Difficulty Row -->
+            <!-- Timer, Difficulty, and Mistakes Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -86,98 +101,14 @@
                 android:gravity="center_vertical"
                 android:layout_marginBottom="12dp">
 
-                <!-- Progress Bar Display -->
+                <!-- Timer Display - Left -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/fantasy_timer_background"
-                    android:padding="8dp"
-                    android:layout_marginEnd="8dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Progress"
-                        android:textColor="#6B4423"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginEnd="6dp" />
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="14dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        android:background="@drawable/fantasy_progress_background">
-
-                        <ProgressBar
-                            android:id="@+id/progressBar"
-                            style="?android:attr/progressBarStyleHorizontal"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:progressDrawable="@drawable/fantasy_progress_bar"
-                            android:max="100"
-                            android:progress="0" />
-
-                        <TextView
-                            android:id="@+id/progressText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0%"
-                            android:textColor="#6B4423"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_gravity="center" />
-                    </FrameLayout>
-                </LinearLayout>
-
-                <!-- Modern Difficulty with Icon -->
-                <LinearLayout
-                    android:id="@+id/difficultyContainer"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/modern_difficulty_background"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:src="@drawable/ic_difficulty"
-                        android:layout_marginEnd="8dp"
-                        app:tint="#1976D2" />
-
-                    <Spinner
-                        android:id="@+id/difficultySpinner"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@android:color/transparent"
-                        android:popupBackground="#FFFFFF" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Small Timer and Mistakes Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <!-- Small Timer Display -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/fantasy_timer_background"
-                    android:padding="6dp"
-                    android:layout_marginEnd="8dp">
+                    android:gravity="start|center_vertical"
+                    android:padding="6dp">
 
                     <TextView
                         android:id="@+id/timerText"
@@ -190,44 +121,53 @@
                         android:fontFamily="monospace" />
                 </LinearLayout>
 
-                <!-- Mistakes HUD -->
+                <!-- Difficulty Display - Center -->
+                <LinearLayout
+                    android:id="@+id/difficultyContainer"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:padding="6dp">
+
+                    <Spinner
+                        android:id="@+id/difficultySpinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:popupBackground="#FFFFFF" />
+                        
+                    <TextView
+                        android:id="@+id/difficultyText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Medium"
+                        android:textColor="#6B4423"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+                </LinearLayout>
+
+                <!-- Mistakes Display - Right -->
                 <LinearLayout
                     android:id="@+id/mistakesHud"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="horizontal"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
-                    android:background="@drawable/fantasy_timer_background">
-
-                    <ImageView
-                        android:id="@+id/mistakesIcon"
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_heart_outline"
-                        app:tint="#6B4C2A" />
+                    android:gravity="end|center_vertical"
+                    android:padding="6dp">
 
                     <TextView
                         android:id="@+id/mistakesText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="0 / 4"
+                        android:text="0 / ∞"
                         android:textColor="#6B4C2A"
                         android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <ImageButton
-                        android:id="@+id/mistakesHelp"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_marginStart="6dp"
-                        android:background="@android:color/transparent"
-                        android:src="@drawable/ic_help"
-                        android:contentDescription="Mistakes help"
-                        android:tint="#6B4C2A" />
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

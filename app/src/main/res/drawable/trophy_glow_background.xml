@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    
+    <!-- Glow effect -->
+    <gradient
+        android:type="radial"
+        android:centerX="0.5"
+        android:centerY="0.5"
+        android:gradientRadius="40dp"
+        android:startColor="#40FFD700"
+        android:centerColor="#20FFD700"
+        android:endColor="#00FFD700" />
+    
+    <!-- Solid background -->
+    <solid android:color="#10FFD700" />
+    
+    <!-- Size -->
+    <size
+        android:width="80dp"
+        android:height="80dp" />
+</shape>
+
+
+
+

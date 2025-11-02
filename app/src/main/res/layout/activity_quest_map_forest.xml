@@ -148,14 +148,6 @@
             android:background="@drawable/forest_button_background"
             android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/resetButton"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:text="🔄 Reset Forest Progress"
-            android:textSize="14sp"
-            android:textColor="#FFFFFF"
-            android:background="@drawable/reset_button_background" />
 
     </LinearLayout>
 

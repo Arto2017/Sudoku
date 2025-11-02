@@ -40,7 +40,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Congratulations! You completed today's challenge!"
+        android:text="Congratulations! You completed today's challenge with skill and determination!"
         android:textColor="#6B4423"
         android:textSize="16sp"
         android:fontFamily="serif"
@@ -86,41 +86,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00"
-                android:textColor="#6B4423"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:fontFamily="serif" />
-        </LinearLayout>
-
-        <!-- Moves Row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_pen"
-                android:layout_marginEnd="8dp"
-                app:tint="#6B4423" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Moves:"
-                android:textColor="#6B4423"
-                android:textSize="14sp"
-                android:fontFamily="serif" />
-
-            <TextView
-                android:id="@+id/completionMoves"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
                 android:textColor="#6B4423"
                 android:textSize="14sp"
                 android:textStyle="bold"
@@ -196,41 +161,6 @@
                 android:textStyle="bold"
                 android:fontFamily="serif" />
         </LinearLayout>
-
-        <!-- Coins Row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:text="⭐"
-                android:textSize="16sp"
-                android:gravity="center"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Coins earned:"
-                android:textColor="#6B4423"
-                android:textSize="14sp"
-                android:fontFamily="serif" />
-
-            <TextView
-                android:id="@+id/completionCoins"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="#FFD700"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:fontFamily="serif" />
-        </LinearLayout>
     </LinearLayout>
 
     <!-- Decorative Separator -->
@@ -285,3 +215,10 @@
             android:paddingHorizontal="4dp" />
     </LinearLayout>
 </LinearLayout>
+
+
+
+
+
+
+

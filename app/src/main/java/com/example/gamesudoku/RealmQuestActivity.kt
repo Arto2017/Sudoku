@@ -2,6 +2,8 @@ package com.example.gamesudoku
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.*
 import android.view.View
@@ -47,8 +49,11 @@ class RealmQuestActivity : AppCompatActivity() {
         val backgroundView = findViewById<View>(R.id.realmBackground)
         backgroundView.setBackgroundResource(getRealmBackground(realm.theme))
         
-        // Setup back button (ImageButton)
+        // Setup back button (ImageButton) - go back to Sudoku Quest window
         findViewById<View>(R.id.backButton).setOnClickListener {
+            val intent = Intent(this, RealmSelectionActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
             finish()
         }
 
@@ -63,13 +68,28 @@ class RealmQuestActivity : AppCompatActivity() {
         val puzzlesWithStatus = puzzleChain.puzzles.map { puzzle ->
             questCodex.getSavedPuzzle(puzzle.id) ?: puzzle
         }
-        puzzleAdapter = PuzzleChainAdapter(puzzlesWithStatus) { puzzle ->
-            if (puzzle.isUnlocked) {
-                startPuzzle(puzzle)
-            } else {
-                Toast.makeText(this, "Complete previous puzzles to unlock this one!", Toast.LENGTH_SHORT).show()
+        puzzleAdapter = PuzzleChainAdapter(
+            puzzles = puzzlesWithStatus,
+            onPuzzleClick = { puzzle ->
+                if (puzzle.isCompleted) {
+                    GameNotification.showInfo(this, "Puzzle is already completed!", 2000)
+                } else if (puzzle.isUnlocked) {
+                    startPuzzle(puzzle)
+                } else {
+                    GameNotification.showError(this, "Complete previous puzzles to unlock this one!", 2000)
+                }
+            },
+            onPuzzleLongClick = { puzzle ->
+                // Test mode: Long-press to simulate completion and test the victory dialog
+                // Works even for locked puzzles in test mode
+                if (TEST_MODE) {
+                    testPuzzleCompletion(puzzle)
+                    true
+                } else {
+                    false
+                }
             }
-        }
+        )
         
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = puzzleAdapter
@@ -87,7 +107,7 @@ class RealmQuestActivity : AppCompatActivity() {
     // Codex removed
 
     private fun startPuzzle(puzzle: QuestPuzzle) {
-        // Clear attempt state so each start is fresh 0/4
+        // Clear attempt state so each start is fresh 0/∞
         AttemptStateStore(this).clear(puzzle.id)
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -106,6 +126,14 @@ class RealmQuestActivity : AppCompatActivity() {
             RealmTheme.FLAME -> R.drawable.flame_background
             RealmTheme.SHADOWS -> R.drawable.shadows_background
         }
+    }
+
+    override fun onBackPressed() {
+        // Handle system back button - go back to Sudoku Quest window
+        val intent = Intent(this, RealmSelectionActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+        finish()
     }
 
     override fun onResume() {
@@ -128,11 +156,45 @@ class RealmQuestActivity : AppCompatActivity() {
         puzzleAdapter.updatePuzzles(puzzlesWithStatus)
         // Codex removed
     }
+    
+    companion object {
+        // Toggle to false to disable test mode
+        private const val TEST_MODE = true
+    }
+    
+    private fun testPuzzleCompletion(puzzle: QuestPuzzle) {
+        // Unlock puzzle first if it's locked (for testing)
+        if (!puzzle.isUnlocked) {
+            questCodex.devUnlockPuzzle(realm.id, puzzle.id)
+            GameNotification.showInfo(this, "[TEST] Puzzle unlocked", 1500)
+        }
+        
+        // Simulate completion with test values
+        val testTimeSeconds = 120L // 2 minutes for testing
+        val testMistakes = 2
+        
+        // Record completion
+        questCodex.recordPuzzleCompletion(realm.id, puzzle.id, testTimeSeconds, testMistakes)
+        
+        // Show test notification
+        GameNotification.showSuccess(this, "[TEST] Opening completion dialog...", 2000)
+        
+        // Start MainActivity in test completion mode immediately
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("quest_puzzle_id", puzzle.id)
+            putExtra("realm_id", realm.id)
+            putExtra("board_size", puzzle.boardSize)
+            putExtra("difficulty", puzzle.difficulty.name)
+            putExtra("test_completion", true) // Flag to trigger immediate completion
+        }
+        startActivity(intent)
+    }
 }
 
 class PuzzleChainAdapter(
     private var puzzles: List<QuestPuzzle>,
-    private val onPuzzleClick: (QuestPuzzle) -> Unit
+    private val onPuzzleClick: (QuestPuzzle) -> Unit,
+    private val onPuzzleLongClick: ((QuestPuzzle) -> Unit)? = null
 ) : RecyclerView.Adapter<PuzzleChainAdapter.PuzzleViewHolder>() {
 
     class PuzzleViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -162,9 +224,9 @@ class PuzzleChainAdapter(
         val mistakes = attempt.getMistakes(puzzle.id)
         val failed = attempt.isFailed(puzzle.id)
 
-        holder.mistakesSmall.text = "$mistakes/4"
+        holder.mistakesSmall.text = "$mistakes/∞"
         when {
-            failed || mistakes >= 4 -> holder.mistakesSmall.setTextColor(Color.parseColor("#C62828"))
+            mistakes >= 10 -> holder.mistakesSmall.setTextColor(Color.parseColor("#C62828"))
             mistakes >= 1 -> holder.mistakesSmall.setTextColor(Color.parseColor("#FF8F00"))
             else -> holder.mistakesSmall.setTextColor(Color.parseColor("#6B4C2A"))
         }
@@ -176,7 +238,7 @@ class PuzzleChainAdapter(
             holder.lockIcon.visibility = View.GONE
             holder.card.setCardBackgroundColor(Color.parseColor("#E8F5E8"))
             holder.card.strokeColor = Color.parseColor("#C8E6C9")
-        } else if (failed || mistakes >= 4) {
+        } else if (failed) {
             holder.status.text = "Failed"
             holder.status.setTextColor(Color.parseColor("#C62828"))
             holder.stars.text = ""
@@ -201,6 +263,12 @@ class PuzzleChainAdapter(
         
         holder.card.setOnClickListener {
             onPuzzleClick(puzzle)
+        }
+        
+        // Long-press for test mode
+        holder.card.setOnLongClickListener {
+            onPuzzleLongClick?.invoke(puzzle)
+            true // Always consume the long-press event
         }
     }
 

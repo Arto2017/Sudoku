@@ -190,7 +190,7 @@ class QuestCodex(private val context: Context) {
         }
     }
     
-    private fun calculateStars(timeInSeconds: Long, mistakes: Int, boardSize: Int): Int {
+    fun calculateStars(timeInSeconds: Long, mistakes: Int, boardSize: Int): Int {
         val baseTime = when (boardSize) {
             6 -> 300L
             9 -> 600L
@@ -204,13 +204,22 @@ class QuestCodex(private val context: Context) {
             else -> 0
         }
         
-        val mistakeScore = when {
-            mistakes == 0 -> 2
-            mistakes <= 3 -> 1
-            else -> 0
+        // Mistakes reduce stars more directly
+        val mistakePenalty = when {
+            mistakes == 0 -> 0  // No penalty for perfect play
+            mistakes <= 2 -> 1   // Lose 1 star for 1-2 mistakes
+            mistakes <= 4 -> 2   // Lose 2 stars for 3-4 mistakes
+            else -> 3            // Lose all 3 stars for 5+ mistakes
         }
         
-        return minOf(timeScore + mistakeScore, 3)
+        // Start from timeScore and subtract mistake penalty
+        return maxOf(0, timeScore - mistakePenalty)
+    }
+    
+    // Keep old method for backwards compatibility but mark as deprecated
+    @Deprecated("Use public calculateStars instead", ReplaceWith("calculateStars(timeInSeconds, mistakes, boardSize)"))
+    private fun calculateStarsPrivate(timeInSeconds: Long, mistakes: Int, boardSize: Int): Int {
+        return calculateStars(timeInSeconds, mistakes, boardSize)
     }
     
     private fun unlockNextPuzzle(realmId: String, currentPuzzleNumber: Int) {
@@ -293,6 +302,53 @@ class QuestCodex(private val context: Context) {
             savePuzzle(puzzle.copy(isUnlocked = true))
         }
     }
+    
+    // DEV ONLY: Unlock a specific puzzle for testing
+    fun devUnlockPuzzle(realmId: String, puzzleId: String) {
+        val chain = getPuzzleChain(realmId) ?: return
+        val puzzle = chain.puzzles.find { it.id == puzzleId } ?: return
+        savePuzzle(puzzle.copy(isUnlocked = true))
+    }
+    
+    // Save quest puzzle board state (current board + fixed cells)
+    fun savePuzzleBoardState(puzzleId: String, board: Array<IntArray>, fixed: Array<BooleanArray>, secondsElapsed: Int, mistakes: Int) {
+        // Convert arrays to lists for JSON serialization
+        val boardList = board.map { it.toList() }.toList()
+        val fixedList = fixed.map { it.toList() }.toList()
+        
+        val state = PuzzleBoardState(
+            board = boardList,
+            fixed = fixedList,
+            secondsElapsed = secondsElapsed,
+            mistakes = mistakes
+        )
+        
+        val json = gson.toJson(state)
+        sharedPreferences.edit().putString("puzzle_state_$puzzleId", json).apply()
+    }
+    
+    // Load quest puzzle board state
+    fun loadPuzzleBoardState(puzzleId: String): PuzzleBoardState? {
+        val json = sharedPreferences.getString("puzzle_state_$puzzleId", null) ?: return null
+        
+        return try {
+            gson.fromJson(json, PuzzleBoardState::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    // Clear quest puzzle board state (when puzzle is completed)
+    fun clearPuzzleBoardState(puzzleId: String) {
+        sharedPreferences.edit().remove("puzzle_state_$puzzleId").apply()
+    }
+    
+    data class PuzzleBoardState(
+        val board: List<List<Int>>,
+        val fixed: List<List<Boolean>>,
+        val secondsElapsed: Int,
+        val mistakes: Int
+    )
     
     // Reset difficulty for existing puzzles to match current realm settings
     fun resetPuzzleDifficulties() {

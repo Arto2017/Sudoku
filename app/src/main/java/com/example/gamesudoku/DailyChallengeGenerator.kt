@@ -19,6 +19,7 @@ object DailyChallengeGenerator {
         val puzzleId: String,       // Same as date
         val seed: String,           // SHA256 hash of date
         val clues: IntArray,        // 81 cells, 0 for empty
+        val solution: IntArray,     // 81 cells, complete solution
         val difficulty: Difficulty,
         val minClues: Int,
         val signature: String = ""  // Optional server signature
@@ -70,10 +71,18 @@ object DailyChallengeGenerator {
         Log.d("DailyChallenge", "Created puzzle with ${puzzle.count { it != 0 }} clues")
         
         // Verify single solution
-        val hasSingleSolution = countSolutions(puzzle.to2DArray()) == 1
+        val hasSingleSolution = countSolutions(puzzle.to2DArray(), 2, 9) == 1
         if (!hasSingleSolution) {
             Log.w("DailyChallenge", "Puzzle does not have unique solution, regenerating...")
             return generateDailyPuzzle(date) // Retry with different seed
+        }
+        
+        // Convert solved grid to IntArray format (81 cells)
+        val solutionArray = IntArray(81)
+        for (row in 0 until 9) {
+            for (col in 0 until 9) {
+                solutionArray[row * 9 + col] = solvedGrid[row][col]
+            }
         }
         
         return DailyPuzzle(
@@ -81,6 +90,7 @@ object DailyChallengeGenerator {
             puzzleId = dateString,
             seed = seed,
             clues = puzzle,
+            solution = solutionArray,
             difficulty = difficulty,
             minClues = targetClues
         )
@@ -134,33 +144,34 @@ object DailyChallengeGenerator {
      * Generate a complete solved Sudoku grid using seeded random
      */
     private fun generateFullSolution(rng: SeededRandom): Array<IntArray> {
-        val board = Array(9) { IntArray(9) }
+        val boardSize = 9
+        val board = Array(boardSize) { IntArray(boardSize) }
         
         // Start with a random first row
-        val firstRow = (1..9).toMutableList()
+        val firstRow = (1..boardSize).toMutableList()
         firstRow.shuffle(rng.random)
         
         // Fill the first row
-        for (col in 0 until 9) {
+        for (col in 0 until boardSize) {
             board[0][col] = firstRow[col]
         }
         
         // Generate the rest using backtracking with seeded random
-        solveSudokuSeeded(board, rng)
+        solveSudokuSeeded(board, rng, boardSize)
         return board
     }
     
     /**
      * Solve Sudoku using seeded random for number selection
      */
-    private fun solveSudokuSeeded(board: Array<IntArray>, rng: SeededRandom): Boolean {
-        for (row in 0 until 9) {
-            for (col in 0 until 9) {
+    private fun solveSudokuSeeded(board: Array<IntArray>, rng: SeededRandom, boardSize: Int = 9): Boolean {
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
                 if (board[row][col] == 0) {
                     // Get valid numbers and shuffle them using seeded random
                     val validNumbers = mutableListOf<Int>()
-                    for (num in 1..9) {
-                        if (isValidPlacement(board, row, col, num)) {
+                    for (num in 1..boardSize) {
+                        if (isValidPlacement(board, row, col, num, boardSize)) {
                             validNumbers.add(num)
                         }
                     }
@@ -168,7 +179,7 @@ object DailyChallengeGenerator {
                     
                     for (num in validNumbers) {
                         board[row][col] = num
-                        if (solveSudokuSeeded(board, rng)) return true
+                        if (solveSudokuSeeded(board, rng, boardSize)) return true
                         board[row][col] = 0
                     }
                     return false
@@ -213,7 +224,7 @@ object DailyChallengeGenerator {
                 board[row][col] = 0
                 
                 // Check if puzzle still has unique solution
-                if (countSolutions(board) == 1) {
+                if (countSolutions(board, 2, 9) == 1) {
                     removedCount++
                 } else {
                     // Restore the number if it breaks uniqueness
@@ -236,10 +247,10 @@ object DailyChallengeGenerator {
     /**
      * Count solutions to verify uniqueness (stops at 2)
      */
-    private fun countSolutions(board: Array<IntArray>, limit: Int = 2): Int {
+    private fun countSolutions(board: Array<IntArray>, limit: Int = 2, boardSize: Int = 9): Int {
         val solutions = mutableListOf<Array<IntArray>>()
-        val boardCopy = Array(9) { r -> board[r].clone() }
-        findSolutions(boardCopy, solutions, limit)
+        val boardCopy = Array(boardSize) { r -> board[r].clone() }
+        findSolutions(boardCopy, solutions, limit, boardSize)
         return solutions.size
     }
     
@@ -249,19 +260,20 @@ object DailyChallengeGenerator {
     private fun findSolutions(
         board: Array<IntArray>, 
         solutions: MutableList<Array<IntArray>>, 
-        maxSolutions: Int
+        maxSolutions: Int,
+        boardSize: Int = 9
     ) {
         if (solutions.size >= maxSolutions) return
         
         // Find cell with fewest candidates
         var bestRow = -1
         var bestCol = -1
-        var minPossibilities = 10
+        var minPossibilities = boardSize + 1
         
-        for (row in 0 until 9) {
-            for (col in 0 until 9) {
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
                 if (board[row][col] == 0) {
-                    val possibilities = countValidNumbers(board, row, col)
+                    val possibilities = countValidNumbers(board, row, col, boardSize)
                     if (possibilities < minPossibilities) {
                         minPossibilities = possibilities
                         bestRow = row
@@ -274,16 +286,16 @@ object DailyChallengeGenerator {
         if (bestRow == -1) {
             // Board is complete
             if (solutions.size < maxSolutions) {
-                solutions.add(Array(9) { r -> board[r].clone() })
+                solutions.add(Array(boardSize) { r -> board[r].clone() })
             }
             return
         }
         
         // Try all valid numbers for the best cell
-        for (num in 1..9) {
-            if (isValidPlacement(board, bestRow, bestCol, num)) {
+        for (num in 1..boardSize) {
+            if (isValidPlacement(board, bestRow, bestCol, num, boardSize)) {
                 board[bestRow][bestCol] = num
-                findSolutions(board, solutions, maxSolutions)
+                findSolutions(board, solutions, maxSolutions, boardSize)
                 board[bestRow][bestCol] = 0
             }
         }
@@ -292,10 +304,10 @@ object DailyChallengeGenerator {
     /**
      * Count valid numbers for a cell
      */
-    private fun countValidNumbers(board: Array<IntArray>, row: Int, col: Int): Int {
+    private fun countValidNumbers(board: Array<IntArray>, row: Int, col: Int, boardSize: Int = 9): Int {
         var count = 0
-        for (num in 1..9) {
-            if (isValidPlacement(board, row, col, num)) {
+        for (num in 1..boardSize) {
+            if (isValidPlacement(board, row, col, num, boardSize)) {
                 count++
             }
         }
@@ -305,21 +317,38 @@ object DailyChallengeGenerator {
     /**
      * Check if number placement is valid
      */
-    private fun isValidPlacement(board: Array<IntArray>, row: Int, col: Int, num: Int): Boolean {
+    private fun isValidPlacement(board: Array<IntArray>, row: Int, col: Int, num: Int, boardSize: Int = 9): Boolean {
         // Check row and column
-        for (i in 0 until 9) {
+        for (i in 0 until boardSize) {
             if (board[row][i] == num || board[i][col] == num) {
                 return false
             }
         }
         
-        // Check 3x3 box
-        val boxRow = (row / 3) * 3
-        val boxCol = (col / 3) * 3
-        for (r in boxRow until boxRow + 3) {
-            for (c in boxCol until boxCol + 3) {
-                if (board[r][c] == num) {
-                    return false
+        // Check boxes based on Sudoku rules
+        when (boardSize) {
+            6 -> {
+                // 6x6 Sudoku: check 2x3 boxes
+                val boxRow = (row / 2) * 2
+                val boxCol = (col / 3) * 3
+                for (r in boxRow until boxRow + 2) {
+                    for (c in boxCol until boxCol + 3) {
+                        if (board[r][c] == num) {
+                            return false
+                        }
+                    }
+                }
+            }
+            9 -> {
+                // 9x9 Sudoku: check 3x3 boxes
+                val boxRow = (row / 3) * 3
+                val boxCol = (col / 3) * 3
+                for (r in boxRow until boxRow + 3) {
+                    for (c in boxCol until boxCol + 3) {
+                        if (board[r][c] == num) {
+                            return false
+                        }
+                    }
                 }
             }
         }

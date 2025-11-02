@@ -42,6 +42,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         requestLayout() // Request new layout measurement
         invalidate() // Redraw the board
     }
+    
+    fun getBoardSize(): Int = boardSize
+    
     private var selectedRow = -1
     private var selectedCol = -1
     private var onCellSelectedListener: OnCellSelectedListener? = null
@@ -67,12 +70,14 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     
     // Hint system data structures
     private var solutionBoard: Array<IntArray>? = null
+    private var solutionBoardExplicitlySet: Boolean = false // Track if solution was explicitly set (e.g., Daily Challenge)
     private var candidates: Array<Array<MutableSet<Int>>> = Array(9) { Array(9) { mutableSetOf() } }
     private var isRevealedByHint: Array<BooleanArray> = Array(9) { BooleanArray(9) }
     private var hintsUsed = 0
-    private var hintsRemaining = 10 // Configurable limit
+    private var hintsRemaining = 50 // Configurable limit
     private var autoPencilEnabled = false
     private var pencilMarksVisible = false
+    private var pencilMode = false // When true, clicking cells adds/removes pencil marks manually
 
     // Colors with theme support - Pure white background
     private var bgColor = Color.parseColor("#FFFFFF") // Pure white background
@@ -188,50 +193,52 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     private fun drawHighlights(canvas: Canvas) {
         if (selectedRow == -1 || selectedCol == -1) return
         
-        // Don't draw row/column highlights when number highlighting is active
-        if (highlightedNumber != 0) return
-
         // Use theme accent color for highlights
         val highlightColor = accentColor
+        
+        // Only draw row/column/box highlights when number highlighting is NOT active
+        // But always draw the selected cell highlight
+        if (highlightedNumber == 0) {
+            // Highlight entire row (light)
+            paint.color = Color.argb(20, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            canvas.drawRect(
+                boardLeft,
+                boardTop + selectedRow * cellSize,
+                boardLeft + boardSize * cellSize,
+                boardTop + (selectedRow + 1) * cellSize,
+                paint
+            )
 
-        // Highlight entire row (light)
-        paint.color = Color.argb(20, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
-        canvas.drawRect(
-            boardLeft,
-            boardTop + selectedRow * cellSize,
-            boardLeft + boardSize * cellSize,
-            boardTop + (selectedRow + 1) * cellSize,
-            paint
-        )
+            // Highlight entire column (light)
+            canvas.drawRect(
+                boardLeft + selectedCol * cellSize,
+                boardTop,
+                boardLeft + (selectedCol + 1) * cellSize,
+                boardTop + boardSize * cellSize,
+                paint
+            )
 
-        // Highlight entire column (light)
-        canvas.drawRect(
-            boardLeft + selectedCol * cellSize,
-            boardTop,
-            boardLeft + (selectedCol + 1) * cellSize,
-            boardTop + boardSize * cellSize,
-            paint
-        )
-
-        // Highlight current box (medium)
-        paint.color = Color.argb(40, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
-        val (boxRows, boxCols) = when (boardSize) {
-            6 -> Pair(2, 3) // 6x6: 2x3 boxes
-            9 -> Pair(3, 3) // 9x9: 3x3 boxes
-            else -> Pair(3, 3)
+            // Highlight current box (medium)
+            paint.color = Color.argb(40, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            val (boxRows, boxCols) = when (boardSize) {
+                6 -> Pair(2, 3) // 6x6: 2x3 boxes
+                9 -> Pair(3, 3) // 9x9: 3x3 boxes
+                else -> Pair(3, 3)
+            }
+            val boxRow = (selectedRow / boxRows) * boxRows
+            val boxCol = (selectedCol / boxCols) * boxCols
+            canvas.drawRoundRect(
+                boardLeft + boxCol * cellSize,
+                boardTop + boxRow * cellSize,
+                boardLeft + (boxCol + boxCols) * cellSize,
+                boardTop + (boxRow + boxRows) * cellSize,
+                12f, 12f, paint
+            )
         }
-        val boxRow = (selectedRow / boxRows) * boxRows
-        val boxCol = (selectedCol / boxCols) * boxCols
-        canvas.drawRoundRect(
-            boardLeft + boxCol * cellSize,
-            boardTop + boxRow * cellSize,
-            boardLeft + (boxCol + boxCols) * cellSize,
-            boardTop + (boxRow + boxRows) * cellSize,
-            12f, 12f, paint
-        )
 
-        // Highlight selected cell (strongest)
-        paint.color = Color.argb(80, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+        // Always highlight selected cell (strongest) - even when number highlighting is active
+        // This ensures the cell stays visible when adding pencil marks
+        paint.color = Color.argb(100, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
         canvas.drawRoundRect(
             boardLeft + selectedCol * cellSize,
             boardTop + selectedRow * cellSize,
@@ -642,9 +649,13 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
 
 
     fun resetPuzzle(difficulty: SudokuGenerator.Difficulty = SudokuGenerator.Difficulty.EASY) {
-        Log.d("SudokuBoardView", "Resetting puzzle: size=$boardSize, difficulty=$difficulty")
+        resetPuzzle(difficulty, null)
+    }
+    
+    fun resetPuzzle(difficulty: SudokuGenerator.Difficulty, seed: String?) {
+        Log.d("SudokuBoardView", "Resetting puzzle: size=$boardSize, difficulty=$difficulty, seed=${seed ?: "random"}")
         
-        val puzzle = SudokuGenerator.generatePuzzle(boardSize, difficulty)
+        val puzzle = SudokuGenerator.generatePuzzle(boardSize, difficulty, seed)
         Log.d("SudokuBoardView", "Generated puzzle with ${puzzle.board.sumOf { it.count { cell -> cell != 0 } }} filled cells")
         
         board = puzzle.board
@@ -654,6 +665,23 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         selectedCol = -1
         // Clear any existing conflicts when resetting
         clearConflicts()
+        
+        // IMPORTANT: Store the complete solution for hints (same approach as Daily Challenge)
+        if (puzzle.solution != null) {
+            // Convert 2D solution array to 1D IntArray
+            val solutionArray = IntArray(boardSize * boardSize)
+            for (row in 0 until boardSize) {
+                for (col in 0 until boardSize) {
+                    solutionArray[row * boardSize + col] = puzzle.solution[row][col]
+                }
+            }
+            setSolutionBoard(solutionArray)
+            Log.d("SudokuBoardView", "Stored complete solution for quest puzzle hints")
+        } else {
+            Log.w("SudokuBoardView", "No solution provided with puzzle, hints will use solver")
+            // Solution not provided, will be generated in initializeHintSystem()
+            solutionBoardExplicitlySet = false
+        }
         
         // Initialize hint system for new puzzle
         initializeHintSystem()
@@ -665,11 +693,37 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
 
     fun setNumber(number: Int) {
         if (selectedRow != -1 && selectedCol != -1 && !fixed[selectedRow][selectedCol]) {
+            // If in pencil mode and cell is empty, add/remove pencil mark instead of placing number
+            if (pencilMode && board[selectedRow][selectedCol] == 0 && number != 0) {
+                val cellCandidates = candidates[selectedRow][selectedCol]
+                if (cellCandidates.contains(number)) {
+                    // Remove pencil mark if it exists
+                    cellCandidates.remove(number)
+                } else {
+                    // Add pencil mark if it doesn't exist
+                    cellCandidates.add(number)
+                }
+                // Keep the cell selected - don't clear selection
+                // The selection will remain visible to show where the mark was added
+                invalidate()
+                return
+            }
+            
             // Store the previous value for conflict detection
             val previousValue = board[selectedRow][selectedCol]
             
+            // Don't do anything if the cell already has this value
+            if (previousValue == number) {
+                return
+            }
+            
             // Set the number
             board[selectedRow][selectedCol] = number
+            
+            // Clear pencil marks when a number is placed
+            if (number != 0) {
+                candidates[selectedRow][selectedCol].clear()
+            }
             
             // Update candidates for affected cells
             updateCandidatesAfterPlacement(selectedRow, selectedCol, number)
@@ -1235,17 +1289,51 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      * Initialize hint system - compute solution and initial candidates
      */
     fun initializeHintSystem() {
-        // Generate solution if not present
+        // Generate solution if not present and not explicitly set
         if (solutionBoard == null) {
             solutionBoard = generateSolution()
+            solutionBoardExplicitlySet = false // Auto-generated, not explicitly set
         }
         
         // Clear previous hint data
         hintsUsed = 0
         isRevealedByHint = Array(boardSize) { BooleanArray(boardSize) }
         
-        // Compute initial candidates for all empty cells
-        computeAllCandidates()
+        // Clear all candidates - player will add pencil marks manually
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                candidates[row][col].clear()
+            }
+        }
+    }
+    
+    /**
+     * Set the complete solution array (81 numbers for 9x9)
+     * This stores the full solved grid so hints can read directly from it
+     * Format: 1D array converted to 2D array[row][col] for easy access
+     * Example: For position (x=5, y=6), we read solutionBoard[5][6]
+     */
+    fun setSolutionBoard(solution: IntArray) {
+        if (solution.size != boardSize * boardSize) {
+            Log.e("SudokuBoardView", "Solution size ${solution.size} doesn't match board size ${boardSize * boardSize}")
+            return
+        }
+        
+        // Create 2D array to store complete solution: solutionBoard[row][col]
+        solutionBoard = Array(boardSize) { IntArray(boardSize) }
+        
+        // Convert 1D array to 2D array
+        // Index calculation: for position (row, col), index = row * boardSize + col
+        for (i in solution.indices) {
+            val row = i / boardSize  // Row = index / boardSize
+            val col = i % boardSize  // Col = index % boardSize
+            solutionBoard!![row][col] = solution[i]
+        }
+        
+        solutionBoardExplicitlySet = true // Mark that solution was explicitly set
+        
+        Log.d("SudokuBoardView", "Solution board stored in 2D array. Size: ${boardSize}x${boardSize}")
+        Log.d("SudokuBoardView", "Example: Solution[0,0]=${solutionBoard!![0][0]}, Solution[0,1]=${solutionBoard!![0][1]}, Solution[5,6]=${solutionBoard!![5][6]}")
     }
     
     /**
@@ -1329,19 +1417,23 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     
     /**
      * Update candidates after a number is placed or removed
+     * Only removes the placed number from related cells (doesn't auto-compute)
      */
     private fun updateCandidatesAfterPlacement(row: Int, col: Int, value: Int) {
+        if (value == 0) return // Nothing to update when removing
+        
+        // Only remove the placed number from related cells (preserve manual pencil marks)
         // Update candidates for cells in same row
         for (c in 0 until boardSize) {
             if (c != col && board[row][c] == 0) {
-                candidates[row][c] = computeCandidatesForCell(row, c)
+                candidates[row][c].remove(value)
             }
         }
         
         // Update candidates for cells in same column
         for (r in 0 until boardSize) {
             if (r != row && board[r][col] == 0) {
-                candidates[r][col] = computeCandidatesForCell(r, col)
+                candidates[r][col].remove(value)
             }
         }
         
@@ -1356,7 +1448,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         for (r in boxRow until boxRow + boxRows) {
             for (c in boxCol until boxCol + boxCols) {
                 if ((r != row || c != col) && board[r][c] == 0) {
-                    candidates[r][c] = computeCandidatesForCell(r, c)
+                    candidates[r][c].remove(value)
                 }
             }
         }
@@ -1364,40 +1456,238 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     
     /**
      * Reveal hint for selected cell
+     * SIMPLIFIED: Read directly from solution array using (row, col) coordinates
+     * This is the simplest and most reliable approach - just read from the stored complete solution
      */
     fun revealHint(): Boolean {
         if (selectedRow == -1 || selectedCol == -1) {
+            lastHintErrorMessage = "Select a cell first"
             return false // No cell selected
         }
         
         if (board[selectedRow][selectedCol] != 0) {
+            lastHintErrorMessage = "Cell already has a number"
             return false // Cell is not empty
         }
         
-        if (solutionBoard == null) {
-            return false // No solution available
-        }
-        
         if (hintsRemaining <= 0) {
+            lastHintErrorMessage = "No hints remaining"
             return false // No hints remaining
         }
         
-        val correctValue = solutionBoard!![selectedRow][selectedCol]
+        // SIMPLIFIED: If solution board exists, read directly from it using (row, col)
+        // This is exactly what the user suggested - read from the array and place on board
+        if (solutionBoard != null && solutionBoardExplicitlySet) {
+            // Validate bounds
+            if (selectedRow >= 0 && selectedRow < boardSize && 
+                selectedCol >= 0 && selectedCol < boardSize) {
+                
+                // Read directly from solution array: solution[row][col]
+                val solutionValue = solutionBoard!![selectedRow][selectedCol]
+                
+                // Validate the value is valid (1-9 for 9x9, etc)
+                if (solutionValue < 1 || solutionValue > boardSize) {
+                    Log.e("SudokuBoardView", "Hint: Invalid solution value=$solutionValue at ($selectedRow, $selectedCol)")
+                    lastHintErrorMessage = "Invalid solution value"
+                    return false
+                }
+                
+                Log.d("SudokuBoardView", "Hint: Reading from solution array[$selectedRow][$selectedCol] = $solutionValue")
+                
+                // Place the number directly from solution array onto the board
+                board[selectedRow][selectedCol] = solutionValue
+                isRevealedByHint[selectedRow][selectedCol] = true
+                hintsUsed++
+                hintsRemaining--
+                
+                // Update candidates for affected cells
+                updateCandidatesAfterPlacement(selectedRow, selectedCol, solutionValue)
+                candidates[selectedRow][selectedCol].clear()
+                
+                lastHintErrorMessage = null
+                invalidate()
+                return true
+            } else {
+                Log.e("SudokuBoardView", "Hint: Invalid row/col bounds: ($selectedRow, $selectedCol), boardSize=$boardSize")
+                lastHintErrorMessage = "Invalid cell position"
+                return false
+            }
+        }
         
-        // Apply the hint
-        board[selectedRow][selectedCol] = correctValue
-        isRevealedByHint[selectedRow][selectedCol] = true
-        hintsUsed++
-        hintsRemaining--
+        // Fallback for puzzles without explicit solution (regular puzzles)
+        if (solutionBoard == null) {
+            lastHintErrorMessage = "No solution available"
+            return false
+        }
         
-        // Update candidates for affected cells
-        updateCandidatesAfterPlacement(selectedRow, selectedCol, correctValue)
+        // Check for incorrect user numbers (only for regular puzzles)
+        if (hasIncorrectUserEnteredNumbers()) {
+            lastHintErrorMessage = "Incorrect answers in board, fix first"
+            return false
+        }
         
-        // Clear candidates for this cell
-        candidates[selectedRow][selectedCol].clear()
+        // Use solution board value for regular puzzles (if valid)
+        val solutionValue = solutionBoard!![selectedRow][selectedCol]
+        if (isValidMove(selectedRow, selectedCol, solutionValue)) {
+            board[selectedRow][selectedCol] = solutionValue
+            isRevealedByHint[selectedRow][selectedCol] = true
+            hintsUsed++
+            hintsRemaining--
+            
+            updateCandidatesAfterPlacement(selectedRow, selectedCol, solutionValue)
+            candidates[selectedRow][selectedCol].clear()
+            
+            lastHintErrorMessage = null
+            invalidate()
+            return true
+        }
         
-        invalidate()
-        return true
+        // Last resort: try other techniques (shouldn't happen if solution is correct)
+        val hintResult = findValidHintFallback(selectedRow, selectedCol)
+        if (hintResult != null) {
+            board[selectedRow][selectedCol] = hintResult
+            isRevealedByHint[selectedRow][selectedCol] = true
+            hintsUsed++
+            hintsRemaining--
+            
+            updateCandidatesAfterPlacement(selectedRow, selectedCol, hintResult)
+            candidates[selectedRow][selectedCol].clear()
+            
+            lastHintErrorMessage = null
+            invalidate()
+            return true
+        }
+        
+        lastHintErrorMessage = "Cannot generate hint"
+        return false
+    }
+    
+    private var lastHintErrorMessage: String? = null
+    
+    fun getLastHintErrorMessage(): String? = lastHintErrorMessage
+    
+    /**
+     * Check if there are any incorrect user-entered numbers on the board
+     * Returns true if any conflicts found (user-entered numbers that violate Sudoku rules)
+     */
+    private fun hasIncorrectUserEnteredNumbers(): Boolean {
+        // Check all non-empty cells for conflicts
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    // Only check user-entered values (not fixed cells or hints)
+                    if (!fixed[row][col] && !isRevealedByHint[row][col]) {
+                        // Check if this number conflicts with other cells
+                        val conflicts = findConflicts(row, col, board[row][col])
+                        if (conflicts.isNotEmpty()) {
+                            // Found at least one conflict with user-entered number
+                            return true
+                        }
+                        
+                        // Also check if the number is correct according to solution
+                        // If solution exists and user-entered value doesn't match, it's incorrect
+                        if (solutionBoard != null) {
+                            if (board[row][col] != solutionBoard!![row][col]) {
+                                // User-entered value doesn't match solution
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false // No incorrect numbers found
+    }
+    
+    /**
+     * Fallback hint finder - only used if solution board approach fails
+     * This should rarely be needed for Daily Challenge
+     */
+    private fun findValidHintFallback(row: Int, col: Int): Int? {
+        // Find candidates for this cell based on current board state
+        val cellCandidates = computeCandidatesForCell(row, col)
+        
+        // Check for naked single (only one candidate)
+        if (cellCandidates.size == 1) {
+            return cellCandidates.first()
+        }
+        
+        // Check for hidden single in row
+        for (num in 1..boardSize) {
+            if (cellCandidates.contains(num)) {
+                var countInRow = 0
+                for (c in 0 until boardSize) {
+                    if (c != col && board[row][c] == 0) {
+                        val candidates = computeCandidatesForCell(row, c)
+                        if (candidates.contains(num)) {
+                            countInRow++
+                        }
+                    }
+                }
+                if (countInRow == 0) {
+                    // This number can only go in this cell in the row
+                    return num
+                }
+            }
+        }
+        
+        // Check for hidden single in column
+        for (num in 1..boardSize) {
+            if (cellCandidates.contains(num)) {
+                var countInCol = 0
+                for (r in 0 until boardSize) {
+                    if (r != row && board[r][col] == 0) {
+                        val candidates = computeCandidatesForCell(r, col)
+                        if (candidates.contains(num)) {
+                            countInCol++
+                        }
+                    }
+                }
+                if (countInCol == 0) {
+                    // This number can only go in this cell in the column
+                    return num
+                }
+            }
+        }
+        
+        // Check for hidden single in box
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        val boxRow = (row / boxRows) * boxRows
+        val boxCol = (col / boxCols) * boxCols
+        
+        for (num in 1..boardSize) {
+            if (cellCandidates.contains(num)) {
+                var countInBox = 0
+                for (r in boxRow until boxRow + boxRows) {
+                    for (c in boxCol until boxCol + boxCols) {
+                        if ((r != row || c != col) && board[r][c] == 0) {
+                            val candidates = computeCandidatesForCell(r, c)
+                            if (candidates.contains(num)) {
+                                countInBox++
+                            }
+                        }
+                    }
+                }
+                if (countInBox == 0) {
+                    // This number can only go in this cell in the box
+                    return num
+                }
+            }
+        }
+        
+        // If no specific technique found, return first valid candidate
+        // This ensures we never place an invalid number
+        for (num in cellCandidates.sorted()) {
+            if (isValidMove(row, col, num)) {
+                return num
+            }
+        }
+        
+        return null // No valid hint found
     }
     
     /**
@@ -1405,11 +1695,26 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      */
     fun togglePencilMarks() {
         pencilMarksVisible = !pencilMarksVisible
-        if (pencilMarksVisible) {
-            computeAllCandidates()
+        // No automatic computation - player must add marks manually
+        invalidate()
+    }
+    
+    /**
+     * Toggle pencil mode (manual pencil mark entry)
+     */
+    fun togglePencilMode() {
+        pencilMode = !pencilMode
+        // Enable visibility when entering pencil mode
+        if (pencilMode) {
+            pencilMarksVisible = true
         }
         invalidate()
     }
+    
+    /**
+     * Check if pencil mode is active
+     */
+    fun isPencilModeActive(): Boolean = pencilMode
     
     /**
      * Get hints remaining count
@@ -1440,4 +1745,56 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      * Get board value at specific position (for external access)
      */
     fun getBoardValue(row: Int, col: Int): Int = board[row][col]
+    
+    /**
+     * Get comprehensive hint for a cell
+     */
+    fun getComprehensiveHint(row: Int, col: Int): ComprehensiveHintResult {
+        if (row == -1 || col == -1) {
+            return ComprehensiveHintResult(false, 0, "No cell selected", HintType.ERROR)
+        }
+        if (fixed[row][col]) {
+            return ComprehensiveHintResult(false, 0, "Cell is fixed", HintType.ERROR)
+        }
+        if (board[row][col] != 0) {
+            return ComprehensiveHintResult(false, 0, "Cell already has a number", HintType.ERROR)
+        }
+        
+        // Simple hint: find a valid number for the selected cell
+        for (num in 1..boardSize) {
+            if (isValidMove(row, col, num)) {
+                return ComprehensiveHintResult(true, num, "Try placing $num", HintType.SINGLE_CANDIDATE)
+            }
+        }
+        return ComprehensiveHintResult(false, 0, "No valid numbers for this cell", HintType.ERROR)
+    }
+    
+    /**
+     * Apply hint to board
+     */
+    fun applyHint(row: Int, col: Int, value: Int): Boolean {
+        board[row][col] = value
+        invalidate()
+        return true
+    }
+}
+
+/**
+ * Data classes for comprehensive hint system
+ */
+data class ComprehensiveHintResult(
+    val success: Boolean,
+    val value: Int,
+    val explanation: String,
+    val type: HintType
+)
+
+enum class HintType {
+    SOLUTION,
+    SINGLE_CANDIDATE,
+    SOLVER_CONFIRMED,
+    SMART_HINT,
+    FALLBACK,
+    CONFLICT,
+    ERROR
 }
