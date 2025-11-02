@@ -1305,7 +1305,6 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 candidates[row][col].clear()
             }
         }
-<<<<<<< HEAD
     }
     
     /**
@@ -1689,43 +1688,6 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         }
         
         return null // No valid hint found
-    }
-    
-    private var lastHintErrorMessage: String? = null
-    
-    fun getLastHintErrorMessage(): String? = lastHintErrorMessage
-    
-    /**
-     * Check if there are any incorrect user-entered numbers on the board
-     * Returns true if any conflicts found (user-entered numbers that violate Sudoku rules)
-     */
-    private fun hasIncorrectUserEnteredNumbers(): Boolean {
-        // Check all non-empty cells for conflicts
-        for (row in 0 until boardSize) {
-            for (col in 0 until boardSize) {
-                if (board[row][col] != 0) {
-                    // Only check user-entered values (not fixed cells or hints)
-                    if (!fixed[row][col] && !isRevealedByHint[row][col]) {
-                        // Check if this number conflicts with other cells
-                        val conflicts = findConflicts(row, col, board[row][col])
-                        if (conflicts.isNotEmpty()) {
-                            // Found at least one conflict with user-entered number
-                            return true
-                        }
-                        
-                        // Also check if the number is correct according to solution
-                        // If solution exists and user-entered value doesn't match, it's incorrect
-                        if (solutionBoard != null) {
-                            if (board[row][col] != solutionBoard!![row][col]) {
-                                // User-entered value doesn't match solution
-                                return true
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false // No incorrect numbers found
     }
     
     /**
