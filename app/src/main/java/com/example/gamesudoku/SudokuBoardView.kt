@@ -1305,6 +1305,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 candidates[row][col].clear()
             }
         }
+<<<<<<< HEAD
     }
     
     /**
@@ -1604,6 +1605,144 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      * This should rarely be needed for Daily Challenge
      */
     private fun findValidHintFallback(row: Int, col: Int): Int? {
+        // Find candidates for this cell based on current board state
+        val cellCandidates = computeCandidatesForCell(row, col)
+        
+        // Check for naked single (only one candidate)
+        if (cellCandidates.size == 1) {
+            return cellCandidates.first()
+        }
+        
+        // Check for hidden single in row
+        for (num in 1..boardSize) {
+            if (cellCandidates.contains(num)) {
+                var countInRow = 0
+                for (c in 0 until boardSize) {
+                    if (c != col && board[row][c] == 0) {
+                        val candidates = computeCandidatesForCell(row, c)
+                        if (candidates.contains(num)) {
+                            countInRow++
+                        }
+                    }
+                }
+                if (countInRow == 0) {
+                    // This number can only go in this cell in the row
+                    return num
+                }
+            }
+        }
+        
+        // Check for hidden single in column
+        for (num in 1..boardSize) {
+            if (cellCandidates.contains(num)) {
+                var countInCol = 0
+                for (r in 0 until boardSize) {
+                    if (r != row && board[r][col] == 0) {
+                        val candidates = computeCandidatesForCell(r, col)
+                        if (candidates.contains(num)) {
+                            countInCol++
+                        }
+                    }
+                }
+                if (countInCol == 0) {
+                    // This number can only go in this cell in the column
+                    return num
+                }
+            }
+        }
+        
+        // Check for hidden single in box
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        val boxRow = (row / boxRows) * boxRows
+        val boxCol = (col / boxCols) * boxCols
+        
+        for (num in 1..boardSize) {
+            if (cellCandidates.contains(num)) {
+                var countInBox = 0
+                for (r in boxRow until boxRow + boxRows) {
+                    for (c in boxCol until boxCol + boxCols) {
+                        if ((r != row || c != col) && board[r][c] == 0) {
+                            val candidates = computeCandidatesForCell(r, c)
+                            if (candidates.contains(num)) {
+                                countInBox++
+                            }
+                        }
+                    }
+                }
+                if (countInBox == 0) {
+                    // This number can only go in this cell in the box
+                    return num
+                }
+            }
+        }
+        
+        // If no specific technique found, return first valid candidate
+        // This ensures we never place an invalid number
+        for (num in cellCandidates.sorted()) {
+            if (isValidMove(row, col, num)) {
+                return num
+            }
+        }
+        
+        return null // No valid hint found
+    }
+    
+    private var lastHintErrorMessage: String? = null
+    
+    fun getLastHintErrorMessage(): String? = lastHintErrorMessage
+    
+    /**
+     * Check if there are any incorrect user-entered numbers on the board
+     * Returns true if any conflicts found (user-entered numbers that violate Sudoku rules)
+     */
+    private fun hasIncorrectUserEnteredNumbers(): Boolean {
+        // Check all non-empty cells for conflicts
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    // Only check user-entered values (not fixed cells or hints)
+                    if (!fixed[row][col] && !isRevealedByHint[row][col]) {
+                        // Check if this number conflicts with other cells
+                        val conflicts = findConflicts(row, col, board[row][col])
+                        if (conflicts.isNotEmpty()) {
+                            // Found at least one conflict with user-entered number
+                            return true
+                        }
+                        
+                        // Also check if the number is correct according to solution
+                        // If solution exists and user-entered value doesn't match, it's incorrect
+                        if (solutionBoard != null) {
+                            if (board[row][col] != solutionBoard!![row][col]) {
+                                // User-entered value doesn't match solution
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false // No incorrect numbers found
+    }
+    
+    /**
+     * Find a valid hint for the given cell using Sudoku solving techniques
+     * 1. Try solution board value if valid
+     * 2. Try naked single (only one candidate)
+     * 3. Try hidden single (only one place for number in row/column/box)
+     */
+    private fun findValidHint(row: Int, col: Int): Int? {
+        // First, try to use solution board value if it's valid for current state
+        if (solutionBoard != null) {
+            val solutionValue = solutionBoard!![row][col]
+            if (isValidMove(row, col, solutionValue)) {
+                return solutionValue
+            }
+        }
+        
         // Find candidates for this cell based on current board state
         val cellCandidates = computeCandidatesForCell(row, col)
         
