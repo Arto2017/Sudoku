@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tooltipText"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:background="@drawable/tooltip_background"
+    android:text="Tooltip text"
+    android:textColor="#6B4423"
+    android:textSize="12sp"
+    android:textStyle="bold"
+    android:fontFamily="sans-serif-medium"
+    android:maxWidth="200dp"
+    android:gravity="center"
+    android:maxLines="2"
+    android:ellipsize="end" />
+

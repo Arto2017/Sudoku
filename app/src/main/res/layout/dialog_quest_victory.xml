@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Animated Background Overlay -->
+    <View
+        android:id="@+id/victoryOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:alpha="0" />
+
+    <!-- Main Dialog Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/victoryCard"
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:alpha="0"
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        app:cardBackgroundColor="#FEFEFE"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="16dp"
+        app:strokeColor="#D4AF8A"
+        app:strokeWidth="3dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center">
+
+            <!-- Animated Trophy Icon -->
+            <FrameLayout
+                android:id="@+id/trophyContainer"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginBottom="16dp">
+
+                <!-- Glow Background -->
+                <View
+                    android:id="@+id/trophyGlow"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:background="@drawable/trophy_glow_background"
+                    android:alpha="0" />
+
+                <!-- Trophy Icon -->
+                <ImageView
+                    android:id="@+id/trophyIcon"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_golden_trophy"
+                    android:alpha="0"
+                    android:scaleX="0"
+                    android:scaleY="0"
+                    app:tint="#FFD700" />
+
+                <!-- Confetti Effects (multiple stars) -->
+                <TextView
+                    android:id="@+id/confettiStar1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⭐"
+                    android:textSize="32sp"
+                    android:layout_gravity="top|start"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginStart="10dp"
+                    android:alpha="0" />
+
+                <TextView
+                    android:id="@+id/confettiStar2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⭐"
+                    android:textSize="32sp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:alpha="0" />
+
+                <TextView
+                    android:id="@+id/confettiStar3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⭐"
+                    android:textSize="32sp"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginBottom="10dp"
+                    android:layout_marginStart="10dp"
+                    android:alpha="0" />
+
+                <TextView
+                    android:id="@+id/confettiStar4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⭐"
+                    android:textSize="32sp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginBottom="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:alpha="0" />
+            </FrameLayout>
+
+            <!-- Congratulations Title -->
+            <TextView
+                android:id="@+id/congratulationsTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Level Complete!"
+                android:textColor="#6B4423"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:layout_marginBottom="8dp"
+                android:alpha="0"
+                android:translationY="20dp" />
+
+            <!-- Subtitle Message -->
+            <TextView
+                android:id="@+id/congratulationsMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Congratulations! You've mastered this challenge!"
+                android:textColor="#8B7355"
+                android:textSize="16sp"
+                android:fontFamily="serif"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:alpha="0"
+                android:translationY="20dp" />
+
+            <!-- Stats Container -->
+            <LinearLayout
+                android:id="@+id/statsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/modern_stats_background"
+                android:padding="16dp"
+                android:layout_marginBottom="20dp"
+                android:alpha="0"
+                android:translationY="20dp">
+
+                <!-- Time Stat -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_timer"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#6B4423" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Time:"
+                        android:textColor="#6B4423"
+                        android:textSize="16sp"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:id="@+id/questTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:00"
+                        android:textColor="#6B4423"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:fontFamily="monospace" />
+                </LinearLayout>
+
+                <!-- Stars Earned -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_star"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#FFD700" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Stars:"
+                        android:textColor="#6B4423"
+                        android:textSize="16sp"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:id="@+id/questStars"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⭐⭐⭐"
+                        android:textSize="18sp" />
+                </LinearLayout>
+
+                <!-- Mistakes Stat -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_heart_outline"
+                        android:layout_marginEnd="12dp"
+                        app:tint="#6B4423" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Mistakes:"
+                        android:textColor="#6B4423"
+                        android:textSize="16sp"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:id="@+id/questMistakes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#6B4423"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Next Puzzle Unlocked Message -->
+            <TextView
+                android:id="@+id/nextPuzzleMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Next puzzle unlocked!"
+                android:textColor="#4CAF50"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:layout_marginBottom="20dp"
+                android:alpha="0"
+                android:visibility="gone" />
+
+            <!-- Action Button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/btnRealmMap"
+                    style="@style/GameButtonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:text="Realm Map"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:fontFamily="serif"
+                    android:alpha="0" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</FrameLayout>
+

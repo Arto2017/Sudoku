@@ -35,7 +35,7 @@
                 android:background="@drawable/back_button_gold"
                 android:padding="0dp"
                 android:src="@drawable/ic_arrow_left"
-                android:tint="#2D1810"
+                app:tint="#2D1810"
                 android:contentDescription="Back" />
 
             <TextView

@@ -15,26 +15,28 @@
         android:minHeight="0dp">
 
         <!-- App Header Section -->
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/appHeader"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
             android:layout_marginTop="@dimen/safe_top_area"
             android:layout_marginBottom="@dimen/responsive_margin_large"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <!-- Logo/Icon -->
-            <ImageView
-                android:id="@+id/appLogo"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/ic_sudoku_pro_icon"
-                android:layout_marginBottom="@dimen/responsive_margin"
-                android:elevation="4dp" />
+            <!-- Statistics Button -->
+            <ImageButton
+                android:id="@+id/btnStatistics"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_stats"
+                android:background="@android:color/transparent"
+                android:padding="8dp"
+                android:contentDescription="Statistics"
+                android:tint="#333333"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <!-- App Title -->
             <TextView
@@ -49,7 +51,10 @@
                 android:shadowColor="#8B7355"
                 android:shadowDx="2"
                 android:shadowDy="2"
-                android:shadowRadius="4" />
+                android:shadowRadius="4"
+                app:layout_constraintTop_toBottomOf="@id/btnStatistics"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <!-- Tagline -->
             <TextView
@@ -61,8 +66,11 @@
                 android:textStyle="italic"
                 android:textColor="#757575"
                 android:layout_marginTop="@dimen/responsive_margin_small"
-                android:fontFamily="sans-serif-light" />
-        </LinearLayout>
+                android:fontFamily="sans-serif-light"
+                app:layout_constraintTop_toBottomOf="@id/appTitle"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <!-- Horizontal Carousel -->
         <HorizontalScrollView
@@ -81,18 +89,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingStart="@dimen/horizontal_padding"
-                android:paddingEnd="@dimen/horizontal_padding">
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
 
                 <!-- Daily Challenge Card -->
                 <LinearLayout
                     android:id="@+id/dailyChallengeCard"
-                    android:layout_width="280dp"
+                    android:layout_width="170dp"
                     android:layout_height="200dp"
-                    android:layout_marginEnd="@dimen/responsive_margin"
+                    android:layout_marginEnd="12dp"
                     android:orientation="vertical"
                     android:background="@drawable/daily_challenge_gradient"
-                    android:padding="16dp"
+                    android:padding="10dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:elevation="6dp">
@@ -107,14 +115,14 @@
 
                         <!-- Left: Daily Challenge Icon -->
                         <FrameLayout
-                            android:layout_width="80dp"
-                            android:layout_height="80dp"
-                            android:layout_marginEnd="16dp">
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="8dp">
 
                             <!-- Calendar Icon Background -->
                             <ImageView
-                                android:layout_width="80dp"
-                                android:layout_height="80dp"
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
                                 android:src="@drawable/ic_calendar_daily"
                                 android:background="@drawable/daily_challenge_icon_bg"
                                 android:scaleType="centerCrop" />
@@ -122,15 +130,15 @@
                             <!-- Streak Badge -->
                             <TextView
                                 android:id="@+id/dailyStreakBadge"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:layout_gravity="top|end"
                                 android:layout_marginTop="-4dp"
                                 android:layout_marginEnd="-4dp"
                                 android:background="@drawable/streak_badge_background"
                                 android:gravity="center"
                                 android:text="4"
-                                android:textSize="12sp"
+                                android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="#FFFFFF" />
                         </FrameLayout>
@@ -147,7 +155,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Daily Challenge"
-                                android:textSize="20sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold"
                                 android:textColor="#333333"
                                 android:fontFamily="sans-serif-medium" />
@@ -157,11 +165,11 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Sep 30 • Medium"
-                                android:textSize="13sp"
+                                android:textSize="11sp"
                                 android:textColor="#6B6B6B"
                                 android:fontFamily="sans-serif"
                                 android:layout_marginTop="2dp"
-                                android:layout_marginBottom="8dp" />
+                                android:layout_marginBottom="6dp" />
 
                             <!-- Status Badge -->
                             <LinearLayout
@@ -190,7 +198,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_marginTop="8dp">
+                        android:layout_marginTop="6dp">
 
                         <!-- Timer -->
                         <LinearLayout
@@ -198,14 +206,14 @@
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:gravity="center_vertical"
-                            android:layout_marginBottom="8dp">
+                            android:layout_marginBottom="6dp">
 
                             <TextView
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Next challenge in:"
-                                android:textSize="12sp"
+                                android:textSize="10sp"
                                 android:textColor="#757575"
                                 android:fontFamily="sans-serif-light" />
 
@@ -214,7 +222,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="12:30:45"
-                                android:textSize="12sp"
+                                android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="#FF6B35"
                                 android:fontFamily="sans-serif-medium" />
@@ -224,29 +232,29 @@
                         <Button
                             android:id="@+id/btnDailyChallenge"
                             android:layout_width="match_parent"
-                            android:layout_height="50dp"
+                            android:layout_height="40dp"
                             android:text="Play"                
-                            android:textSize="14sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:textColor="#333333"
                             android:background="@drawable/daily_challenge_button_bg"
                             android:fontFamily="sans-serif-medium"
                             android:gravity="center"
                             android:maxLines="1"
-                            android:paddingVertical="8dp"
-                            android:paddingHorizontal="12dp" />
+                            android:paddingVertical="6dp"
+                            android:paddingHorizontal="10dp" />
                     </LinearLayout>
                 </LinearLayout>
 
                 <!-- Redesigned Sudoku Quest Card -->
                 <LinearLayout
                     android:id="@+id/questCard"
-                    android:layout_width="280dp"
+                    android:layout_width="170dp"
                     android:layout_height="200dp"
-                        android:layout_marginEnd="@dimen/responsive_margin"
+                        android:layout_marginEnd="12dp"
                     android:orientation="vertical"
                     android:background="@drawable/quest_card_gradient"
-                    android:padding="16dp"
+                    android:padding="10dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:elevation="6dp">
@@ -261,16 +269,16 @@
 
                         <!-- Left: Progress Ring with Trophy -->
                         <FrameLayout
-                            android:layout_width="80dp"
-                            android:layout_height="80dp"
-                            android:layout_marginEnd="16dp">
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginEnd="8dp">
 
                             <!-- Progress Ring Background -->
                             <ProgressBar
                                 android:id="@+id/questProgressRing"
                                 style="?android:attr/progressBarStyleHorizontal"
-                                android:layout_width="80dp"
-                                android:layout_height="80dp"
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
                                 android:progress="65"
                                 android:max="100"
                                 android:progressDrawable="@drawable/quest_progress_ring"
@@ -278,20 +286,20 @@
 
                             <!-- Trophy Icon in Center -->
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                android:layout_width="25dp"
+                                android:layout_height="25dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/golden_icon"
                                 android:scaleType="centerCrop" />
 
                             <!-- New Badge Overlay -->
                             <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
                                 android:layout_gravity="top|start"
                                 android:src="@drawable/ic_badge_new"
-                                android:layout_marginTop="-4dp"
-                                android:layout_marginStart="-4dp" />
+                                android:layout_marginTop="-3dp"
+                                android:layout_marginStart="-3dp" />
                         </FrameLayout>
 
                         <!-- Right: Title and Info -->
@@ -306,25 +314,15 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                                 android:text="Sudoku Quest"
-                                android:textSize="20sp"
+                                android:textSize="14sp"
                             android:textStyle="bold"
                                 android:textColor="#333333"
                             android:fontFamily="sans-serif-medium" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                                android:text="Adventure • 24 levels unlocked"
-                                android:textSize="13sp"
-                                android:textColor="#6B6B6B"
-                                android:fontFamily="sans-serif"
-                                android:layout_marginTop="2dp"
-                                android:layout_marginBottom="8dp" />
-
                             <!-- Mini Grid Preview -->
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:src="@drawable/ic_mini_grid_preview"
                                 android:alpha="0.65" />
                         </LinearLayout>
@@ -336,21 +334,21 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="4dp">
 
                         <!-- Level Progress Bar -->
                         <ProgressBar
                             android:id="@+id/questLevelProgressBar"
                             style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="0dp"
-                            android:layout_height="4dp"
+                            android:layout_height="3dp"
                         android:layout_weight="1"
                             android:progress="75"
                             android:max="100"
                             android:progressTint="#FF7A59"
                             android:progressBackgroundTint="#E0E0E0"
-                            android:layout_marginEnd="12dp" />
+                            android:layout_marginEnd="8dp" />
 
                         <!-- Reward Chip -->
                         <LinearLayout
@@ -358,21 +356,21 @@
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:background="@drawable/reward_chip_background"
-                            android:padding="6dp"
+                            android:padding="4dp"
                             android:gravity="center_vertical">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="⭐"
-                                android:textSize="12sp"
+                                android:textSize="10sp"
                                 android:layout_marginEnd="2dp" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                                 android:text="25"
-                                android:textSize="12sp"
+                                android:textSize="10sp"
                                 android:textStyle="bold"
                                 android:textColor="#FF8A65" />
                         </LinearLayout>
@@ -389,46 +387,18 @@
                         <Button
                             android:id="@+id/btnChooseLevel"
                             android:layout_width="match_parent"
-                            android:layout_height="36dp"
-                            android:text="Choose Level"
-                            android:textSize="14sp"
+                            android:layout_height="40dp"
+                            android:text="Play"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:textColor="#333333"
                             android:background="@drawable/choose_level_background"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:paddingVertical="6dp"
+                            android:paddingHorizontal="10dp" />
                     </LinearLayout>
-                </LinearLayout>
-
-                <!-- Statistics Card -->
-                <LinearLayout
-                    android:id="@+id/statisticsCard"
-                    android:layout_width="220dp"
-                    android:layout_height="180dp"
-                    android:layout_marginEnd="@dimen/responsive_margin"
-                    android:orientation="vertical"
-                    android:background="@drawable/carousel_card_background"
-                    android:padding="@dimen/responsive_padding"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:elevation="4dp">
-
-                    <ImageView
-                        android:layout_width="96dp"
-                        android:layout_height="96dp"
-                        android:src="@drawable/ic_stats_illustration"
-                        android:layout_marginBottom="@dimen/responsive_margin"
-                        android:elevation="2dp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                        android:text="Statistics"
-                        android:textSize="18sp"
-                            android:textStyle="bold"
-                        android:textColor="#333333"
-                        android:fontFamily="sans-serif-medium"
-                        android:layout_marginBottom="4dp" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -441,7 +411,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginTop="48dp"
+            android:layout_marginTop="72dp"
             android:layout_marginBottom="32dp"
             app:layout_constraintTop_toBottomOf="@id/carouselContainer"
             app:layout_constraintStart_toStartOf="parent"
@@ -450,34 +420,40 @@
             <!-- Quick Play CTA -->
             <LinearLayout
                 android:id="@+id/btnQuickPlay"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="64dp"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:maxWidth="300dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/cta_gradient_background"
-                android:padding="20dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingVertical="12dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:elevation="6dp"
                 android:minHeight="64dp">
 
                 <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:src="@drawable/ic_play"
-                    android:layout_marginEnd="16dp"
+                    android:layout_marginEnd="12dp"
                     app:tint="@android:color/white"
                     android:elevation="2dp" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Quick Play"
-                    android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF"
-                            android:fontFamily="sans-serif-medium" />
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:ellipsize="none" />
 
                 <ImageView
                     android:layout_width="24dp"

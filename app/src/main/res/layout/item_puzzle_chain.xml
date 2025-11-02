@@ -68,7 +68,7 @@
                 android:id="@+id/mistakesSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0/4"
+                android:text="0/∞"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#6B4C2A"

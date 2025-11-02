@@ -284,15 +284,5 @@
                 android:layout_marginTop="32dp"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Reset Button -->
-            <Button
-                android:id="@+id/resetButton"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:text="🔄 Reset Quest Progress"
-                android:textSize="14sp"
-                android:textColor="#FFFFFF"
-                android:background="@drawable/reset_button_background"
-                android:layout_marginBottom="24dp" />
 
 </LinearLayout>

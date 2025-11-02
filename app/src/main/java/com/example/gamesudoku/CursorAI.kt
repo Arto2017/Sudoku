@@ -14,6 +14,9 @@ import kotlin.math.abs
  */
 class CursorAI(private val sudokuBoardView: SudokuBoardView) {
     
+    private val boardSize: Int
+        get() = sudokuBoardView.getBoardSize()
+    
     data class HintResult(
         val cell: Cell,
         val value: Int,
@@ -53,22 +56,49 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
     }
     
     /**
-     * Suggest hint with cursor movement
+     * Suggest hint with cursor movement using comprehensive algorithm
      */
     fun suggestHint(): HintResult? {
-        val board = sudokuBoardView.getBoardState()
-        val fixed = sudokuBoardView.getFixedState()
+        // Use the comprehensive hint system
+        val hintResult = sudokuBoardView.getComprehensiveHint(selectedRow, selectedCol)
         
-        // Try different hint techniques in order of preference
-        val hint = findSingleCandidate(board, fixed)
-            ?: findHiddenSingle(board, fixed)
-            ?: findNakedPair(board, fixed)
-            ?: findPointingPair(board, fixed)
-            ?: findBoxLineReduction(board, fixed)
-            ?: findSimpleElimination(board, fixed)
+        if (hintResult.success) {
+            // Convert to CursorAI format
+            return HintResult(
+                cell = Cell(selectedRow, selectedCol),
+                value = hintResult.value,
+                explanation = hintResult.explanation,
+                cursorPath = listOf(Cell(selectedRow, selectedCol)),
+                technique = mapHintTypeToTechnique(hintResult.type)
+            )
+        }
         
-        return hint
+        return null
     }
+    
+    /**
+     * Map HintType to HintTechnique for compatibility
+     */
+    private fun mapHintTypeToTechnique(type: HintType): HintTechnique {
+        return when (type) {
+            HintType.SOLUTION -> HintTechnique.SINGLE_CANDIDATE
+            HintType.SINGLE_CANDIDATE -> HintTechnique.SINGLE_CANDIDATE
+            HintType.SOLVER_CONFIRMED -> HintTechnique.HIDDEN_SINGLE
+            HintType.SMART_HINT -> HintTechnique.SIMPLE_ELIMINATION
+            HintType.FALLBACK -> HintTechnique.SIMPLE_ELIMINATION
+            HintType.CONFLICT -> HintTechnique.SIMPLE_ELIMINATION
+            HintType.ERROR -> HintTechnique.SIMPLE_ELIMINATION
+        }
+    }
+    
+    /**
+     * Get selected cell coordinates
+     */
+    private val selectedRow: Int
+        get() = sudokuBoardView.getSelectedRow()
+    
+    private val selectedCol: Int
+        get() = sudokuBoardView.getSelectedCol()
     
     /**
      * Move cursor through path with animation
@@ -103,32 +133,18 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
     }
     
     /**
-     * Apply hint to board
+     * Apply hint to board using comprehensive system
      */
     fun applyHint(hint: HintResult): Boolean {
-        if (hint.cell.row < 0 || hint.cell.row >= 9 || hint.cell.col < 0 || hint.cell.col >= 9) {
-            return false
-        }
-        
-        // Check if cell is empty and not fixed
-        val board = sudokuBoardView.getBoardState()
-        val fixed = sudokuBoardView.getFixedState()
-        
-        if (board[hint.cell.row][hint.cell.col] != 0 || fixed[hint.cell.row][hint.cell.col]) {
-            return false
-        }
-        
-        // Apply the hint
-        sudokuBoardView.setNumber(hint.value)
-        return true
+        return sudokuBoardView.applyHint(hint.cell.row, hint.cell.col, hint.value)
     }
     
     /**
      * Find single candidate (only one possible number for a cell)
      */
     private fun findSingleCandidate(board: Array<IntArray>, fixed: Array<BooleanArray>): HintResult? {
-        for (row in 0 until 9) {
-            for (col in 0 until 9) {
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
                 if (board[row][col] == 0 && !fixed[row][col]) {
                     val candidates = getCandidates(board, row, col)
                     if (candidates.size == 1) {
@@ -154,12 +170,14 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Find hidden single (only one cell in row/column/box that can contain a number)
      */
     private fun findHiddenSingle(board: Array<IntArray>, fixed: Array<BooleanArray>): HintResult? {
+        val boxSize = kotlin.math.sqrt(boardSize.toDouble()).toInt()
+        
         // Check rows
-        for (row in 0 until 9) {
-            for (num in 1..9) {
+        for (row in 0 until boardSize) {
+            for (num in 1..boardSize) {
                 if (!isNumberInRow(board, row, num)) {
                     val possibleCells = mutableListOf<Cell>()
-                    for (col in 0 until 9) {
+                    for (col in 0 until boardSize) {
                         if (board[row][col] == 0 && !fixed[row][col] && canPlaceNumber(board, row, col, num)) {
                             possibleCells.add(Cell(row, col))
                         }
@@ -182,11 +200,11 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
         }
         
         // Check columns
-        for (col in 0 until 9) {
-            for (num in 1..9) {
+        for (col in 0 until boardSize) {
+            for (num in 1..boardSize) {
                 if (!isNumberInColumn(board, col, num)) {
                     val possibleCells = mutableListOf<Cell>()
-                    for (row in 0 until 9) {
+                    for (row in 0 until boardSize) {
                         if (board[row][col] == 0 && !fixed[row][col] && canPlaceNumber(board, row, col, num)) {
                             possibleCells.add(Cell(row, col))
                         }
@@ -209,13 +227,13 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
         }
         
         // Check boxes
-        for (boxRow in 0 until 3) {
-            for (boxCol in 0 until 3) {
-                for (num in 1..9) {
+        for (boxRow in 0 until boxSize) {
+            for (boxCol in 0 until boxSize) {
+                for (num in 1..boardSize) {
                     if (!isNumberInBox(board, boxRow, boxCol, num)) {
                         val possibleCells = mutableListOf<Cell>()
-                        for (r in boxRow * 3 until (boxRow + 1) * 3) {
-                            for (c in boxCol * 3 until (boxCol + 1) * 3) {
+                        for (r in boxRow * boxSize until (boxRow + 1) * boxSize) {
+                            for (c in boxCol * boxSize until (boxCol + 1) * boxSize) {
                                 if (board[r][c] == 0 && !fixed[r][c] && canPlaceNumber(board, r, c, num)) {
                                     possibleCells.add(Cell(r, c))
                                 }
@@ -223,9 +241,9 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
                         }
                         if (possibleCells.size == 1) {
                             val cell = possibleCells.first()
-                            val boxNum = boxRow * 3 + boxCol + 1
+                            val boxNum = boxRow * boxSize + boxCol + 1
                             val explanation = "Only cell in box $boxNum that can contain $num"
-                            val cursorPath = listOf(Cell(boxRow * 3, boxCol * 3), cell) // Move to box first, then cell
+                            val cursorPath = listOf(Cell(boxRow * boxSize, boxCol * boxSize), cell) // Move to box first, then cell
                             
                             return HintResult(
                                 cell = cell,
@@ -248,9 +266,9 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      */
     private fun findNakedPair(board: Array<IntArray>, fixed: Array<BooleanArray>): HintResult? {
         // Check rows for naked pairs
-        for (row in 0 until 9) {
+        for (row in 0 until boardSize) {
             val emptyCells = mutableListOf<Cell>()
-            for (col in 0 until 9) {
+            for (col in 0 until boardSize) {
                 if (board[row][col] == 0 && !fixed[row][col]) {
                     emptyCells.add(Cell(row, col))
                 }
@@ -290,13 +308,14 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Find pointing pair (number can only be in one row/column within a box)
      */
     private fun findPointingPair(board: Array<IntArray>, fixed: Array<BooleanArray>): HintResult? {
-        for (boxRow in 0 until 3) {
-            for (boxCol in 0 until 3) {
-                for (num in 1..9) {
+        val boxSize = kotlin.math.sqrt(boardSize.toDouble()).toInt()
+        for (boxRow in 0 until boxSize) {
+            for (boxCol in 0 until boxSize) {
+                for (num in 1..boardSize) {
                     if (!isNumberInBox(board, boxRow, boxCol, num)) {
                         val possibleCells = mutableListOf<Cell>()
-                        for (r in boxRow * 3 until (boxRow + 1) * 3) {
-                            for (c in boxCol * 3 until (boxCol + 1) * 3) {
+                        for (r in boxRow * boxSize until (boxRow + 1) * boxSize) {
+                            for (c in boxCol * boxSize until (boxCol + 1) * boxSize) {
                                 if (board[r][c] == 0 && !fixed[r][c] && canPlaceNumber(board, r, c, num)) {
                                     possibleCells.add(Cell(r, c))
                                 }
@@ -310,7 +329,8 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
                             // Check if they're in the same row or column
                             if (cell1.row == cell2.row) {
                                 // Same row - can eliminate from other cells in that row
-                                val explanation = "Pointing pair: $num can only be in this row within box ${boxRow * 3 + boxCol + 1}"
+                                val boxNum = boxRow * boxSize + boxCol + 1
+                                val explanation = "Pointing pair: $num can only be in this row within box $boxNum"
                                 val cursorPath = listOf(Cell(cell1.row, 0), cell1, cell2)
                                 
                                 return HintResult(
@@ -322,7 +342,8 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
                                 )
                             } else if (cell1.col == cell2.col) {
                                 // Same column - can eliminate from other cells in that column
-                                val explanation = "Pointing pair: $num can only be in this column within box ${boxRow * 3 + boxCol + 1}"
+                                val boxNum = boxRow * boxSize + boxCol + 1
+                                val explanation = "Pointing pair: $num can only be in this column within box $boxNum"
                                 val cursorPath = listOf(Cell(0, cell1.col), cell1, cell2)
                                 
                                 return HintResult(
@@ -346,23 +367,25 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Find box line reduction (number can only be in one box within a row/column)
      */
     private fun findBoxLineReduction(board: Array<IntArray>, fixed: Array<BooleanArray>): HintResult? {
+        val boxSize = kotlin.math.sqrt(boardSize.toDouble()).toInt()
+        
         // Check rows
-        for (row in 0 until 9) {
-            for (num in 1..9) {
+        for (row in 0 until boardSize) {
+            for (num in 1..boardSize) {
                 if (!isNumberInRow(board, row, num)) {
                     val possibleBoxes = mutableSetOf<Int>()
-                    for (col in 0 until 9) {
+                    for (col in 0 until boardSize) {
                         if (board[row][col] == 0 && !fixed[row][col] && canPlaceNumber(board, row, col, num)) {
-                            possibleBoxes.add(col / 3)
+                            possibleBoxes.add(col / boxSize)
                         }
                     }
                     if (possibleBoxes.size == 1) {
                         val boxCol = possibleBoxes.first()
-                        val boxNum = (row / 3) * 3 + boxCol + 1
+                        val boxNum = (row / boxSize) * boxSize + boxCol + 1
                         val explanation = "Box line reduction: $num can only be in box $boxNum within row ${row + 1}"
                         
                         // Find first empty cell in that box and row
-                        for (col in boxCol * 3 until (boxCol + 1) * 3) {
+                        for (col in boxCol * boxSize until (boxCol + 1) * boxSize) {
                             if (board[row][col] == 0 && !fixed[row][col] && canPlaceNumber(board, row, col, num)) {
                                 val cursorPath = listOf(Cell(row, 0), Cell(row, col))
                                 
@@ -390,10 +413,10 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
         // Find cell with fewest candidates
         var bestCell: Cell? = null
         var bestCandidates: Set<Int>? = null
-        var minCandidates = 10
+        var minCandidates = boardSize + 1
         
-        for (row in 0 until 9) {
-            for (col in 0 until 9) {
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
                 if (board[row][col] == 0 && !fixed[row][col]) {
                     val candidates = getCandidates(board, row, col)
                     if (candidates.size < minCandidates && candidates.isNotEmpty()) {
@@ -427,7 +450,7 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      */
     private fun getCandidates(board: Array<IntArray>, row: Int, col: Int): Set<Int> {
         val candidates = mutableSetOf<Int>()
-        for (num in 1..9) {
+        for (num in 1..boardSize) {
             if (canPlaceNumber(board, row, col, num)) {
                 candidates.add(num)
             }
@@ -440,20 +463,21 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      */
     private fun canPlaceNumber(board: Array<IntArray>, row: Int, col: Int, num: Int): Boolean {
         // Check row
-        for (c in 0 until 9) {
+        for (c in 0 until boardSize) {
             if (board[row][c] == num) return false
         }
         
         // Check column
-        for (r in 0 until 9) {
+        for (r in 0 until boardSize) {
             if (board[r][col] == num) return false
         }
         
         // Check box
-        val boxRow = (row / 3) * 3
-        val boxCol = (col / 3) * 3
-        for (r in boxRow until boxRow + 3) {
-            for (c in boxCol until boxCol + 3) {
+        val boxSize = kotlin.math.sqrt(boardSize.toDouble()).toInt()
+        val boxRow = (row / boxSize) * boxSize
+        val boxCol = (col / boxSize) * boxSize
+        for (r in boxRow until boxRow + boxSize) {
+            for (c in boxCol until boxCol + boxSize) {
                 if (board[r][c] == num) return false
             }
         }
@@ -465,7 +489,7 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Check if number exists in row
      */
     private fun isNumberInRow(board: Array<IntArray>, row: Int, num: Int): Boolean {
-        for (col in 0 until 9) {
+        for (col in 0 until boardSize) {
             if (board[row][col] == num) return true
         }
         return false
@@ -475,7 +499,7 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Check if number exists in column
      */
     private fun isNumberInColumn(board: Array<IntArray>, col: Int, num: Int): Boolean {
-        for (row in 0 until 9) {
+        for (row in 0 until boardSize) {
             if (board[row][col] == num) return true
         }
         return false
@@ -485,8 +509,9 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Check if number exists in box
      */
     private fun isNumberInBox(board: Array<IntArray>, boxRow: Int, boxCol: Int, num: Int): Boolean {
-        for (r in boxRow * 3 until (boxRow + 1) * 3) {
-            for (c in boxCol * 3 until (boxCol + 1) * 3) {
+        val boxSize = kotlin.math.sqrt(boardSize.toDouble()).toInt()
+        for (r in boxRow * boxSize until (boxRow + 1) * boxSize) {
+            for (c in boxCol * boxSize until (boxCol + 1) * boxSize) {
                 if (board[r][c] == num) return true
             }
         }

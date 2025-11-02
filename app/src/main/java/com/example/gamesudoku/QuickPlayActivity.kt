@@ -30,7 +30,7 @@ class QuickPlayActivity : AppCompatActivity() {
         // Start entrance animations
         startEntranceAnimations()
 
-        // Back button
+        // Back button - returns to game
         findViewById<View>(R.id.quickPlayBackButton)?.setOnClickListener {
             finish()
         }
@@ -150,7 +150,7 @@ class QuickPlayActivity : AppCompatActivity() {
         }
 
     }
-    
+
     private fun setupDifficultyRow(rowId: Int, difficulty: SudokuGenerator.Difficulty) {
         val row = findViewById<View>(rowId)
         
@@ -171,7 +171,7 @@ class QuickPlayActivity : AppCompatActivity() {
                 .start()
         }
     }
-
+    
     private fun startGame(boardSize: Int, difficulty: SudokuGenerator.Difficulty) {
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra(EXTRA_BOARD_SIZE, boardSize)

@@ -1,0 +1,31 @@
+{
+  "name": "sudoku-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for AI-powered Sudoku features",
+  "main": "mcp-server-example.js",
+  "scripts": {
+    "start": "node mcp-server-example.js",
+    "dev": "nodemon mcp-server-example.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "sudoku",
+    "mcp",
+    "ai",
+    "hints",
+    "puzzle"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
+
+
+
+
+

@@ -21,6 +21,7 @@ import android.widget.TextView
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.widget.Button
+import android.widget.ImageButton
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -65,7 +66,7 @@ class MainMenuActivity : AppCompatActivity() {
         // Start daily challenge timer
         startDailyChallengeTimer()
 
-        // Quick Play button with animation
+        // Quick Play button with animation - starts game directly with 9x9 medium
         val quickPlayButton = findViewById<View>(R.id.btnQuickPlay)
         quickPlayButton.setOnClickListener {
             // Add click animation
@@ -79,7 +80,11 @@ class MainMenuActivity : AppCompatActivity() {
                         .scaleY(1.0f)
                         .setDuration(100)
                         .withEndAction {
-                            val intent = Intent(this, QuickPlayActivity::class.java)
+                            // Start game directly with 9x9 medium difficulty
+                            val intent = Intent(this, MainActivity::class.java).apply {
+                                putExtra(QuickPlayActivity.EXTRA_BOARD_SIZE, 9)
+                                putExtra(QuickPlayActivity.EXTRA_DIFFICULTY, SudokuGenerator.Difficulty.MEDIUM.name)
+                            }
                             startActivity(intent)
                         }
                         .start()
@@ -89,6 +94,12 @@ class MainMenuActivity : AppCompatActivity() {
         
         // Add continuous pulsing animation to Quick Play button
         addPulsingAnimation(quickPlayButton)
+
+        // Statistics Button Handler
+        findViewById<View>(R.id.btnStatistics).setOnClickListener {
+            val intent = Intent(this, StatisticsActivity::class.java)
+            startActivity(intent)
+        }
 
         // Carousel card click handlers
         findViewById<View>(R.id.dailyChallengeCard).setOnClickListener {
@@ -109,11 +120,6 @@ class MainMenuActivity : AppCompatActivity() {
         // Quest Card Button Handler
         findViewById<View>(R.id.btnChooseLevel).setOnClickListener {
             val intent = Intent(this, RealmSelectionActivity::class.java)
-            startActivity(intent)
-        }
-
-        findViewById<View>(R.id.statisticsCard).setOnClickListener {
-            val intent = Intent(this, StatisticsActivity::class.java)
             startActivity(intent)
         }
 
@@ -162,14 +168,11 @@ class MainMenuActivity : AppCompatActivity() {
     }
 
     private fun setupCarousel() {
-        val carousel = findViewById<HorizontalScrollView>(R.id.carouselContainer)
-        val carouselContent = findViewById<LinearLayout>(R.id.carouselContent)
-        
+        // Cards are now fixed in place without scrolling
         // Add card press animations
         val cards = listOf(
             findViewById<View>(R.id.dailyChallengeCard),
-            findViewById<View>(R.id.questCard),
-            findViewById<View>(R.id.statisticsCard)
+            findViewById<View>(R.id.questCard)
         )
         
         cards.forEach { card ->
@@ -192,14 +195,6 @@ class MainMenuActivity : AppCompatActivity() {
                 }
                 false
             }
-        }
-        
-        // Simple snap-to-center behavior
-        carousel.setOnScrollChangeListener { _, scrollX, _, _, _ ->
-            // This is a simplified version - in a production app you'd want more sophisticated snapping
-            val cardWidth = 220 + resources.getDimensionPixelSize(R.dimen.responsive_margin)
-            val currentCard = (scrollX + cardWidth / 2) / cardWidth
-            // Could add smooth scrolling to center the current card here
         }
     }
     

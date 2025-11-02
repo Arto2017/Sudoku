@@ -3,19 +3,19 @@
     android:shape="rectangle">
     
     <gradient
-        android:startColor="#2F1B14"
-        android:centerColor="#3D2318"
-        android:endColor="#1A0F0A"
+        android:startColor="#8B5A3C"
+        android:centerColor="#9D6B4A"
+        android:endColor="#7A4F2E"
         android:angle="45" />
     
     <corners android:radius="8dp" />
     
     <stroke
         android:width="2dp"
-        android:color="#FF4500" />
+        android:color="#FF6B35" />
     
-    <!-- Dark stone texture effect -->
-    <solid android:color="#2F1B14" />
+    <!-- Lighter flame texture effect -->
+    <solid android:color="#8B5A3C" />
     
 </shape>
 
