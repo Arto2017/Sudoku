@@ -665,6 +665,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         selectedCol = -1
         // Clear any existing conflicts when resetting
         clearConflicts()
+        // Clear number highlighting when resetting puzzle
+        clearNumberHighlight()
+        // Clear success animation
+        clearSuccessAnimation()
         
         // IMPORTANT: Store the complete solution for hints (same approach as Daily Challenge)
         if (puzzle.solution != null) {
@@ -1297,6 +1301,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         
         // Clear previous hint data
         hintsUsed = 0
+        hintsRemaining = 50 // Reset hints remaining to 50 for new game
         isRevealedByHint = Array(boardSize) { BooleanArray(boardSize) }
         
         // Clear all candidates - player will add pencil marks manually

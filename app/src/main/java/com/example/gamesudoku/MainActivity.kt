@@ -155,20 +155,24 @@ class MainActivity : AppCompatActivity() {
                 // Show brief toast message
                 Toast.makeText(this@MainActivity, "Mistake made.", Toast.LENGTH_SHORT).show()
 
-                // Warn at 3 mistakes
-                if (totalMistakes == 3) {
-                    val hud = findViewById<LinearLayout>(R.id.mistakesHud)
-                    hud.animate().translationXBy(6f).setDuration(50).withEndAction {
-                        hud.animate().translationX(0f).setDuration(50).start()
-                    }.start()
-                    Toast.makeText(this@MainActivity, "Last chance — 1 mistake left.", Toast.LENGTH_SHORT).show()
-                }
+                // Only show warnings and game over for quest puzzles (not for Play Now)
+                if (questPuzzleId != null) {
+                    // Warn at 3 mistakes (quest puzzles only)
+                    if (totalMistakes == 3) {
+                        val hud = findViewById<LinearLayout>(R.id.mistakesHud)
+                        hud.animate().translationXBy(6f).setDuration(50).withEndAction {
+                            hud.animate().translationX(0f).setDuration(50).start()
+                        }.start()
+                        Toast.makeText(this@MainActivity, "Last chance — 1 mistake left.", Toast.LENGTH_SHORT).show()
+                    }
 
-                // Fail at 4 mistakes
-                if (totalMistakes >= 4) {
-                    questPuzzleId?.let { id -> attemptStore.setFailed(id, true) }
-                    showPuzzleFailedDialog()
+                    // Fail at 4 mistakes (quest puzzles only)
+                    if (totalMistakes >= 4) {
+                        questPuzzleId?.let { id -> attemptStore.setFailed(id, true) }
+                        showPuzzleFailedDialog()
+                    }
                 }
+                // For Play Now mode (questPuzzleId == null), mistakes are unlimited (infinity)
             }
         })
         
@@ -634,27 +638,94 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showVictoryDialog(timeText: String, mistakes: Int) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_puzzle_complete, null)
+        
+        // Set the stats data
+        dialogView.findViewById<TextView>(R.id.completionTime)?.text = timeText
+        dialogView.findViewById<TextView>(R.id.completionMistakes)?.text = mistakes.toString()
+        
+        // Format difficulty name (capitalize first letter)
+        val difficultyText = currentDifficulty.name.lowercase().replaceFirstChar { 
+            if (it.isLowerCase()) it.titlecase() else it.toString() 
+        }
+        dialogView.findViewById<TextView>(R.id.completionDifficulty)?.text = difficultyText
+        
+        // Calculate performance stars based on time and mistakes
+        val performanceStars = calculatePerformanceStars(secondsElapsed, mistakes, boardSize)
+        val starsText = dialogView.findViewById<TextView>(R.id.performanceStars)
+        val starDisplay = "⭐".repeat(performanceStars) + "☆".repeat(5 - performanceStars)
+        starsText?.text = starDisplay
+        
         val dialog = AlertDialog.Builder(this)
-            .setTitle("🎉 Victory!")
-            .setMessage("Congratulations! You completed the puzzle!\n\nTime: $timeText\nMistakes: $mistakes")
-            .setPositiveButton("New Game") { _, _ ->
-                // Start new game with same settings
-                sudokuBoard.resetPuzzle(currentDifficulty)
-                sudokuBoard.clearNumberHighlight() // Clear number highlighting when starting new game
-                secondsElapsed = 0
-                totalMistakes = 0
-                gameResultSaved = false
-                gameStarted = false // Reset game started flag for new game
-                updateTimerText()
-                updateProgress()
-            }
-            .setNegativeButton("Main Menu") { _, _ ->
-                finish()
-            }
+            .setView(dialogView)
             .setCancelable(false)
             .create()
         
+        // Make background transparent around card for nicer presentation
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        
+        // Setup button click listeners
+        dialogView.findViewById<Button>(R.id.btnNewGame)?.setOnClickListener {
+            dialog.dismiss()
+            // Start new game with same settings
+            sudokuBoard.resetPuzzle(currentDifficulty) // This now clears selection, highlighting, and animations
+            secondsElapsed = 0
+            totalMistakes = 0
+            gameResultSaved = false
+            gameStarted = false // Reset game started flag for new game
+            updateTimerText()
+            updateProgress()
+        }
+        
+        dialogView.findViewById<Button>(R.id.btnMenu)?.setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+        
+        dialogView.findViewById<Button>(R.id.btnShare)?.setOnClickListener {
+            dialog.dismiss()
+            // Share functionality can be added here if needed
+            Toast.makeText(this, "Share feature coming soon!", Toast.LENGTH_SHORT).show()
+        }
+        
         dialog.show()
+    }
+    
+    private fun calculatePerformanceStars(timeSeconds: Int, mistakes: Int, boardSize: Int): Int {
+        var stars = 5
+        
+        // Deduct stars for mistakes
+        when (boardSize) {
+            6 -> {
+                // 6x6: more lenient
+                if (mistakes > 5) stars -= 2
+                else if (mistakes > 2) stars -= 1
+            }
+            9 -> {
+                // 9x9: stricter
+                if (mistakes > 3) stars -= 2
+                else if (mistakes > 1) stars -= 1
+            }
+        }
+        
+        // Deduct stars for slow completion (optional - time-based)
+        // This can be customized based on difficulty
+        val expectedTime = when (currentDifficulty) {
+            SudokuGenerator.Difficulty.EASY -> if (boardSize == 6) 300 else 600
+            SudokuGenerator.Difficulty.MEDIUM -> if (boardSize == 6) 600 else 1200
+            SudokuGenerator.Difficulty.HARD -> if (boardSize == 6) 900 else 1800
+            SudokuGenerator.Difficulty.EXPERT -> if (boardSize == 6) 1200 else 2400
+        }
+        
+        // Deduct stars if completion time is too slow
+        if (timeSeconds > expectedTime * 2) {
+            stars = (stars - 1).coerceAtLeast(1)
+        } else if (timeSeconds > (expectedTime * 1.5).toInt()) {
+            // Slightly slow, but no penalty (stars already adjusted for mistakes)
+            stars = stars.coerceAtLeast(1)
+        }
+        
+        return stars.coerceIn(1, 5)
     }
 
     private fun showQuestVictoryDialog(time: String, mistakes: Int) {
