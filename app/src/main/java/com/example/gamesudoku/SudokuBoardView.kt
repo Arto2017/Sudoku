@@ -1333,7 +1333,12 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         solutionBoardExplicitlySet = true // Mark that solution was explicitly set
         
         Log.d("SudokuBoardView", "Solution board stored in 2D array. Size: ${boardSize}x${boardSize}")
-        Log.d("SudokuBoardView", "Example: Solution[0,0]=${solutionBoard!![0][0]}, Solution[0,1]=${solutionBoard!![0][1]}, Solution[5,6]=${solutionBoard!![5][6]}")
+        // Use safe indices based on board size to avoid ArrayIndexOutOfBoundsException
+        val lastRow = boardSize - 1
+        val lastCol = boardSize - 1
+        val midRow = boardSize / 2
+        val midCol = boardSize / 2
+        Log.d("SudokuBoardView", "Example: Solution[0,0]=${solutionBoard!![0][0]}, Solution[0,1]=${solutionBoard!![0][1]}, Solution[$midRow,$midCol]=${solutionBoard!![midRow][midCol]}, Solution[$lastRow,$lastCol]=${solutionBoard!![lastRow][lastCol]}")
     }
     
     /**

@@ -65,6 +65,18 @@ class RealmQuestActivity : AppCompatActivity() {
     private fun setupPuzzleList() {
         val recyclerView = findViewById<RecyclerView>(R.id.puzzleRecyclerView)
         // Load puzzles with their saved status
+        // Ensure puzzle 1 is always unlocked (for new or existing realms)
+        val firstPuzzle = puzzleChain.puzzles.firstOrNull()
+        if (firstPuzzle != null) {
+            val savedFirstPuzzle = questCodex.getSavedPuzzle(firstPuzzle.id)
+            if (savedFirstPuzzle == null || !savedFirstPuzzle.isUnlocked) {
+                // Initialize puzzle 1 as unlocked if it doesn't exist or is locked
+                questCodex.devUnlockPuzzle(realm.id, firstPuzzle.id)
+                // Refresh puzzle chain after unlocking
+                puzzleChain = questCodex.getPuzzleChain(realm.id) ?: puzzleChain
+            }
+        }
+        
         val puzzlesWithStatus = puzzleChain.puzzles.map { puzzle ->
             questCodex.getSavedPuzzle(puzzle.id) ?: puzzle
         }
@@ -143,6 +155,19 @@ class RealmQuestActivity : AppCompatActivity() {
         puzzleChain = questCodex.getPuzzleChain(realm.id) ?: puzzleChain
         
         setupUI()
+        
+        // Ensure puzzle 1 is always unlocked (for new or existing realms)
+        val firstPuzzle = puzzleChain.puzzles.firstOrNull()
+        if (firstPuzzle != null) {
+            val savedFirstPuzzle = questCodex.getSavedPuzzle(firstPuzzle.id)
+            if (savedFirstPuzzle == null || !savedFirstPuzzle.isUnlocked) {
+                // Initialize puzzle 1 as unlocked if it doesn't exist or is locked
+                questCodex.devUnlockPuzzle(realm.id, firstPuzzle.id)
+                // Refresh puzzle chain after unlocking
+                puzzleChain = questCodex.getPuzzleChain(realm.id) ?: puzzleChain
+            }
+        }
+        
         // Load puzzles with their saved status, but always use current realm difficulty
         val puzzlesWithStatus = puzzleChain.puzzles.map { puzzle ->
             val savedPuzzle = questCodex.getSavedPuzzle(puzzle.id)
