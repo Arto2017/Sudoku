@@ -132,6 +132,14 @@ class DailyChallengeActivity : AppCompatActivity() {
         hintButton.setOnClickListener {
             if (sudokuBoardView.revealHint()) {
                 hintsUsed++
+                
+                // Highlight the number that was placed by the hint (same as manual placement)
+                val placedNumber = sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol())
+                if (placedNumber > 0) {
+                    sudokuBoardView.highlightNumber(placedNumber)
+                    highlightActiveNumber(placedNumber)
+                }
+                
                 showTooltip(hintButton, "Hint! (${sudokuBoardView.getHintsRemaining()} left)")
                 
                 // Check for completion after revealing hint (in case hint fills last cell)
@@ -189,20 +197,8 @@ class DailyChallengeActivity : AppCompatActivity() {
                 // Show brief toast message
                 Toast.makeText(this@DailyChallengeActivity, "Mistake made.", Toast.LENGTH_SHORT).show()
 
-                // Warn at 3 mistakes
-                if (totalMistakes == 3) {
-                    val hud = findViewById<LinearLayout>(R.id.mistakesHud)
-                    hud?.animate()?.translationXBy(6f)?.setDuration(50)?.withEndAction {
-                        hud.animate().translationX(0f).setDuration(50).start()
-                    }?.start()
-                    Toast.makeText(this@DailyChallengeActivity, "Last chance — 1 mistake left.", Toast.LENGTH_SHORT).show()
-                }
-
-                // Fail at 4 mistakes
-                if (totalMistakes >= 4) {
-                    attemptStore.setFailed(dailyChallengeId, true)
-                    showPuzzleFailedDialog()
-                }
+                // Mistakes are unlimited (infinity) - no game over dialog
+                // Player can continue playing regardless of mistake count
             }
         })
     }

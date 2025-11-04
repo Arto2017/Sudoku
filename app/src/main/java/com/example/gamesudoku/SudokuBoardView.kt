@@ -763,6 +763,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             val previousValue = board[selectedRow][selectedCol]
             board[selectedRow][selectedCol] = 0
             
+            // Clear pencil marks (candidates) when clearing the cell
+            candidates[selectedRow][selectedCol].clear()
+            
             // Update candidates for affected cells
             updateCandidatesAfterPlacement(selectedRow, selectedCol, previousValue)
             
@@ -1485,6 +1488,13 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             return false // No hints remaining
         }
         
+        // Check for incorrect user numbers FIRST - prevent hints if there are conflicts
+        // Player must fix or remove incorrect numbers before using hints
+        if (hasIncorrectUserEnteredNumbers()) {
+            lastHintErrorMessage = "Incorrect answers in board, fix or remove them first"
+            return false
+        }
+        
         // SIMPLIFIED: If solution board exists, read directly from it using (row, col)
         // This is exactly what the user suggested - read from the array and place on board
         if (solutionBoard != null && solutionBoardExplicitlySet) {
@@ -1530,13 +1540,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             return false
         }
         
-        // Check for incorrect user numbers (only for regular puzzles)
-        if (hasIncorrectUserEnteredNumbers()) {
-            lastHintErrorMessage = "Incorrect answers in board, fix first"
-            return false
-        }
-        
         // Use solution board value for regular puzzles (if valid)
+        // Note: hasIncorrectUserEnteredNumbers() is already checked at the top of this function
         val solutionValue = solutionBoard!![selectedRow][selectedCol]
         if (isValidMove(selectedRow, selectedCol, solutionValue)) {
             board[selectedRow][selectedCol] = solutionValue

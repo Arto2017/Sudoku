@@ -155,24 +155,9 @@ class MainActivity : AppCompatActivity() {
                 // Show brief toast message
                 Toast.makeText(this@MainActivity, "Mistake made.", Toast.LENGTH_SHORT).show()
 
-                // Only show warnings and game over for quest puzzles (not for Play Now)
-                if (questPuzzleId != null) {
-                    // Warn at 3 mistakes (quest puzzles only)
-                    if (totalMistakes == 3) {
-                        val hud = findViewById<LinearLayout>(R.id.mistakesHud)
-                        hud.animate().translationXBy(6f).setDuration(50).withEndAction {
-                            hud.animate().translationX(0f).setDuration(50).start()
-                        }.start()
-                        Toast.makeText(this@MainActivity, "Last chance — 1 mistake left.", Toast.LENGTH_SHORT).show()
-                    }
-
-                    // Fail at 4 mistakes (quest puzzles only)
-                    if (totalMistakes >= 4) {
-                        questPuzzleId?.let { id -> attemptStore.setFailed(id, true) }
-                        showPuzzleFailedDialog()
-                    }
-                }
-                // For Play Now mode (questPuzzleId == null), mistakes are unlimited (infinity)
+                // Mistakes are unlimited (infinity) for all game modes
+                // No game over dialog - player can continue playing regardless of mistake count
+                // This applies to Play Now, Quest puzzles, and Daily Challenge
             }
         })
         
@@ -355,6 +340,15 @@ class MainActivity : AppCompatActivity() {
             if (sudokuBoard.revealHint()) {
                 startTimer() // Start timer when hint is used (player is playing)
                 updateProgress()
+                
+                // Highlight the number that was placed by the hint (same as manual placement)
+                val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
+                if (placedNumber > 0) {
+                    sudokuBoard.highlightNumber(placedNumber)
+                    selectedNumber = placedNumber
+                    highlightActiveNumber(placedNumber)
+                }
+                
                 // Show success feedback
                 showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
                 
@@ -495,13 +489,23 @@ class MainActivity : AppCompatActivity() {
             dialog.dismiss()
             // Clear attempt state so starting later is fresh
             questPuzzleId?.let { id -> attemptStore.clear(id) }
-            // Always go to main menu explicitly, especially for Quick Play mode
-            // This ensures we go to main menu and not back to difficulty menu
-            val intent = Intent(this, MainMenuActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            
+            // For quest puzzles, go back to realm/level window instead of main menu
+            if (questPuzzleId != null && realmId != null) {
+                val intent = Intent(this, RealmQuestActivity::class.java).apply {
+                    putExtra("realm_id", realmId)
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                startActivity(intent)
+                finish()
+            } else {
+                // For Quick Play and other modes, go to main menu
+                val intent = Intent(this, MainMenuActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                startActivity(intent)
+                finish()
             }
-            startActivity(intent)
-            finish()
         }
 
         dialog.show()
