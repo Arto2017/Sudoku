@@ -133,6 +133,11 @@ class DailyChallengeActivity : AppCompatActivity() {
             if (sudokuBoardView.revealHint()) {
                 hintsUsed++
                 showTooltip(hintButton, "Hint! (${sudokuBoardView.getHintsRemaining()} left)")
+                
+                // Check for completion after revealing hint (in case hint fills last cell)
+                if (sudokuBoardView.isBoardComplete()) {
+                    completeGame()
+                }
             } else {
                 // Show error message
                 val errorMsg = sudokuBoardView.getLastHintErrorMessage()

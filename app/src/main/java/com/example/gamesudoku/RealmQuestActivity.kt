@@ -77,8 +77,43 @@ class RealmQuestActivity : AppCompatActivity() {
             }
         }
         
-        val puzzlesWithStatus = puzzleChain.puzzles.map { puzzle ->
-            questCodex.getSavedPuzzle(puzzle.id) ?: puzzle
+        // Load puzzles with their saved status, but ensure proper unlocking logic
+        val puzzlesWithStatus = puzzleChain.puzzles.mapIndexed { index, puzzle ->
+            val savedPuzzle = questCodex.getSavedPuzzle(puzzle.id)
+            val basePuzzle = savedPuzzle ?: puzzle
+            
+            // For puzzle 1, ensure it's unlocked
+            if (index == 0) {
+                val unlockedPuzzle = basePuzzle.copy(isUnlocked = true)
+                // Save the corrected state if it was different
+                if (savedPuzzle?.isUnlocked != true) {
+                    questCodex.savePuzzle(unlockedPuzzle)
+                }
+                unlockedPuzzle
+            } else {
+                // For puzzles 2, 3, 4, etc., check if previous puzzle is completed
+                val previousPuzzle = puzzleChain.puzzles[index - 1]
+                val savedPreviousPuzzle = questCodex.getSavedPuzzle(previousPuzzle.id)
+                val isPreviousCompleted = savedPreviousPuzzle?.isCompleted == true
+                
+                // Only unlock if previous puzzle is completed
+                if (isPreviousCompleted) {
+                    val unlockedPuzzle = basePuzzle.copy(isUnlocked = true)
+                    // Save the corrected state if it was different
+                    if (savedPuzzle?.isUnlocked != true) {
+                        questCodex.savePuzzle(unlockedPuzzle)
+                    }
+                    unlockedPuzzle
+                } else {
+                    // Lock this puzzle if previous is not completed
+                    val lockedPuzzle = basePuzzle.copy(isUnlocked = false)
+                    // Save the corrected state if it was incorrectly unlocked
+                    if (savedPuzzle?.isUnlocked == true) {
+                        questCodex.savePuzzle(lockedPuzzle)
+                    }
+                    lockedPuzzle
+                }
+            }
         }
         puzzleAdapter = PuzzleChainAdapter(
             puzzles = puzzlesWithStatus,
@@ -168,14 +203,50 @@ class RealmQuestActivity : AppCompatActivity() {
             }
         }
         
-        // Load puzzles with their saved status, but always use current realm difficulty
-        val puzzlesWithStatus = puzzleChain.puzzles.map { puzzle ->
+        // Fix any incorrectly unlocked puzzles (puzzles 2, 3, etc. should be locked if puzzle 1 is not completed)
+        puzzleChain.puzzles.forEachIndexed { index, puzzle ->
+            if (index > 0) { // Only check puzzles 2, 3, 4, etc.
+                val savedPuzzle = questCodex.getSavedPuzzle(puzzle.id)
+                if (savedPuzzle?.isUnlocked == true) {
+                    // Check if previous puzzle is completed
+                    val previousPuzzle = puzzleChain.puzzles[index - 1]
+                    val savedPreviousPuzzle = questCodex.getSavedPuzzle(previousPuzzle.id)
+                    val isPreviousCompleted = savedPreviousPuzzle?.isCompleted == true
+                    
+                    // Lock this puzzle if previous is not completed
+                    if (!isPreviousCompleted && savedPuzzle != null) {
+                        questCodex.savePuzzle(savedPuzzle.copy(isUnlocked = false))
+                    }
+                }
+            }
+        }
+        
+        // Load puzzles with their saved status, but ensure proper unlocking logic
+        val puzzlesWithStatus = puzzleChain.puzzles.mapIndexed { index, puzzle ->
             val savedPuzzle = questCodex.getSavedPuzzle(puzzle.id)
-            if (savedPuzzle != null) {
+            val basePuzzle = if (savedPuzzle != null) {
                 // Keep saved completion status but use current realm difficulty
                 savedPuzzle.copy(difficulty = puzzle.difficulty)
             } else {
                 puzzle
+            }
+            
+            // For puzzle 1, ensure it's unlocked
+            if (index == 0) {
+                basePuzzle.copy(isUnlocked = true)
+            } else {
+                // For puzzles 2, 3, 4, etc., check if previous puzzle is completed
+                val previousPuzzle = puzzleChain.puzzles[index - 1]
+                val savedPreviousPuzzle = questCodex.getSavedPuzzle(previousPuzzle.id)
+                val isPreviousCompleted = savedPreviousPuzzle?.isCompleted == true
+                
+                // Only unlock if previous puzzle is completed
+                if (isPreviousCompleted) {
+                    basePuzzle.copy(isUnlocked = true)
+                } else {
+                    // Lock this puzzle if previous is not completed
+                    basePuzzle.copy(isUnlocked = false)
+                }
             }
         }
         puzzleAdapter.updatePuzzles(puzzlesWithStatus)

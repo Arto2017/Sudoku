@@ -273,7 +273,7 @@ class QuestCodex(private val context: Context) {
         }
     }
     
-    private fun savePuzzle(puzzle: QuestPuzzle) {
+    fun savePuzzle(puzzle: QuestPuzzle) {
         val json = gson.toJson(puzzle)
         sharedPreferences.edit().putString("puzzle_${puzzle.id}", json).apply()
     }

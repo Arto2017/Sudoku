@@ -357,6 +357,11 @@ class MainActivity : AppCompatActivity() {
                 updateProgress()
                 // Show success feedback
                 showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
+                
+                // Check for completion after revealing hint (in case hint fills last cell)
+                if (sudokuBoard.isBoardComplete()) {
+                    checkVictory()
+                }
             } else {
                 // Show error message
                 val errorMsg = sudokuBoard.getLastHintErrorMessage()
