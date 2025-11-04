@@ -191,29 +191,93 @@ class QuestCodex(private val context: Context) {
     }
     
     fun calculateStars(timeInSeconds: Long, mistakes: Int, boardSize: Int): Int {
-        val baseTime = when (boardSize) {
-            6 -> 300L
-            9 -> 600L
-            else -> 600L
+        // Simplified: Perfect = 3, mistakes = 2, many mistakes = 1
+        return when {
+            mistakes == 0 -> 3  // Perfect completion
+            mistakes <= 2 -> 2  // Some mistakes
+            else -> 1           // Many mistakes
         }
-        
-        val timeScore = when {
-            timeInSeconds <= baseTime * 0.5 -> 3
-            timeInSeconds <= baseTime * 0.8 -> 2
-            timeInSeconds <= baseTime -> 1
-            else -> 0
+    }
+    
+    // Get total stars collected across all quests
+    fun getTotalStars(): Int {
+        return realms.sumOf { realm ->
+            val chain = getPuzzleChain(realm.id)
+            chain?.puzzles?.sumOf { puzzle ->
+                val saved = getSavedPuzzle(puzzle.id)
+                saved?.stars ?: 0
+            } ?: 0
         }
-        
-        // Mistakes reduce stars more directly
-        val mistakePenalty = when {
-            mistakes == 0 -> 0  // No penalty for perfect play
-            mistakes <= 2 -> 1   // Lose 1 star for 1-2 mistakes
-            mistakes <= 4 -> 2   // Lose 2 stars for 3-4 mistakes
-            else -> 3            // Lose all 3 stars for 5+ mistakes
+    }
+    
+    // Get maximum possible stars (4 realms × 10 puzzles × 3 stars = 120)
+    fun getMaxStars(): Int {
+        return realms.sumOf { realm ->
+            realm.totalPuzzles * 3
         }
+    }
+    
+    // Check if a realm is perfect (all puzzles have 3 stars)
+    fun isRealmPerfect(realmId: String): Boolean {
+        val chain = getPuzzleChain(realmId) ?: return false
+        val realm = getRealmById(realmId) ?: return false
         
-        // Start from timeScore and subtract mistake penalty
-        return maxOf(0, timeScore - mistakePenalty)
+        return chain.puzzles.all { puzzle ->
+            val saved = getSavedPuzzle(puzzle.id)
+            saved?.isCompleted == true && saved.stars == 3
+        } && chain.puzzles.size == realm.totalPuzzles
+    }
+    
+    // Get star progress percentage
+    fun getStarProgressPercentage(): Int {
+        val total = getTotalStars()
+        val max = getMaxStars()
+        return if (max > 0) (total * 100) / max else 0
+    }
+    
+    // Get next milestone and remaining stars needed
+    fun getNextMilestone(): Pair<String, Int> {
+        val total = getTotalStars()
+        val milestones = listOf(30, 60, 90, 120)
+        val next = milestones.find { it > total }
+        
+        return if (next != null) {
+            val remaining = next - total
+            val message = when (next) {
+                30 -> "Reach 30 Stars!"
+                60 -> "Reach 60 Stars!"
+                90 -> "Reach 90 Stars!"
+                120 -> "Perfect Master - 120 Stars!"
+                else -> "Keep going!"
+            }
+            Pair(message, remaining)
+        } else {
+            Pair("Perfect Master! All 120 Stars!", 0)
+        }
+    }
+    
+    // Get motivational message based on star count
+    fun getMotivationalMessage(): String {
+        val total = getTotalStars()
+        val percentage = getStarProgressPercentage()
+        
+        return when {
+            total == 0 -> "Start your journey! Collect your first star!"
+            total < 10 -> "Great start! Keep collecting stars!"
+            total < 30 -> "You're making progress! Aim for 30 stars!"
+            total < 60 -> "Excellent work! You're halfway there!"
+            total < 90 -> "Amazing! You're a star collector!"
+            total < 120 -> "Incredible! Almost perfect mastery!"
+            total == 120 -> "PERFECT MASTER! All 120 stars collected! 🏆"
+            else -> "Keep pushing for perfection!"
+        }
+    }
+    
+    // Get count of perfect realms (all puzzles 3 stars)
+    fun getPerfectRealmCount(): Int {
+        return realms.count { realm ->
+            isRealmPerfect(realm.id)
+        }
     }
     
     // Keep old method for backwards compatibility but mark as deprecated

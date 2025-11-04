@@ -80,97 +80,57 @@
             android:textStyle="italic" />
     </LinearLayout>
 
-    <!-- Codex Progress Section -->
+    <!-- Star Progress Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/codex_progress_background"
-        android:padding="16dp"
-        android:layout_marginBottom="24dp">
+        android:padding="12dp"
+        android:layout_marginBottom="16dp">
 
+        <!-- Star Progress Bar -->
+        <ProgressBar
+            android:id="@+id/starProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="16dp"
+            android:max="120"
+            android:progress="0"
+            android:progressTint="#FFD700"
+            android:progressBackgroundTint="#E0E0E0"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Star Count and Description -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <TextView
+                android:id="@+id/totalStarsText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Progress"
-                android:textSize="12sp"
-                android:textColor="#8B4513"
-                android:fontFamily="serif" />
-
-            <TextView
-                android:id="@+id/overallProgressText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0%"
-                android:textSize="20sp"
+                android:text="⭐ 0/120"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="#8B4513"
-                android:fontFamily="serif" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Realms"
-                android:textSize="12sp"
-                android:textColor="#8B4513"
+                android:textColor="#FFD700"
                 android:fontFamily="serif" />
 
             <TextView
-                android:id="@+id/completedRealmsText"
-                android:layout_width="wrap_content"
+                android:id="@+id/motivationalMessageText"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="0/4"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#8B4513"
-                android:fontFamily="serif" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Fragments"
-                android:textSize="12sp"
-                android:textColor="#8B4513"
-                android:fontFamily="serif" />
-
-            <TextView
-                android:id="@+id/fragmentsCollectedText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0/12"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#8B4513"
-                android:fontFamily="serif" />
-        </LinearLayout>
+                android:layout_weight="1"
+                android:text="Start your journey! Collect your first star!"
+                android:textSize="11sp"
+                android:textColor="#6B4423"
+                android:fontFamily="serif"
+                android:gravity="end"
+                android:paddingStart="8dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
 
         <!-- Reset Quest History Button -->

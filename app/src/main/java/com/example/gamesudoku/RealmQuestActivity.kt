@@ -45,6 +45,14 @@ class RealmQuestActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.realmProgressText).text = "$clamped%"
         findViewById<ProgressBar>(R.id.realmProgressBar)?.progress = clamped
         
+        // Check if realm is perfect (all puzzles 3 stars)
+        val isPerfect = questCodex.isRealmPerfect(realm.id)
+        if (isPerfect) {
+            // Show perfect badge indicator
+            val titleText = findViewById<TextView>(R.id.realmTitleText)
+            titleText.text = "${realm.name} ⭐ Perfect!"
+        }
+        
         // Set theme-specific background
         val backgroundView = findViewById<View>(R.id.realmBackground)
         backgroundView.setBackgroundResource(getRealmBackground(realm.theme))

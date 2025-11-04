@@ -104,10 +104,18 @@ class RealmSelectionActivity : AppCompatActivity() {
                 lockIcon?.visibility = View.GONE
                 lockText?.visibility = View.GONE
                 
+                // Check if realm is perfect (all puzzles 3 stars)
+                val isPerfect = questCodex.isRealmPerfect(questRealm.id)
+                
                 // Update progress
                 val progress = (questRealm.puzzlesCompleted * 100) / questRealm.totalPuzzles
                 val clamped = progress.coerceIn(0, 100)
-                progressText?.text = "$clamped%"
+                if (isPerfect) {
+                    progressText?.text = "⭐ Perfect!"
+                    progressText?.setTextColor(Color.parseColor("#FFD700"))
+                } else {
+                    progressText?.text = "$clamped%"
+                }
                 
                 card.setOnClickListener {
                     val intent = Intent(this, RealmQuestActivity::class.java).apply {
@@ -189,19 +197,16 @@ class RealmSelectionActivity : AppCompatActivity() {
         val totalPuzzles = realms.sumOf { it.totalPuzzles }
         val completedPuzzles = realms.sumOf { it.puzzlesCompleted }
         
-        // Update overall progress
-        val overallProgress = if (totalPuzzles > 0) (completedPuzzles * 100) / totalPuzzles else 0
-        findViewById<TextView>(R.id.overallProgressText).text = "$overallProgress%"
+        // Update star collection display
+        val totalStars = questCodex.getTotalStars()
+        val maxStars = questCodex.getMaxStars()
+        findViewById<TextView>(R.id.totalStarsText).text = "⭐ $totalStars/$maxStars"
+        findViewById<ProgressBar>(R.id.starProgressBar).progress = totalStars
+        findViewById<ProgressBar>(R.id.starProgressBar).max = maxStars
         
-        // Update completed realms
-        findViewById<TextView>(R.id.completedRealmsText).text = "$completedRealms/$totalRealms"
-        
-        // Update total fragments collected
-        val totalFragments = realms.sumOf { it.codexFragments.size }
-        val unlockedFragments = realms.sumOf { realm ->
-            realm.codexFragments.count { it.isUnlocked }
-        }
-        findViewById<TextView>(R.id.fragmentsCollectedText).text = "$unlockedFragments/$totalFragments"
+        // Update motivational message
+        val motivationalMessage = questCodex.getMotivationalMessage()
+        findViewById<TextView>(R.id.motivationalMessageText).text = motivationalMessage
     }
 
     override fun onResume() {

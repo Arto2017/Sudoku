@@ -770,6 +770,16 @@ class MainActivity : AppCompatActivity() {
         val starDisplay = "⭐".repeat(starsEarned) + "☆".repeat(3 - starsEarned)
         starsText?.text = starDisplay
         
+        // Show total star collection progress
+        val totalStars = questCodex.getTotalStars()
+        val maxStars = questCodex.getMaxStars()
+        val starProgress = (totalStars * 100) / maxStars
+        
+        // Update congratulations message with star collection info
+        val messageText = dialogView.findViewById<TextView>(R.id.congratulationsMessage)
+        val motivationalMessage = questCodex.getMotivationalMessage()
+        messageText?.text = "You now have $totalStars/$maxStars stars!\n$motivationalMessage"
+        
         // Check if next puzzle is unlocked
         val puzzleChain = questCodex.getPuzzleChain(realmId ?: "")
         val nextPuzzleUnlocked = puzzle?.let { p ->
@@ -779,6 +789,13 @@ class MainActivity : AppCompatActivity() {
         
         if (nextPuzzleUnlocked) {
             dialogView.findViewById<TextView>(R.id.nextPuzzleMessage)?.visibility = android.view.View.VISIBLE
+        }
+        
+        // Check if reached a milestone
+        val (milestoneMessage, remaining) = questCodex.getNextMilestone()
+        if (remaining == 0 && totalStars > 0) {
+            // Just reached a milestone!
+            messageText?.text = "🎉 MILESTONE REACHED! 🎉\n$milestoneMessage\n\nYou have $totalStars/$maxStars stars!"
         }
         
         val dialog = AlertDialog.Builder(this)
