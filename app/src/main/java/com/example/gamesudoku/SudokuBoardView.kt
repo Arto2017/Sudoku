@@ -78,6 +78,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     private var autoPencilEnabled = false
     private var pencilMarksVisible = false
     private var pencilMode = false // When true, clicking cells adds/removes pencil marks manually
+    
+    // Track manually added candidates that were removed when placing a number
+    // Key: (row, col, value) that was placed, Value: Set of (row, col) cells that had this value as a candidate
+    private var removedCandidatesMap = mutableMapOf<Triple<Int, Int, Int>, MutableSet<Pair<Int, Int>>>()
 
     // Colors with theme support - Pure white background
     private var bgColor = Color.parseColor("#FFFFFF") // Pure white background
@@ -665,6 +669,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         selectedCol = -1
         // Clear any existing conflicts when resetting
         clearConflicts()
+        // Clear removed candidates map when resetting puzzle
+        removedCandidatesMap.clear()
         // Clear number highlighting when resetting puzzle
         clearNumberHighlight()
         // Clear success animation
@@ -721,6 +727,59 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 return
             }
             
+            // When placing a number, remember which cells had that value as a candidate BEFORE removing it
+            // so we can restore them later when the number is deleted
+            if (number != 0) {
+                val cellsWithValue = mutableSetOf<Pair<Int, Int>>()
+                val (boxRows, boxCols) = when (boardSize) {
+                    6 -> Pair(2, 3)
+                    9 -> Pair(3, 3)
+                    else -> Pair(3, 3)
+                }
+                
+                // Check same row for cells that have this value as a candidate
+                for (c in 0 until boardSize) {
+                    if (c != selectedCol && board[selectedRow][c] == 0 && candidates[selectedRow][c].contains(number)) {
+                        cellsWithValue.add(Pair(selectedRow, c))
+                    }
+                }
+                // Check same column
+                for (r in 0 until boardSize) {
+                    if (r != selectedRow && board[r][selectedCol] == 0 && candidates[r][selectedCol].contains(number)) {
+                        cellsWithValue.add(Pair(r, selectedCol))
+                    }
+                }
+                // Check same box
+                val boxRow = (selectedRow / boxRows) * boxRows
+                val boxCol = (selectedCol / boxCols) * boxCols
+                for (r in boxRow until boxRow + boxRows) {
+                    for (c in boxCol until boxCol + boxCols) {
+                        if ((r != selectedRow || c != selectedCol) && board[r][c] == 0 && candidates[r][c].contains(number)) {
+                            cellsWithValue.add(Pair(r, c))
+                        }
+                    }
+                }
+                
+                // Store this information so we can restore later when number is deleted
+                if (cellsWithValue.isNotEmpty()) {
+                    removedCandidatesMap[Triple(selectedRow, selectedCol, number)] = cellsWithValue
+                }
+            }
+            
+            // When removing a number, restore it ONLY to cells where it was manually added before
+            if (number == 0 && previousValue != 0) {
+                val key = Triple(selectedRow, selectedCol, previousValue)
+                val cellsToRestore = removedCandidatesMap.remove(key)
+                if (cellsToRestore != null) {
+                    // Restore the value only to cells where it was manually added before
+                    for ((r, c) in cellsToRestore) {
+                        if (board[r][c] == 0 && isValidMove(r, c, previousValue)) {
+                            candidates[r][c].add(previousValue)
+                        }
+                    }
+                }
+            }
+            
             // Set the number
             board[selectedRow][selectedCol] = number
             
@@ -730,7 +789,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             }
             
             // Update candidates for affected cells
-            updateCandidatesAfterPlacement(selectedRow, selectedCol, number)
+            if (number != 0) {
+                // When placing a number, remove it from candidates in related cells
+                updateCandidatesAfterPlacement(selectedRow, selectedCol, number)
+            }
             
             // Check for conflicts
             if (number != 0) {
@@ -750,8 +812,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                     startSuccessAnimation(selectedRow, selectedCol)
                 }
             } else {
-                // Clear conflicts when removing a number
-                clearConflicts()
+                // When removing a number, check for remaining conflicts in the entire board
+                // This ensures animation continues if there are still conflicts (e.g., multiple "5"s in same row)
+                checkAllConflictsAfterRemoval()
             }
             
             invalidate()
@@ -761,16 +824,30 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     fun clearSelected() {
         if (selectedRow != -1 && selectedCol != -1 && !fixed[selectedRow][selectedCol]) {
             val previousValue = board[selectedRow][selectedCol]
+            
+            // When removing a number, restore it ONLY to cells where it was manually added before
+            if (previousValue != 0) {
+                val key = Triple(selectedRow, selectedCol, previousValue)
+                val cellsToRestore = removedCandidatesMap.remove(key)
+                if (cellsToRestore != null) {
+                    // Restore the value only to cells where it was manually added before
+                    for ((r, c) in cellsToRestore) {
+                        if (board[r][c] == 0 && isValidMove(r, c, previousValue)) {
+                            candidates[r][c].add(previousValue)
+                        }
+                    }
+                }
+            }
+            
             board[selectedRow][selectedCol] = 0
             
             // Clear pencil marks (candidates) when clearing the cell
             candidates[selectedRow][selectedCol].clear()
             
-            // Update candidates for affected cells
-            updateCandidatesAfterPlacement(selectedRow, selectedCol, previousValue)
+            // Check for remaining conflicts after clearing a cell
+            // This ensures animation continues if there are still conflicts
+            checkAllConflictsAfterRemoval()
             
-            // Clear conflicts when clearing a cell
-            clearConflicts()
             invalidate()
         }
     }
@@ -938,6 +1015,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         fixed = fixedState.map { it.clone() }.toTypedArray()
         // Clear conflicts when loading a new board state
         clearConflicts()
+        // Clear removed candidates map when loading new board state
+        removedCandidatesMap.clear()
         invalidate()
     }
 
@@ -1165,6 +1244,32 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         if (allConflicts.isNotEmpty()) {
             startConflictAnimation(allConflicts)
         } else {
+            clearConflicts()
+        }
+    }
+    
+    /**
+     * Check for all remaining conflicts after a number is removed
+     * This ensures conflict animation continues if there are still conflicts in the board
+     */
+    private fun checkAllConflictsAfterRemoval() {
+        val allConflicts = mutableSetOf<Pair<Int, Int>>()
+        
+        // Check the entire board for any remaining conflicts
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    val conflicts = findConflicts(row, col, board[row][col])
+                    allConflicts.addAll(conflicts)
+                }
+            }
+        }
+        
+        if (allConflicts.isNotEmpty()) {
+            // Continue animation with all remaining conflicts
+            startConflictAnimation(allConflicts)
+        } else {
+            // No conflicts remaining, clear animation
             clearConflicts()
         }
     }
@@ -1462,6 +1567,54 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             for (c in boxCol until boxCol + boxCols) {
                 if ((r != row || c != col) && board[r][c] == 0) {
                     candidates[r][c].remove(value)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Restore candidates after a number is removed
+     * Only adds the removed value back to candidates if it's valid AND not already present
+     * This preserves manually added pencil marks without duplicating them
+     */
+    private fun restoreCandidatesAfterRemoval(row: Int, col: Int, removedValue: Int) {
+        if (removedValue == 0) return // Nothing to restore
+        
+        // Restore candidates for cells in same row
+        for (c in 0 until boardSize) {
+            if (c != col && board[row][c] == 0) {
+                // Only add if it's valid AND not already in the candidates (preserve manual marks)
+                if (isValidMove(row, c, removedValue) && !candidates[row][c].contains(removedValue)) {
+                    candidates[row][c].add(removedValue)
+                }
+            }
+        }
+        
+        // Restore candidates for cells in same column
+        for (r in 0 until boardSize) {
+            if (r != row && board[r][col] == 0) {
+                // Only add if it's valid AND not already in the candidates (preserve manual marks)
+                if (isValidMove(r, col, removedValue) && !candidates[r][col].contains(removedValue)) {
+                    candidates[r][col].add(removedValue)
+                }
+            }
+        }
+        
+        // Restore candidates for cells in same box
+        val (boxRows, boxCols) = when (boardSize) {
+            6 -> Pair(2, 3) // 6x6: 2x3 boxes
+            9 -> Pair(3, 3) // 9x9: 3x3 boxes
+            else -> Pair(3, 3)
+        }
+        val boxRow = (row / boxRows) * boxRows
+        val boxCol = (col / boxCols) * boxCols
+        for (r in boxRow until boxRow + boxRows) {
+            for (c in boxCol until boxCol + boxCols) {
+                if ((r != row || c != col) && board[r][c] == 0) {
+                    // Only add if it's valid AND not already in the candidates (preserve manual marks)
+                    if (isValidMove(r, c, removedValue) && !candidates[r][c].contains(removedValue)) {
+                        candidates[r][c].add(removedValue)
+                    }
                 }
             }
         }

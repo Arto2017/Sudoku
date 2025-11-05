@@ -151,9 +151,6 @@ class MainActivity : AppCompatActivity() {
                     @Suppress("DEPRECATION")
                     vibrator.vibrate(150)
                 }
-                
-                // Show brief toast message
-                Toast.makeText(this@MainActivity, "Mistake made.", Toast.LENGTH_SHORT).show()
 
                 // Mistakes are unlimited (infinity) for all game modes
                 // No game over dialog - player can continue playing regardless of mistake count

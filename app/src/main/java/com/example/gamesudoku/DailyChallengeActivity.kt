@@ -193,9 +193,6 @@ class DailyChallengeActivity : AppCompatActivity() {
                     @Suppress("DEPRECATION")
                     vibrator.vibrate(150)
                 }
-                
-                // Show brief toast message
-                Toast.makeText(this@DailyChallengeActivity, "Mistake made.", Toast.LENGTH_SHORT).show()
 
                 // Mistakes are unlimited (infinity) - no game over dialog
                 // Player can continue playing regardless of mistake count
