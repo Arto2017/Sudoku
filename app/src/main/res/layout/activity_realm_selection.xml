@@ -89,49 +89,73 @@
         android:padding="12dp"
         android:layout_marginBottom="16dp">
 
-        <!-- Star Progress Bar -->
-        <ProgressBar
-            android:id="@+id/starProgressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="16dp"
-            android:max="120"
-            android:progress="0"
-            android:progressTint="#FFD700"
-            android:progressBackgroundTint="#E0E0E0"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Star Count and Description -->
+        <!-- Modern Star Progress Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:padding="8dp">
 
+            <!-- Star Icon -->
+            <ImageView
+                android:id="@+id/starIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_star"
+                android:tint="#FFD36B"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Star icon" />
+
+            <!-- Progress Bar Container -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="16dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp">
+
+                <!-- Background -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/star_progress_bar_background" />
+
+                <!-- Progress Fill -->
+                <View
+                    android:id="@+id/starProgressFill"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/star_progress_bar_fill"
+                    android:layout_gravity="start|center_vertical" />
+            </FrameLayout>
+
+            <!-- Progress Text -->
             <TextView
                 android:id="@+id/totalStarsText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⭐ 0/120"
-                android:textSize="14sp"
+                android:text="0 / 120"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#FFD700"
-                android:fontFamily="serif" />
-
-            <TextView
-                android:id="@+id/motivationalMessageText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Start your journey! Collect your first star!"
-                android:textSize="11sp"
-                android:textColor="#6B4423"
+                android:textColor="#5B4636"
                 android:fontFamily="serif"
-                android:gravity="end"
-                android:paddingStart="8dp"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:minWidth="60dp"
+                android:gravity="end" />
         </LinearLayout>
+
+        <!-- Motivational Message -->
+        <TextView
+            android:id="@+id/motivationalMessageText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start your journey! Collect your first star!"
+            android:textSize="11sp"
+            android:textColor="#6B4423"
+            android:fontFamily="serif"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <!-- Reset Quest History Button -->
         <Button
