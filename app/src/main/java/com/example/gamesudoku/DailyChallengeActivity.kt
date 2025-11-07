@@ -29,6 +29,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     private lateinit var sudokuBoardView: SudokuBoardView
     private lateinit var dailyChallengeManager: DailyChallengeManager
     private lateinit var currentPuzzle: DailyChallengeGenerator.DailyPuzzle
+    private lateinit var audioManager: AudioManager
     
     // UI Elements
     private lateinit var headerTitle: TextView
@@ -75,6 +76,11 @@ class DailyChallengeActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.btnDailyBack).setOnClickListener {
             onBackPressed()
         }
+
+        findViewById<ImageButton>(R.id.btnDailySettings).setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
         
         // Setup number buttons (matching MainActivity design)
         setupNumberButtons()
@@ -83,6 +89,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     private fun initializeGame() {
         dailyChallengeManager = DailyChallengeManager(this)
         attemptStore = AttemptStateStore(this)
+        audioManager = AudioManager.getInstance(this)
         
         // Generate today's puzzle
         currentPuzzle = DailyChallengeGenerator.generateDailyPuzzle()
@@ -180,18 +187,23 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Board completion listener with mistake tracking
         sudokuBoardView.setOnConflictListener(object : SudokuBoardView.OnConflictListener {
             override fun onConflictDetected() {
+                // Play error sound
+                SoundManager.getInstance(this@DailyChallengeActivity).playError()
+                
                 // Increment mistake counter
                 val dailyChallengeId = "daily_${currentPuzzle.date}"
                 totalMistakes = attemptStore.incrementMistakes(dailyChallengeId)
                 updateMistakesHud(totalMistakes)
                 
                 // Provide haptic feedback
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(150)
+                if (audioManager.areHapticsEnabled()) {
+                    val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(150)
+                    }
                 }
 
                 // Mistakes are unlimited (infinity) - no game over dialog
@@ -372,6 +384,7 @@ class DailyChallengeActivity : AppCompatActivity() {
                 setBackgroundResource(R.drawable.fantasy_number_button_background)
                 typeface = android.graphics.Typeface.create("serif", android.graphics.Typeface.BOLD)
                 setOnClickListener {
+                    SoundManager.getInstance(this@DailyChallengeActivity).playClick()
                     sudokuBoardView.setNumber(i)
                     sudokuBoardView.highlightNumber(i) // Highlight all cells with this number
                     movesCount++

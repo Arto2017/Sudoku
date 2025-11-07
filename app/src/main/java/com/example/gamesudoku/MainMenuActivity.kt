@@ -37,6 +37,7 @@ class MainMenuActivity : AppCompatActivity() {
     private lateinit var dailyChallengeManager: DailyChallengeManager
     private lateinit var dailyTimerHandler: Handler
     private lateinit var dailyTimerRunnable: Runnable
+    private lateinit var soundManager: SoundManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +51,9 @@ class MainMenuActivity : AppCompatActivity() {
         // Initialize daily challenge system
         dailyChallengeManager = DailyChallengeManager(this)
         dailyTimerHandler = Handler(Looper.getMainLooper())
+        
+        // Initialize sound manager
+        soundManager = SoundManager.getInstance(this)
 
         // Start entrance animations
         startEntranceAnimations()
@@ -94,6 +98,12 @@ class MainMenuActivity : AppCompatActivity() {
         
         // Add continuous pulsing animation to Quick Play button
         addPulsingAnimation(quickPlayButton)
+
+        // Settings Button Handler
+        findViewById<View>(R.id.btnSettings).setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
 
         // Statistics Button Handler
         findViewById<View>(R.id.btnStatistics).setOnClickListener {

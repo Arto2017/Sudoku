@@ -224,6 +224,19 @@ class AudioManager private constructor(context: Context) {
         saveSettings()
     }
     
+    fun areEffectsEnabled(): Boolean {
+        return soundSettings.masterEnabled && soundSettings.effectsVolume > 0f
+    }
+
+    fun getEffectiveEffectsVolume(): Float {
+        if (!soundSettings.masterEnabled) return 0f
+        return soundSettings.effectsVolume * EFFECTS_VOLUME_MULTIPLIER * MASTER_VOLUME
+    }
+
+    fun areHapticsEnabled(): Boolean {
+        return soundSettings.hapticsEnabled
+    }
+
     fun getSettings(): SoundSettings = soundSettings.copy()
     
     fun cleanup() {

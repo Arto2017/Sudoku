@@ -45,6 +45,17 @@
                 android:textStyle="bold"
                 android:textColor="@color/text_primary_warm"
                 android:fontFamily="sans-serif-medium" />
+
+            <ImageButton
+                android:id="@+id/quickPlaySettingsButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="end|center_vertical"
+                android:background="@drawable/card_soft_background"
+                android:padding="8dp"
+                android:src="@drawable/ic_settings_new"
+                android:tint="@color/text_primary_warm"
+                android:contentDescription="Settings" />
         </FrameLayout>
 
         <!-- Grid Size Selection -->

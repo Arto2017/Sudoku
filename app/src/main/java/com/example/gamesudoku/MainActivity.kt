@@ -35,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var timerText: TextView
     private lateinit var titleText: TextView
     private lateinit var statsManager: StatsManager
+    private lateinit var soundManager: SoundManager
+    private lateinit var audioManager: AudioManager
     private var secondsElapsed = 0
     private val handler = Handler(Looper.getMainLooper())
     private var running = false
@@ -100,6 +102,8 @@ class MainActivity : AppCompatActivity() {
         // Initialize stats manager
         statsManager = StatsManager(this)
         attemptStore = AttemptStateStore(this)
+        soundManager = SoundManager.getInstance(this)
+        audioManager = AudioManager.getInstance(this)
         
 
         sudokuBoard = findViewById(R.id.sudokuBoard)
@@ -135,6 +139,9 @@ class MainActivity : AppCompatActivity() {
         // Set up conflict listener
         sudokuBoard.setOnConflictListener(object : SudokuBoardView.OnConflictListener {
             override fun onConflictDetected() {
+                // Play error sound
+                soundManager.playError()
+                
                 // Increment mistake counter
                 questPuzzleId?.let { id ->
                     totalMistakes = attemptStore.incrementMistakes(id)
@@ -144,12 +151,14 @@ class MainActivity : AppCompatActivity() {
                 updateMistakesHud(totalMistakes)
                 
                 // Provide haptic feedback
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator.vibrate(150)
+                if (audioManager.areHapticsEnabled()) {
+                    val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(150)
+                    }
                 }
 
                 // Mistakes are unlimited (infinity) for all game modes
@@ -271,6 +280,7 @@ class MainActivity : AppCompatActivity() {
                 setBackgroundResource(R.drawable.fantasy_number_button_background)
                 setTypeface(Typeface.create("serif", Typeface.BOLD))
                 setOnClickListener {
+                    soundManager.playClick()
                     selectedNumber = i
                     sudokuBoard.setNumber(i)
                     sudokuBoard.highlightNumber(i) // Highlight all cells with this number

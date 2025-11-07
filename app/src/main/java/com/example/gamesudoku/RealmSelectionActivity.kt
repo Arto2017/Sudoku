@@ -15,6 +15,7 @@ import com.google.android.material.card.MaterialCardView
 class RealmSelectionActivity : AppCompatActivity() {
 
     private lateinit var questCodex: QuestCodex
+    private lateinit var soundManager: SoundManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +25,9 @@ class RealmSelectionActivity : AppCompatActivity() {
         
         // Ensure all puzzles have correct difficulty settings
         questCodex.resetPuzzleDifficulties()
+        
+        // Initialize sound manager
+        soundManager = SoundManager.getInstance(this)
 
         // Initialize previous star count
         previousStarCount = questCodex.getTotalStars()

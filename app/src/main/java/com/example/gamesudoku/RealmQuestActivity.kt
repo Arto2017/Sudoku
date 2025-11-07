@@ -20,12 +20,14 @@ class RealmQuestActivity : AppCompatActivity() {
     private lateinit var realm: QuestRealm
     private lateinit var puzzleChain: PuzzleChain
     private lateinit var puzzleAdapter: PuzzleChainAdapter
+    private lateinit var soundManager: SoundManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_realm_quest)
 
         questCodex = QuestCodex(this)
+        soundManager = SoundManager.getInstance(this)
         
         val realmId = intent.getStringExtra("realm_id") ?: "echoes"
         realm = questCodex.getRealmById(realmId) ?: questCodex.getRealms().first()

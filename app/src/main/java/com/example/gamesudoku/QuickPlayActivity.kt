@@ -35,6 +35,11 @@ class QuickPlayActivity : AppCompatActivity() {
             finish()
         }
 
+        findViewById<View>(R.id.quickPlaySettingsButton)?.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
+
         // Grid size selection
         findViewById<View>(R.id.btn6x6).setOnClickListener {
             selectGridSize(6)
