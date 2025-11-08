@@ -9,13 +9,22 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import kotlin.math.abs
 
+interface CursorBoard {
+    fun getBoardSize(): Int
+    fun getComprehensiveHint(row: Int, col: Int): ComprehensiveHintResult
+    fun applyHint(row: Int, col: Int, value: Int): Boolean
+    fun getSelectedRow(): Int
+    fun getSelectedCol(): Int
+    fun postDelayed(action: () -> Unit, delayMillis: Long)
+}
+
 /**
  * Cursor AI - Advanced hint system with cursor movement and logical suggestions
  */
-class CursorAI(private val sudokuBoardView: SudokuBoardView) {
+class CursorAI(private val cursorBoard: CursorBoard) {
     
     private val boardSize: Int
-        get() = sudokuBoardView.getBoardSize()
+        get() = cursorBoard.getBoardSize()
     
     data class HintResult(
         val cell: Cell,
@@ -60,7 +69,7 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      */
     fun suggestHint(): HintResult? {
         // Use the comprehensive hint system
-        val hintResult = sudokuBoardView.getComprehensiveHint(selectedRow, selectedCol)
+        val hintResult = cursorBoard.getComprehensiveHint(selectedRow, selectedCol)
         
         if (hintResult.success) {
             // Convert to CursorAI format
@@ -95,10 +104,10 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Get selected cell coordinates
      */
     private val selectedRow: Int
-        get() = sudokuBoardView.getSelectedRow()
+        get() = cursorBoard.getSelectedRow()
     
     private val selectedCol: Int
-        get() = sudokuBoardView.getSelectedCol()
+        get() = cursorBoard.getSelectedCol()
     
     /**
      * Move cursor through path with animation
@@ -126,7 +135,7 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
         val cell = path[index]
         onCursorMoveListener?.onCursorMoveTo(cell) {
             // Add small delay between moves for better UX
-            sudokuBoardView.postDelayed({
+            cursorBoard.postDelayed({
                 moveCursorToNext(path, index + 1, onComplete)
             }, 300)
         }
@@ -136,7 +145,7 @@ class CursorAI(private val sudokuBoardView: SudokuBoardView) {
      * Apply hint to board using comprehensive system
      */
     fun applyHint(hint: HintResult): Boolean {
-        return sudokuBoardView.applyHint(hint.cell.row, hint.cell.col, hint.value)
+        return cursorBoard.applyHint(hint.cell.row, hint.cell.col, hint.value)
     }
     
     /**

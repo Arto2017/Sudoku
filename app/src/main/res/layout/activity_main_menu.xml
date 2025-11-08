@@ -85,32 +85,27 @@
                 app:layout_constraintEnd_toEndOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Horizontal Carousel -->
-        <HorizontalScrollView
+        <!-- Feature Cards Row -->
+        <LinearLayout
             android:id="@+id/carouselContainer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/responsive_margin_large"
-            android:scrollbars="none"
-            android:overScrollMode="never"
+            android:orientation="horizontal"
+            android:gravity="center"
             app:layout_constraintTop_toBottomOf="@id/appHeader"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-
-            <LinearLayout
-                android:id="@+id/carouselContent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp">
+            app:layout_constraintEnd_toEndOf="parent"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
 
                 <!-- Daily Challenge Card -->
                 <LinearLayout
                     android:id="@+id/dailyChallengeCard"
-                    android:layout_width="170dp"
+                    android:layout_width="0dp"
                     android:layout_height="200dp"
                     android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
                     android:orientation="vertical"
                     android:background="@drawable/daily_challenge_gradient"
                     android:padding="10dp"
@@ -262,9 +257,10 @@
                 <!-- Redesigned Sudoku Quest Card -->
                 <LinearLayout
                     android:id="@+id/questCard"
-                    android:layout_width="170dp"
+                    android:layout_width="0dp"
                     android:layout_height="200dp"
-                        android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
                     android:orientation="vertical"
                     android:background="@drawable/quest_card_gradient"
                     android:padding="10dp"
@@ -413,9 +409,7 @@
                             android:paddingHorizontal="10dp" />
                     </LinearLayout>
                 </LinearLayout>
-
-            </LinearLayout>
-        </HorizontalScrollView>
+        </LinearLayout>
 
         <!-- Big Quick Play CTA Button -->
         <LinearLayout

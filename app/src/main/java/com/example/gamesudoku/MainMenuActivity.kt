@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import android.app.AlertDialog
 import android.content.Context
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.view.MotionEvent
 import android.widget.ProgressBar

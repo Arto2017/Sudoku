@@ -12,7 +12,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.content.withStyledAttributes
 import kotlin.math.min
 
-class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, attrs) {
+class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, attrs), CursorBoard {
 
     interface OnCellSelectedListener {
         fun onCellSelected(row: Int, col: Int, isEditable: Boolean)
@@ -43,7 +43,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         invalidate() // Redraw the board
     }
     
-    fun getBoardSize(): Int = boardSize
+    override fun getBoardSize(): Int = boardSize
     
     private var selectedRow = -1
     private var selectedCol = -1
@@ -2003,12 +2003,12 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     /**
      * Get selected row (for external access)
      */
-    fun getSelectedRow(): Int = selectedRow
+    override fun getSelectedRow(): Int = selectedRow
     
     /**
      * Get selected column (for external access)
      */
-    fun getSelectedCol(): Int = selectedCol
+    override fun getSelectedCol(): Int = selectedCol
     
     /**
      * Get board value at specific position (for external access)
@@ -2018,7 +2018,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     /**
      * Get comprehensive hint for a cell
      */
-    fun getComprehensiveHint(row: Int, col: Int): ComprehensiveHintResult {
+    override fun getComprehensiveHint(row: Int, col: Int): ComprehensiveHintResult {
         if (row == -1 || col == -1) {
             return ComprehensiveHintResult(false, 0, "No cell selected", HintType.ERROR)
         }
@@ -2041,10 +2041,14 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     /**
      * Apply hint to board
      */
-    fun applyHint(row: Int, col: Int, value: Int): Boolean {
+    override fun applyHint(row: Int, col: Int, value: Int): Boolean {
         board[row][col] = value
         invalidate()
         return true
+    }
+
+    override fun postDelayed(action: () -> Unit, delayMillis: Long) {
+        super.postDelayed({ action() }, delayMillis)
     }
 }
 

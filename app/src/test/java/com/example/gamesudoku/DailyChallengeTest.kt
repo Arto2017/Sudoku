@@ -135,20 +135,22 @@ class DailyChallengeTest {
         fixed[0][0] = true
         fixed[0][1] = true
         
-        // Create mock SudokuBoardView
-        val mockBoardView = MockSudokuBoardView()
+        // Create mock board implementing CursorBoard
+        val mockBoardView = MockCursorBoard()
         mockBoardView.setBoardState(board, fixed)
-        
+        mockBoardView.setSelectedCell(0, 2)
+
         val cursorAI = CursorAI(mockBoardView)
         val hint = cursorAI.suggestHint()
-        
+
         // Should be able to generate a hint
         assertNotNull(hint)
-        assertTrue(hint.cell.row >= 0 && hint.cell.row < 9)
-        assertTrue(hint.cell.col >= 0 && hint.cell.col < 9)
-        assertTrue(hint.value >= 1 && hint.value <= 9)
-        assertTrue(hint.explanation.isNotEmpty())
-        assertTrue(hint.cursorPath.isNotEmpty())
+        val nonNullHint = requireNotNull(hint) { "Expected hint to be non-null" }
+        assertTrue(nonNullHint.cell.row >= 0 && nonNullHint.cell.row < 9)
+        assertTrue(nonNullHint.cell.col >= 0 && nonNullHint.cell.col < 9)
+        assertTrue(nonNullHint.value >= 1 && nonNullHint.value <= 9)
+        assertTrue(nonNullHint.explanation.isNotEmpty())
+        assertTrue(nonNullHint.cursorPath.isNotEmpty())
     }
     
     @Test
@@ -349,16 +351,82 @@ class DailyChallengeTest {
 /**
  * Mock SudokuBoardView for testing
  */
-class MockSudokuBoardView : SudokuBoardView(null, null) {
+class MockCursorBoard : CursorBoard {
     private var board: Array<IntArray> = Array(9) { IntArray(9) }
     private var fixed: Array<BooleanArray> = Array(9) { BooleanArray(9) }
-    
-    override fun getBoardState(): Array<IntArray> = board.map { it.clone() }.toTypedArray()
-    override fun getFixedState(): Array<BooleanArray> = fixed.map { it.clone() }.toTypedArray()
-    
+    private var selectedRow: Int = 0
+    private var selectedCol: Int = 0
+
+    override fun getBoardSize(): Int = board.size
+
+    override fun getComprehensiveHint(row: Int, col: Int): ComprehensiveHintResult {
+        if (row !in 0 until board.size || col !in 0 until board.size) {
+            return ComprehensiveHintResult(false, 0, "Out of range", HintType.ERROR)
+        }
+        if (fixed[row][col]) {
+            return ComprehensiveHintResult(false, 0, "Cell is fixed", HintType.ERROR)
+        }
+        if (board[row][col] != 0) {
+            return ComprehensiveHintResult(false, 0, "Cell already filled", HintType.ERROR)
+        }
+
+        val value = findValidNumber(row, col)
+        return if (value != null) {
+            ComprehensiveHintResult(true, value, "Try placing $value", HintType.SINGLE_CANDIDATE)
+        } else {
+            ComprehensiveHintResult(false, 0, "No valid hint", HintType.ERROR)
+        }
+    }
+
+    override fun applyHint(row: Int, col: Int, value: Int): Boolean {
+        board[row][col] = value
+        return true
+    }
+
+    override fun getSelectedRow(): Int = selectedRow
+
+    override fun getSelectedCol(): Int = selectedCol
+
+    override fun postDelayed(action: () -> Unit, delayMillis: Long) {
+        action()
+    }
+
     fun setBoardState(board: Array<IntArray>, fixed: Array<BooleanArray>) {
         this.board = board.map { it.clone() }.toTypedArray()
         this.fixed = fixed.map { it.clone() }.toTypedArray()
+    }
+
+    fun setSelectedCell(row: Int, col: Int) {
+        selectedRow = row
+        selectedCol = col
+    }
+
+    private fun findValidNumber(row: Int, col: Int): Int? {
+        for (num in 1..board.size) {
+            if (isValid(row, col, num)) {
+                return num
+            }
+        }
+        return null
+    }
+
+    private fun isValid(row: Int, col: Int, num: Int): Boolean {
+        for (c in 0 until board.size) {
+            if (board[row][c] == num) return false
+        }
+        for (r in 0 until board.size) {
+            if (board[r][col] == num) return false
+        }
+
+        val boxSize = 3
+        val boxRow = (row / boxSize) * boxSize
+        val boxCol = (col / boxSize) * boxSize
+        for (r in boxRow until boxRow + boxSize) {
+            for (c in boxCol until boxCol + boxSize) {
+                if (board[r][c] == num) return false
+            }
+        }
+        return true
     }
 }
 

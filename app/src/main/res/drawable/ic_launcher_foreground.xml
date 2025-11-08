@@ -7,3 +7,5 @@
         android:gravity="center"
         android:src="@drawable/sudoku_icon" />
 </inset>
+</vector>
+

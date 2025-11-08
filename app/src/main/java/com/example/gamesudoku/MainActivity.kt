@@ -235,6 +235,9 @@ class MainActivity : AppCompatActivity() {
         // Set up action buttons
         setupActionButtons()
 
+        // Play entrance animation for a fresh launch
+        playStartAnimation(savedInstanceState)
+
         // Back (icon) button at top-left
         findViewById<ImageButton>(R.id.gameBackButton)?.setOnClickListener {
             showBackToMenuDialog()
@@ -260,6 +263,110 @@ class MainActivity : AppCompatActivity() {
         updateMistakesHud(totalMistakes)
 
         // Mistake help removed
+    }
+
+    private fun playStartAnimation(savedInstanceState: Bundle?) {
+        if (savedInstanceState != null) {
+            return
+        }
+
+        val mainLayout = findViewById<View>(R.id.mainLayout)
+        val topCard = findViewById<View>(R.id.topCard)
+        val titleBanner = findViewById<View>(R.id.titleBanner)
+        val timerContainer = findViewById<View>(R.id.timerText)
+        val difficultyContainer = findViewById<View>(R.id.difficultyContainer)
+        val mistakesHud = findViewById<View>(R.id.mistakesHud)
+        val boardContainer = findViewById<View>(R.id.boardContainer)
+        val controlCard = findViewById<View>(R.id.controlCard)
+        val numberButtons = findViewById<View>(R.id.numberButtonsContainer)
+
+        mainLayout.alpha = 0f
+        topCard?.apply {
+            alpha = 0f
+            translationY = -50f
+        }
+        titleBanner?.apply {
+            alpha = 0f
+            scaleX = 0.9f
+            scaleY = 0.9f
+        }
+        timerContainer?.alpha = 0f
+        difficultyContainer?.alpha = 0f
+        mistakesHud?.alpha = 0f
+        boardContainer?.apply {
+            alpha = 0f
+            scaleX = 0.95f
+            scaleY = 0.95f
+        }
+        controlCard?.apply {
+            alpha = 0f
+            translationY = 60f
+        }
+        numberButtons?.alpha = 0f
+
+        mainLayout.post {
+            mainLayout.animate()
+                .alpha(1f)
+                .setDuration(150)
+                .start()
+
+            topCard?.animate()
+                ?.alpha(1f)
+                ?.translationY(0f)
+                ?.setDuration(300)
+                ?.setInterpolator(AccelerateDecelerateInterpolator())
+                ?.start()
+
+            titleBanner?.animate()
+                ?.alpha(1f)
+                ?.scaleX(1f)
+                ?.scaleY(1f)
+                ?.setStartDelay(150)
+                ?.setDuration(350)
+                ?.setInterpolator(OvershootInterpolator(1.05f))
+                ?.start()
+
+            timerContainer?.animate()
+                ?.alpha(1f)
+                ?.setStartDelay(150)
+                ?.setDuration(250)
+                ?.start()
+
+            difficultyContainer?.animate()
+                ?.alpha(1f)
+                ?.setStartDelay(200)
+                ?.setDuration(250)
+                ?.start()
+
+            mistakesHud?.animate()
+                ?.alpha(1f)
+                ?.setStartDelay(250)
+                ?.setDuration(250)
+                ?.start()
+
+            boardContainer?.animate()
+                ?.alpha(1f)
+                ?.scaleX(1f)
+                ?.scaleY(1f)
+                ?.setStartDelay(200)
+                ?.setDuration(450)
+                ?.setInterpolator(OvershootInterpolator(1.08f))
+                ?.start()
+
+            controlCard?.animate()
+                ?.alpha(1f)
+                ?.translationY(0f)
+                ?.setStartDelay(300)
+                ?.setDuration(350)
+                ?.setInterpolator(AccelerateDecelerateInterpolator())
+                ?.start()
+
+            numberButtons?.animate()
+                ?.alpha(1f)
+                ?.setStartDelay(400)
+                ?.setDuration(300)
+                ?.start()
+        }
     }
 
     private fun setupNumberButtons() {
