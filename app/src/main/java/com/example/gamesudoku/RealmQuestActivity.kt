@@ -139,7 +139,7 @@ class RealmQuestActivity : AppCompatActivity() {
             onPuzzleLongClick = { puzzle ->
                 // Test mode: Long-press to simulate completion and test the victory dialog
                 // Works even for locked puzzles in test mode
-                if (TEST_MODE) {
+                if (TEST_MODE && !puzzle.isCompleted) {
                     testPuzzleCompletion(puzzle)
                     true
                 } else {
@@ -164,6 +164,14 @@ class RealmQuestActivity : AppCompatActivity() {
     // Codex removed
 
     private fun startPuzzle(puzzle: QuestPuzzle) {
+        if (!TEST_MODE) {
+            val latestPuzzle = questCodex.getSavedPuzzle(puzzle.id)
+            if (latestPuzzle?.isCompleted == true || puzzle.isCompleted) {
+                GameNotification.showInfo(this, "Puzzle is already completed!", 2000)
+                return
+            }
+        }
+
         // Clear attempt state so each start is fresh 0/∞
         AttemptStateStore(this).clear(puzzle.id)
 
@@ -269,6 +277,11 @@ class RealmQuestActivity : AppCompatActivity() {
     }
     
     private fun testPuzzleCompletion(puzzle: QuestPuzzle) {
+        if (puzzle.isCompleted) {
+            GameNotification.showInfo(this, "[TEST] Puzzle already completed", 1500)
+            return
+        }
+
         // Unlock puzzle first if it's locked (for testing)
         if (!puzzle.isUnlocked) {
             questCodex.devUnlockPuzzle(realm.id, puzzle.id)

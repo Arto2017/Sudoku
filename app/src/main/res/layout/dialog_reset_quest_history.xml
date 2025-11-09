@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/fantasy_dialog_background"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_warning"
+            android:layout_marginEnd="12dp"
+            app:tint="#C62828" />
+
+        <TextView
+            android:id="@+id/resetDialogTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reset Quest History"
+            android:textColor="#6B4423"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:shadowColor="#8B7355"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="1" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/resetDialogSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="This will clear your entire quest progress:"
+        android:textColor="#6B4423"
+        android:textSize="16sp"
+        android:fontFamily="serif"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="12dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="\u2022 Puzzle completions and stars"
+            android:textColor="#6B4423"
+            android:textSize="15sp"
+            android:fontFamily="serif"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="\u2022 Realm unlocks and progress"
+            android:textColor="#6B4423"
+            android:textSize="15sp"
+            android:fontFamily="serif"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="\u2022 Codex fragments and lore"
+            android:textColor="#6B4423"
+            android:textSize="15sp"
+            android:fontFamily="serif"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="\u2022 Saved board states for quest puzzles"
+            android:textColor="#6B4423"
+            android:textSize="15sp"
+            android:fontFamily="serif" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@drawable/fantasy_separator_background"
+        android:layout_marginVertical="8dp" />
+
+    <TextView
+        android:id="@+id/resetDialogWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="This action cannot be undone."
+        android:textColor="#C62828"
+        android:textSize="15sp"
+        android:fontFamily="serif"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/resetDialogCancel"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Cancel"
+            android:textColor="#6B4423"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:background="@drawable/fantasy_continue_button"
+            android:elevation="2dp"
+            android:maxLines="1"
+            android:paddingHorizontal="4dp" />
+
+        <Button
+            android:id="@+id/resetDialogConfirm"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Reset"
+            android:textColor="#6B4423"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:background="@drawable/fantasy_exit_button"
+            android:elevation="2dp"
+            android:maxLines="1"
+            android:paddingHorizontal="4dp" />
+    </LinearLayout>
+
+</LinearLayout>
+

@@ -12,6 +12,9 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.content.withStyledAttributes
 import kotlin.math.min
 
+private const val DEFAULT_HINTS_PER_GAME = 2
+private const val EXTENDED_HINTS_PER_GAME = 50
+
 class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, attrs), CursorBoard {
 
     interface OnCellSelectedListener {
@@ -74,7 +77,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     private var candidates: Array<Array<MutableSet<Int>>> = Array(9) { Array(9) { mutableSetOf() } }
     private var isRevealedByHint: Array<BooleanArray> = Array(9) { BooleanArray(9) }
     private var hintsUsed = 0
-    private var hintsRemaining = 50 // Configurable limit
+    private var hintsRemaining = DEFAULT_HINTS_PER_GAME // Configurable limit
+    private var maxHintsPerGame = DEFAULT_HINTS_PER_GAME
     private var autoPencilEnabled = false
     private var pencilMarksVisible = false
     private var pencilMode = false // When true, clicking cells adds/removes pencil marks manually
@@ -97,6 +101,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         textSize = 48f
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
+    
+    private val gameSettings = GameSettings.getInstance(context)
     
     // Function to update text size based on cell size
     private fun updateTextSize() {
@@ -287,6 +293,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     }
 
     private fun drawConflictHighlights(canvas: Canvas) {
+        pruneConflictingCells()
         if (conflictingCells.isEmpty()) return
 
         // Create pulsing effect for conflict animation with multiple frequencies
@@ -300,6 +307,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             val cellRight = cellLeft + cellSize
             val cellBottom = cellTop + cellSize
             
+            if (row !in 0 until boardSize || col !in 0 until boardSize || board[row][col] == 0) {
+                continue
+            }
+
             // Draw outer glow effect (larger, more transparent)
             paint.color = Color.argb(pulseAlpha2 / 4, Color.red(conflictColor), Color.green(conflictColor), Color.blue(conflictColor))
             canvas.drawRoundRect(
@@ -334,7 +345,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         }
         
         // Special highlight for the last placed number (stronger effect with different animation)
-        if (lastPlacedRow != -1 && lastPlacedCol != -1) {
+        if (lastPlacedRow != -1 && lastPlacedCol != -1 && board.getOrNull(lastPlacedRow)?.getOrNull(lastPlacedCol) != 0) {
             val cellLeft = boardLeft + lastPlacedCol * cellSize
             val cellTop = boardTop + lastPlacedRow * cellSize
             val cellRight = cellLeft + cellSize
@@ -778,6 +789,11 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                         }
                     }
                 }
+                if (lastPlacedRow == selectedRow && lastPlacedCol == selectedCol) {
+                    lastPlacedRow = -1
+                    lastPlacedCol = -1
+                    lastPlacedNumber = 0
+                }
             }
             
             // Set the number
@@ -786,6 +802,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             // Clear pencil marks when a number is placed
             if (number != 0) {
                 candidates[selectedRow][selectedCol].clear()
+                // Ensure we're not keeping stale conflict markers for this cell
+                conflictingCells.remove(Pair(selectedRow, selectedCol))
             }
             
             // Update candidates for affected cells
@@ -806,16 +824,18 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                     lastPlacedCol = selectedCol
                     onConflictListener?.onConflictDetected()
                 } else {
-                    // Clear any existing conflicts when placing a valid number
-                    clearConflicts()
                     // Start success animation for correct placement
                     startSuccessAnimation(selectedRow, selectedCol)
                 }
             } else {
-                // When removing a number, check for remaining conflicts in the entire board
-                // This ensures animation continues if there are still conflicts (e.g., multiple "5"s in same row)
-                checkAllConflictsAfterRemoval()
+                if (lastPlacedRow == selectedRow && lastPlacedCol == selectedCol) {
+                    lastPlacedRow = -1
+                    lastPlacedCol = -1
+                    lastPlacedNumber = 0
+                }
             }
+
+            recomputeConflicts()
             
             invalidate()
         }
@@ -843,10 +863,18 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             
             // Clear pencil marks (candidates) when clearing the cell
             candidates[selectedRow][selectedCol].clear()
-            
-            // Check for remaining conflicts after clearing a cell
-            // This ensures animation continues if there are still conflicts
-            checkAllConflictsAfterRemoval()
+            // Remove this cell from conflict tracking if it was highlighted
+            val removedCell = Pair(selectedRow, selectedCol)
+            if (conflictingCells.remove(removedCell) && conflictingCells.isEmpty()) {
+                clearConflicts()
+            }
+            if (lastPlacedRow == selectedRow && lastPlacedCol == selectedCol) {
+                lastPlacedRow = -1
+                lastPlacedCol = -1
+                lastPlacedNumber = 0
+            }
+
+            recomputeConflicts()
             
             invalidate()
         }
@@ -1190,6 +1218,25 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         lastPlacedCol = -1
         lastPlacedNumber = 0
         conflictAnimationProgress = 0f
+        invalidate()
+    }
+
+    private fun pruneConflictingCells() {
+        if (conflictingCells.isEmpty()) {
+            return
+        }
+
+        val iterator = conflictingCells.iterator()
+        while (iterator.hasNext()) {
+            val (row, col) = iterator.next()
+            if (row !in 0 until boardSize || col !in 0 until boardSize || board[row][col] == 0) {
+                iterator.remove()
+            }
+        }
+
+        if (conflictingCells.isEmpty()) {
+            clearConflicts()
+        }
     }
 
     private fun startSuccessAnimation(row: Int, col: Int) {
@@ -1249,33 +1296,45 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     }
     
     /**
-     * Check for all remaining conflicts after a number is removed
-     * This ensures conflict animation continues if there are still conflicts in the board
+     * Recompute conflict state for the entire board to ensure highlights match actual duplicates.
      */
-    private fun checkAllConflictsAfterRemoval() {
-        val allConflicts = mutableSetOf<Pair<Int, Int>>()
-        
-        // Check the entire board for any remaining conflicts
+    private fun recomputeConflicts() {
+        pruneConflictingCells()
+
+        val newConflicts = mutableSetOf<Pair<Int, Int>>()
+
         for (row in 0 until boardSize) {
             for (col in 0 until boardSize) {
-                if (board[row][col] != 0) {
-                    val conflicts = findConflicts(row, col, board[row][col])
-                    allConflicts.addAll(conflicts)
+                val value = board[row][col]
+                if (value != 0) {
+                    val conflicts = findConflicts(row, col, value)
+                    if (conflicts.isNotEmpty()) {
+                        newConflicts.add(Pair(row, col))
+                        newConflicts.addAll(conflicts)
+                    }
                 }
             }
         }
-        
-        if (allConflicts.isNotEmpty()) {
-            // Continue animation with all remaining conflicts
-            startConflictAnimation(allConflicts)
-        } else {
-            // No conflicts remaining, clear animation
-            clearConflicts()
+
+        if (newConflicts.isEmpty()) {
+            if (conflictingCells.isNotEmpty()) {
+                clearConflicts()
+            }
+            return
+        }
+
+        if (newConflicts != conflictingCells) {
+            startConflictAnimation(newConflicts)
+        } else if (conflictAnimator?.isRunning != true) {
+            startConflictAnimation(newConflicts)
         }
     }
 
     // Number highlighting methods - clean implementation
     fun highlightNumber(number: Int) {
+        if (successCells.isNotEmpty()) {
+            clearSuccessAnimation()
+        }
         highlightedNumber = number
         highlightedCells.clear()
         
@@ -1409,7 +1468,12 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         
         // Clear previous hint data
         hintsUsed = 0
-        hintsRemaining = 50 // Reset hints remaining to 50 for new game
+        maxHintsPerGame = if (gameSettings.isExtendedHintsEnabled()) {
+            EXTENDED_HINTS_PER_GAME
+        } else {
+            DEFAULT_HINTS_PER_GAME
+        }
+        hintsRemaining = maxHintsPerGame // Reset hints remaining based on settings
         isRevealedByHint = Array(boardSize) { BooleanArray(boardSize) }
         
         // Clear all candidates - player will add pencil marks manually
