@@ -253,6 +253,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        findViewById<ImageButton>(R.id.systemSettingsButton)?.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
+
         // Start timer
         startTimer()
         updateProgress()

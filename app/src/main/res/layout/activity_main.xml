@@ -45,19 +45,39 @@
                     android:tint="#2D1810"
                     android:contentDescription="Back" />
 
-                <TextView
-                    android:id="@+id/settingsButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="end|center_vertical"
-                    android:background="@drawable/back_button_gold"
-                    android:text="🧩"
-                    android:textSize="20sp"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="Change Difficulty"
-                    android:visibility="gone" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/settingsButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/back_button_gold"
+                        android:text="🧩"
+                        android:textSize="20sp"
+                        android:gravity="center"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Change Difficulty"
+                        android:visibility="gone" />
+
+                    <ImageButton
+                        android:id="@+id/systemSettingsButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@drawable/back_button_gold"
+                        android:padding="0dp"
+                        android:src="@drawable/ic_settings_new"
+                        android:tint="#2D1810"
+                        android:contentDescription="Settings"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
 
                 <!-- Decorative Fantasy Banner Background -->
                 <LinearLayout
