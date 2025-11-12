@@ -549,6 +549,7 @@ class MainActivity : AppCompatActivity() {
         val hintButton = findViewById<Button>(R.id.revealHintButton)
         hintButton.setOnClickListener {
             if (sudokuBoard.revealHint()) {
+                soundManager.playClick()
                 startTimer() // Start timer when hint is used (player is playing)
                 updateProgress()
                 
@@ -803,6 +804,8 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopTimer()
+
+
         persistQuestPuzzleState()
     }
 

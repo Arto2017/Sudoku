@@ -138,6 +138,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     private fun setupClickListeners() {
         hintButton.setOnClickListener {
             if (sudokuBoardView.revealHint()) {
+                SoundManager.getInstance(this@DailyChallengeActivity).playClick()
                 hintsUsed++
                 
                 // Highlight the number that was placed by the hint (same as manual placement)
