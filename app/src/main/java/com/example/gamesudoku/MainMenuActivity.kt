@@ -37,6 +37,9 @@ class MainMenuActivity : AppCompatActivity() {
     private lateinit var dailyTimerHandler: Handler
     private lateinit var dailyTimerRunnable: Runnable
     private lateinit var soundManager: SoundManager
+    private lateinit var playNowStateManager: PlayNowStateManager
+    private lateinit var continueButton: View
+    private lateinit var ctaSubtext: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +56,7 @@ class MainMenuActivity : AppCompatActivity() {
         
         // Initialize sound manager
         soundManager = SoundManager.getInstance(this)
+        playNowStateManager = PlayNowStateManager(this)
 
         // Start entrance animations
         startEntranceAnimations()
@@ -71,6 +75,22 @@ class MainMenuActivity : AppCompatActivity() {
 
         // Quick Play button with animation - starts game directly with 9x9 medium
         val quickPlayButton = findViewById<View>(R.id.btnQuickPlay)
+        continueButton = findViewById(R.id.btnContinuePlay)
+        ctaSubtext = findViewById(R.id.ctaSubtext)
+
+        continueButton.setOnClickListener {
+            soundManager.playClick()
+            if (!playNowStateManager.hasSavedState()) {
+                Toast.makeText(this, "No game to continue yet!", Toast.LENGTH_SHORT).show()
+                updateContinueButton()
+                return@setOnClickListener
+            }
+            val intent = Intent(this, MainActivity::class.java).apply {
+                putExtra(MainActivity.EXTRA_CONTINUE_PLAY_NOW, true)
+            }
+            startActivity(intent)
+        }
+
         quickPlayButton.setOnClickListener {
             // Add click animation
             it.animate()
@@ -97,6 +117,7 @@ class MainMenuActivity : AppCompatActivity() {
         
         // Add continuous pulsing animation to Quick Play button
         addPulsingAnimation(quickPlayButton)
+        updateContinueButton()
 
         // Settings Button Handler
         findViewById<View>(R.id.btnSettings).setOnClickListener {
@@ -349,6 +370,7 @@ class MainMenuActivity : AppCompatActivity() {
         updateQuestProgress()
         // Refresh daily challenge card
         updateDailyChallengeCard()
+        updateContinueButton()
     }
     
     override fun onPause() {
@@ -414,6 +436,16 @@ class MainMenuActivity : AppCompatActivity() {
     
     private fun stopDailyChallengeTimer() {
         dailyTimerHandler.removeCallbacks(dailyTimerRunnable)
+    }
+
+    private fun updateContinueButton() {
+        val hasSavedGame = playNowStateManager.hasSavedState()
+        continueButton.visibility = if (hasSavedGame) View.VISIBLE else View.GONE
+        ctaSubtext.text = if (hasSavedGame) {
+            "Resume where you left off or start fresh"
+        } else {
+            "Choose your challenge"
+        }
     }
 }
 

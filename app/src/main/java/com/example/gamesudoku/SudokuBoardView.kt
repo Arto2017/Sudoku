@@ -1041,6 +1041,16 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     fun setBoardState(boardState: Array<IntArray>, fixedState: Array<BooleanArray>) {
         board = boardState.map { it.clone() }.toTypedArray()
         fixed = fixedState.map { it.clone() }.toTypedArray()
+        // Rebuild initial board using fixed cells to preserve original puzzle state
+        initialBoard = Array(boardSize) { row ->
+            IntArray(boardSize) { col ->
+                if (row < fixed.size && col < fixed[row].size && fixed[row][col]) {
+                    board[row][col]
+                } else {
+                    0
+                }
+            }
+        }
         // Clear conflicts when loading a new board state
         clearConflicts()
         // Clear removed candidates map when loading new board state
@@ -2078,6 +2088,26 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      * Get board value at specific position (for external access)
      */
     fun getBoardValue(row: Int, col: Int): Int = board[row][col]
+
+    fun getSolutionForSaving(): IntArray? {
+        val solution = solutionBoard ?: return null
+        val flattened = IntArray(boardSize * boardSize)
+        var index = 0
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                flattened[index++] = solution[row][col]
+            }
+        }
+        return flattened
+    }
+
+    fun setHintsState(savedRemaining: Int?, savedUsed: Int?, savedMax: Int?) {
+        savedMax?.let { maxHintsPerGame = it }
+        savedUsed?.let { hintsUsed = it.coerceAtLeast(0) }
+        savedRemaining?.let { hintsRemaining = it.coerceAtLeast(0) }
+    }
+
+    fun getMaxHintsPerGame(): Int = maxHintsPerGame
     
     /**
      * Get comprehensive hint for a cell
