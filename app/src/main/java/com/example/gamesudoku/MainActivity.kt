@@ -97,6 +97,11 @@ class MainActivity : AppCompatActivity() {
             secondsElapsed = savedState.secondsElapsed
             totalMistakes = savedState.mistakes
             attemptStore.setMistakes(puzzleId, totalMistakes)
+            sudokuBoard.setHintsState(
+                savedRemaining = savedState.hintsRemaining,
+                savedUsed = savedState.hintsUsed,
+                savedMax = savedState.maxHints
+            )
             updateTimerText()
 
             val hasProgress = hasUserPlacedNumbers(boardArray, fixedArray)
@@ -118,6 +123,9 @@ class MainActivity : AppCompatActivity() {
 
         val boardState = sudokuBoard.getBoardState()
         val fixedState = sudokuBoard.getFixedState()
+        val hintsRemaining = sudokuBoard.getHintsRemaining()
+        val hintsUsed = sudokuBoard.getHintsUsed()
+        val maxHints = sudokuBoard.getMaxHintsPerGame()
         val hasProgress = hasUserPlacedNumbers(boardState, fixedState) || secondsElapsed > 0 || totalMistakes > 0
 
         if (!hasProgress) {
@@ -125,7 +133,16 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        codex.savePuzzleBoardState(puzzleId, boardState, fixedState, secondsElapsed, totalMistakes)
+        codex.savePuzzleBoardState(
+            puzzleId,
+            boardState,
+            fixedState,
+            secondsElapsed,
+            totalMistakes,
+            hintsRemaining,
+            hintsUsed,
+            maxHints
+        )
     }
 
     private fun hasUserPlacedNumbers(
@@ -671,6 +688,13 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setView(view)
             .create()
+
+        val messageView = view.findViewById<TextView>(R.id.dialogMessage)
+        if (questPuzzleId != null) {
+            messageView?.text = "Are you sure you want to leave? Your quest progress is safely saved and you can resume from the realm menu."
+        } else {
+            messageView?.text = "Are you sure you want to go back to the main menu? Your current progress will be lost."
+        }
 
         // Make background transparent around card for nicer presentation
         dialog.window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))

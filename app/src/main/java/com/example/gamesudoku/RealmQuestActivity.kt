@@ -125,8 +125,10 @@ class RealmQuestActivity : AppCompatActivity() {
                 }
             }
         }
+        val inProgressPuzzleIds = getInProgressPuzzleIds()
         puzzleAdapter = PuzzleChainAdapter(
             puzzles = puzzlesWithStatus,
+            inProgressPuzzleIds = inProgressPuzzleIds,
             onPuzzleClick = { puzzle ->
                 if (puzzle.isCompleted) {
                     GameNotification.showInfo(this, "Puzzle is already completed!", 2000)
@@ -272,7 +274,8 @@ class RealmQuestActivity : AppCompatActivity() {
                 }
             }
         }
-        puzzleAdapter.updatePuzzles(puzzlesWithStatus)
+        val inProgressPuzzleIds = getInProgressPuzzleIds()
+        puzzleAdapter.updatePuzzles(puzzlesWithStatus, inProgressPuzzleIds)
         // Codex removed
     }
     
@@ -313,10 +316,20 @@ class RealmQuestActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
+
+    private fun getInProgressPuzzleIds(): Set<String> {
+        return puzzleChain.puzzles
+            .filter { puzzle ->
+                !puzzle.isCompleted && questCodex.loadPuzzleBoardState(puzzle.id) != null
+            }
+            .map { it.id }
+            .toSet()
+    }
 }
 
 class PuzzleChainAdapter(
     private var puzzles: List<QuestPuzzle>,
+    private var inProgressPuzzleIds: Set<String>,
     private val onPuzzleClick: (QuestPuzzle) -> Unit,
     private val onPuzzleLongClick: ((QuestPuzzle) -> Unit)? = null
 ) : RecyclerView.Adapter<PuzzleChainAdapter.PuzzleViewHolder>() {
@@ -360,6 +373,8 @@ class PuzzleChainAdapter(
             else -> holder.mistakesSmall.setTextColor(Color.parseColor("#6B4C2A"))
         }
 
+        val isInProgress = !puzzle.isCompleted && inProgressPuzzleIds.contains(puzzle.id)
+
         if (puzzle.isCompleted) {
             holder.status.text = "Completed"
             holder.status.setTextColor(Color.parseColor("#4CAF50"))
@@ -367,6 +382,13 @@ class PuzzleChainAdapter(
             holder.lockIcon.visibility = View.GONE
             holder.card.setCardBackgroundColor(Color.parseColor("#E8F5E8"))
             holder.card.strokeColor = Color.parseColor("#C8E6C9")
+        } else if (isInProgress) {
+            holder.status.text = "Continue"
+            holder.status.setTextColor(Color.parseColor("#1976D2"))
+            holder.stars.text = ""
+            holder.lockIcon.visibility = View.GONE
+            holder.card.setCardBackgroundColor(Color.parseColor("#E3F2FD"))
+            holder.card.strokeColor = Color.parseColor("#90CAF9")
         } else if (failed) {
             holder.status.text = "Failed"
             holder.status.setTextColor(Color.parseColor("#C62828"))
@@ -403,8 +425,9 @@ class PuzzleChainAdapter(
 
     override fun getItemCount() = puzzles.size
 
-    fun updatePuzzles(newPuzzles: List<QuestPuzzle>) {
+    fun updatePuzzles(newPuzzles: List<QuestPuzzle>, updatedInProgressIds: Set<String>) {
         puzzles = newPuzzles
+        inProgressPuzzleIds = updatedInProgressIds
         notifyDataSetChanged()
     }
 }

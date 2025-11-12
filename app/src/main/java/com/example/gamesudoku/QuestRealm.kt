@@ -377,7 +377,16 @@ class QuestCodex(private val context: Context) {
     }
     
     // Save quest puzzle board state (current board + fixed cells)
-    fun savePuzzleBoardState(puzzleId: String, board: Array<IntArray>, fixed: Array<BooleanArray>, secondsElapsed: Int, mistakes: Int) {
+    fun savePuzzleBoardState(
+        puzzleId: String,
+        board: Array<IntArray>,
+        fixed: Array<BooleanArray>,
+        secondsElapsed: Int,
+        mistakes: Int,
+        hintsRemaining: Int,
+        hintsUsed: Int,
+        maxHints: Int
+    ) {
         // Convert arrays to lists for JSON serialization
         val boardList = board.map { it.toList() }.toList()
         val fixedList = fixed.map { it.toList() }.toList()
@@ -386,7 +395,10 @@ class QuestCodex(private val context: Context) {
             board = boardList,
             fixed = fixedList,
             secondsElapsed = secondsElapsed,
-            mistakes = mistakes
+            mistakes = mistakes,
+            hintsRemaining = hintsRemaining,
+            hintsUsed = hintsUsed,
+            maxHints = maxHints
         )
         
         val json = gson.toJson(state)
@@ -413,7 +425,10 @@ class QuestCodex(private val context: Context) {
         val board: List<List<Int>>,
         val fixed: List<List<Boolean>>,
         val secondsElapsed: Int,
-        val mistakes: Int
+        val mistakes: Int,
+        val hintsRemaining: Int? = null,
+        val hintsUsed: Int? = null,
+        val maxHints: Int? = null
     )
     
     // Reset difficulty for existing puzzles to match current realm settings
