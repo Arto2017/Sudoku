@@ -262,8 +262,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         if (highlightedNumber == 0 || highlightedCells.isEmpty()) return
 
         // Use darker green color for all same numbers
-        val highlightColor = Color.parseColor("#2E7D32") // Darker green
-        val pulseAlpha = (120 + 60 * Math.sin(System.currentTimeMillis() * 0.003).toFloat()).toInt()
+        val highlightColor = Color.parseColor("#439247") // Darker green
+        val pulseAlpha = (120 + 60 * Math.sin(System.currentTimeMillis() * 0.0001).toFloat()).toInt()
         
         for ((row, col) in highlightedCells) {
             val cellLeft = boardLeft + col * cellSize
@@ -2058,52 +2058,6 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      * Get hints used count
      */
     fun getHintsUsed(): Int = hintsUsed
-
-    /**
-     * Get maximum hints allowed for this game
-     */
-    fun getMaxHintsPerGame(): Int = maxHintsPerGame
-
-    /**
-     * Restore hint counters for resumed games
-     */
-    fun setHintsState(
-        savedRemaining: Int? = null,
-        savedUsed: Int? = null,
-        savedMax: Int? = null
-    ) {
-        val targetMax = when {
-            savedMax != null && savedMax > 0 -> savedMax
-            else -> maxHintsPerGame
-        }
-        maxHintsPerGame = targetMax
-
-        val clampedUsed = savedUsed?.coerceIn(0, targetMax)
-        val clampedRemaining = savedRemaining?.coerceIn(0, targetMax)
-
-        when {
-            clampedUsed != null && clampedRemaining != null -> {
-                val total = clampedUsed + clampedRemaining
-                if (total <= targetMax) {
-                    hintsUsed = clampedUsed
-                    hintsRemaining = clampedRemaining
-                } else {
-                    hintsUsed = clampedUsed.coerceAtMost(targetMax)
-                    hintsRemaining = (targetMax - hintsUsed).coerceAtLeast(0)
-                }
-            }
-            clampedUsed != null -> {
-                hintsUsed = clampedUsed
-                hintsRemaining = (targetMax - hintsUsed).coerceAtLeast(0)
-            }
-            clampedRemaining != null -> {
-                hintsRemaining = clampedRemaining
-                hintsUsed = (targetMax - hintsRemaining).coerceAtLeast(0)
-            }
-        }
-
-        invalidate()
-    }
     
     /**
      * Check if pencil marks are visible
