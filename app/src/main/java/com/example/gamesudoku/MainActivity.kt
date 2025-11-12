@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private var currentDifficulty = SudokuGenerator.Difficulty.EASY
     private var totalMistakes = 0
     private lateinit var attemptStore: AttemptStateStore
+    private var questCodex: QuestCodex? = null
 
     private var gameResultSaved = false // Flag to prevent duplicate saves
     private var questPuzzleId: String? = null // Current quest puzzle ID
@@ -77,6 +78,75 @@ class MainActivity : AppCompatActivity() {
         // Progress bar removed, do nothing
     }
 
+    private fun restoreQuestPuzzleStateIfNeeded() {
+        val puzzleId = questPuzzleId ?: return
+        val codex = questCodex ?: QuestCodex(this).also { questCodex = it }
+        val savedState = codex.loadPuzzleBoardState(puzzleId) ?: return
+
+        try {
+            val boardArray = savedState.board.map { it.toIntArray() }.toTypedArray()
+            val fixedArray = savedState.fixed.map { it.toBooleanArray() }.toTypedArray()
+
+            if (boardArray.size != boardSize || fixedArray.size != boardSize) {
+                codex.clearPuzzleBoardState(puzzleId)
+                attemptStore.clear(puzzleId)
+                return
+            }
+
+            sudokuBoard.setBoardState(boardArray, fixedArray)
+            secondsElapsed = savedState.secondsElapsed
+            totalMistakes = savedState.mistakes
+            attemptStore.setMistakes(puzzleId, totalMistakes)
+            updateTimerText()
+
+            val hasProgress = hasUserPlacedNumbers(boardArray, fixedArray)
+            gameStarted = hasProgress || secondsElapsed > 0
+        } catch (e: Exception) {
+            codex.clearPuzzleBoardState(puzzleId)
+            attemptStore.clear(puzzleId)
+        }
+    }
+
+    private fun persistQuestPuzzleState() {
+        val puzzleId = questPuzzleId ?: return
+        val codex = questCodex ?: QuestCodex(this).also { questCodex = it }
+
+        if (gameResultSaved || sudokuBoard.isBoardComplete()) {
+            codex.clearPuzzleBoardState(puzzleId)
+            return
+        }
+
+        val boardState = sudokuBoard.getBoardState()
+        val fixedState = sudokuBoard.getFixedState()
+        val hasProgress = hasUserPlacedNumbers(boardState, fixedState) || secondsElapsed > 0 || totalMistakes > 0
+
+        if (!hasProgress) {
+            codex.clearPuzzleBoardState(puzzleId)
+            return
+        }
+
+        codex.savePuzzleBoardState(puzzleId, boardState, fixedState, secondsElapsed, totalMistakes)
+    }
+
+    private fun hasUserPlacedNumbers(
+        boardState: Array<IntArray>,
+        fixedState: Array<BooleanArray>
+    ): Boolean {
+        for (row in boardState.indices) {
+            for (col in boardState[row].indices) {
+                val isFixed = if (row < fixedState.size && col < fixedState[row].size) {
+                    fixedState[row][col]
+                } else {
+                    false
+                }
+                if (!isFixed && boardState[row][col] != 0) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -85,6 +155,9 @@ class MainActivity : AppCompatActivity() {
         boardSize = intent.getIntExtra("board_size", intent.getIntExtra(MainMenuActivity.EXTRA_BOARD_SIZE, 9))
         questPuzzleId = intent.getStringExtra("quest_puzzle_id")
         realmId = intent.getStringExtra("realm_id")
+        questPuzzleId?.let {
+            questCodex = QuestCodex(this)
+        }
         
         // Set difficulty from intent (for Quick Play) or quest puzzle
         val difficultyString = intent.getStringExtra("difficulty") ?: intent.getStringExtra(QuickPlayActivity.EXTRA_DIFFICULTY)
@@ -135,6 +208,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             sudokuBoard.resetPuzzle()
         }
+
+        restoreQuestPuzzleStateIfNeeded()
         
         // Set up conflict listener
         sudokuBoard.setOnConflictListener(object : SudokuBoardView.OnConflictListener {
@@ -607,6 +682,7 @@ class MainActivity : AppCompatActivity() {
         view.findViewById<Button>(R.id.dialogConfirm).setOnClickListener {
             dialog.dismiss()
             // For quest puzzles, go back to realm/level window instead of main menu
+            persistQuestPuzzleState()
             if (questPuzzleId != null && realmId != null) {
                 val intent = Intent(this, RealmQuestActivity::class.java).apply {
                     putExtra("realm_id", realmId)
@@ -703,6 +779,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopTimer()
+        persistQuestPuzzleState()
     }
 
     override fun onResume() {
@@ -722,6 +799,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopTimer()
+        persistQuestPuzzleState()
     }
 
     // Check for victory
@@ -746,12 +824,12 @@ class MainActivity : AppCompatActivity() {
             
             // Record quest progress if this is a quest puzzle
             questPuzzleId?.let { puzzleId ->
-                val questCodex = QuestCodex(this)
+                val codex = questCodex ?: QuestCodex(this).also { questCodex = it }
                 
                 // Clear saved board state when puzzle is completed
-                questCodex.clearPuzzleBoardState(puzzleId)
+                codex.clearPuzzleBoardState(puzzleId)
                 
-                questCodex.recordPuzzleCompletion(realmId ?: "", puzzleId, secondsElapsed.toLong(), totalMistakes)
+                codex.recordPuzzleCompletion(realmId ?: "", puzzleId, secondsElapsed.toLong(), totalMistakes)
                 
                 // Show animated quest victory dialog
                 showQuestVictoryDialog(timeText, totalMistakes)

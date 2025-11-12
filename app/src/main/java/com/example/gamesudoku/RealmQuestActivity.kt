@@ -172,8 +172,13 @@ class RealmQuestActivity : AppCompatActivity() {
             }
         }
 
-        // Clear attempt state so each start is fresh 0/∞
-        AttemptStateStore(this).clear(puzzle.id)
+        val savedBoardState = questCodex.loadPuzzleBoardState(puzzle.id)
+        val attemptStore = AttemptStateStore(this)
+        if (savedBoardState == null) {
+            attemptStore.clear(puzzle.id)
+        } else {
+            attemptStore.setMistakes(puzzle.id, savedBoardState.mistakes)
+        }
 
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra("quest_puzzle_id", puzzle.id)
