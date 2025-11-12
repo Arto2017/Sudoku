@@ -340,7 +340,12 @@ class PuzzleChainAdapter(
         
         // Pull live attempt snapshot for mistakes/failed state
         val attempt = AttemptStateStore(holder.itemView.context)
-        val mistakes = attempt.getMistakes(puzzle.id)
+        val liveMistakes = attempt.getMistakes(puzzle.id)
+        val mistakes = when {
+            liveMistakes > 0 -> liveMistakes
+            puzzle.isCompleted -> puzzle.lastMistakes
+            else -> 0
+        }
         val failed = attempt.isFailed(puzzle.id)
 
         holder.mistakesSmall.text = "$mistakes/∞"

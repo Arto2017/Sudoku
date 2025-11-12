@@ -145,7 +145,7 @@ class DailyChallengeTest {
 
         // Should be able to generate a hint
         assertNotNull(hint)
-        val nonNullHint = requireNotNull(hint) { "Expected hint to be non-null" }
+        val nonNullHint = requireNotNull(hint)  { "Expected hint to be non-null" }
         assertTrue(nonNullHint.cell.row >= 0 && nonNullHint.cell.row < 9)
         assertTrue(nonNullHint.cell.col >= 0 && nonNullHint.cell.col < 9)
         assertTrue(nonNullHint.value >= 1 && nonNullHint.value <= 9)

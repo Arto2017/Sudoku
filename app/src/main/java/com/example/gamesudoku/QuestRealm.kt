@@ -163,7 +163,9 @@ class QuestCodex(private val context: Context) {
             val updatedPuzzle = questPuzzle.copy(
                 isCompleted = true,
                 bestTime = if (questPuzzle.bestTime == 0L || timeInSeconds < questPuzzle.bestTime) timeInSeconds else questPuzzle.bestTime,
-                stars = maxOf(questPuzzle.stars, stars)
+                stars = maxOf(questPuzzle.stars, stars),
+                lastMistakes = mistakes,
+                isFailed = false
             )
             savePuzzle(updatedPuzzle)
             

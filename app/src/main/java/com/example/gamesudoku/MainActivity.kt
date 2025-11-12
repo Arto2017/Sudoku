@@ -606,9 +606,6 @@ class MainActivity : AppCompatActivity() {
 
         view.findViewById<Button>(R.id.dialogConfirm).setOnClickListener {
             dialog.dismiss()
-            // Clear attempt state so starting later is fresh
-            questPuzzleId?.let { id -> attemptStore.clear(id) }
-            
             // For quest puzzles, go back to realm/level window instead of main menu
             if (questPuzzleId != null && realmId != null) {
                 val intent = Intent(this, RealmQuestActivity::class.java).apply {
