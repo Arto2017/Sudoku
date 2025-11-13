@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/fantasy_dialog_background"
+    android:padding="24dp">
+
+    <!-- Fantasy Header with Game Icon -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_star"
+            android:layout_marginEnd="12dp"
+            app:tint="#FFD700" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Game Details"
+            android:textColor="#6B4423"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:shadowColor="#8B7355"
+            android:shadowDx="1"
+            android:shadowDy="1"
+            android:shadowRadius="1" />
+    </LinearLayout>
+
+    <!-- Stats Container with fantasy design -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/fantasy_timer_background"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <!-- Date Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_timer"
+                android:layout_marginEnd="12dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Date &amp; Time:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/detailDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Jan 01, 2025 at 12:00"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="end" />
+        </LinearLayout>
+
+        <!-- Game Info Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_star"
+                android:layout_marginEnd="12dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Game:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/detailGame"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="9x9 • Medium"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="end" />
+        </LinearLayout>
+
+        <!-- Time Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_timer"
+                android:layout_marginEnd="12dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Completion Time:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/detailTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="end" />
+        </LinearLayout>
+
+        <!-- Mistakes Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_warning"
+                android:layout_marginEnd="12dp"
+                app:tint="#6B4423" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mistakes:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/detailMistakes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="end" />
+        </LinearLayout>
+
+        <!-- Status Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_golden_trophy"
+                android:layout_marginEnd="12dp"
+                app:tint="#FFD700" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Status:"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/detailStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completed"
+                android:textColor="#6B4423"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Decorative Separator -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@drawable/fantasy_separator_background"
+        android:layout_marginVertical="8dp" />
+
+    <!-- Performance Rating -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Performance Rating"
+            android:textSize="14sp"
+            android:textColor="#6B4423"
+            android:fontFamily="serif"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/detailStars"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⭐⭐⭐"
+            android:textSize="24sp"
+            android:textColor="#FFD700"
+            android:fontFamily="serif" />
+    </LinearLayout>
+
+    <!-- OK Button -->
+    <Button
+        android:id="@+id/btnOk"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="OK"
+        android:textColor="#6B4423"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:fontFamily="serif"
+        android:background="@drawable/fantasy_continue_button"
+        android:elevation="2dp" />
+</LinearLayout>
+

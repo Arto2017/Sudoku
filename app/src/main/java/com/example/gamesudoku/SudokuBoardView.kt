@@ -2110,6 +2110,26 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     fun getMaxHintsPerGame(): Int = maxHintsPerGame
     
     /**
+     * Update hint limits based on current settings and recalculate remaining hints
+     * This is called when settings change during gameplay
+     */
+    fun updateHintsFromSettings() {
+        val newMaxHints = if (gameSettings.isExtendedHintsEnabled()) {
+            EXTENDED_HINTS_PER_GAME
+        } else {
+            DEFAULT_HINTS_PER_GAME
+        }
+        
+        // Only update if the max hints changed
+        if (newMaxHints != maxHintsPerGame) {
+            maxHintsPerGame = newMaxHints
+            
+            // Recalculate remaining hints: new remaining = new max - hints used
+            hintsRemaining = (newMaxHints - hintsUsed).coerceAtLeast(0)
+        }
+    }
+    
+    /**
      * Get comprehensive hint for a cell
      */
     override fun getComprehensiveHint(row: Int, col: Int): ComprehensiveHintResult {

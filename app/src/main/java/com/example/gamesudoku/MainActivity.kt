@@ -924,6 +924,9 @@ class MainActivity : AppCompatActivity() {
         if (gameStarted) {
             startTimer() // Resume timer if game was started
         }
+        
+        // Update hint count if settings changed while in settings
+        sudokuBoard.updateHintsFromSettings()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
