@@ -268,120 +268,108 @@
                     android:focusable="true"
                     android:elevation="6dp">
 
-                    <!-- Top row: Progress ring + Content -->
+                    <!-- Top row: Title at top, then Progress ring + Content -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:orientation="vertical">
 
-                        <!-- Left: Progress Ring with Trophy -->
-                        <FrameLayout
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
-                            android:layout_marginEnd="8dp">
-
-                            <!-- Progress Ring Background -->
-                            <ProgressBar
-                                android:id="@+id/questProgressRing"
-                                style="?android:attr/progressBarStyleHorizontal"
-                                android:layout_width="50dp"
-                                android:layout_height="50dp"
-                                android:progress="65"
-                                android:max="100"
-                                android:progressDrawable="@drawable/quest_progress_ring"
-                                android:background="@android:color/transparent" />
-
-                            <!-- Trophy Icon in Center -->
-                            <ImageView
-                                android:layout_width="25dp"
-                                android:layout_height="25dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/golden_icon"
-                                android:scaleType="centerCrop" />
-
-                            <!-- New Badge Overlay -->
-                            <ImageView
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
-                                android:layout_gravity="top|start"
-                                android:src="@drawable/ic_badge_new"
-                                android:layout_marginTop="-3dp"
-                                android:layout_marginStart="-3dp" />
-                        </FrameLayout>
-
-                        <!-- Right: Title and Info -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:gravity="start">
-
+                        <!-- Title at top, full width -->
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                                android:text="Sudoku Quest"
-                                android:textSize="14sp"
+                            android:text="Sudoku Quest"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                                android:textColor="#333333"
-                            android:fontFamily="sans-serif-medium" />
+                            android:textColor="#333333"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:layout_marginBottom="8dp" />
 
-                            <!-- Mini Grid Preview -->
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/ic_mini_grid_preview"
-                                android:alpha="0.65" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Bottom: Progress Bar + Reward Chip -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginBottom="4dp">
-
-                        <!-- Level Progress Bar -->
-                        <ProgressBar
-                            android:id="@+id/questLevelProgressBar"
-                            style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="0dp"
-                            android:layout_height="3dp"
-                        android:layout_weight="1"
-                            android:progress="75"
-                            android:max="100"
-                            android:progressTint="#FF7A59"
-                            android:progressBackgroundTint="#E0E0E0"
-                            android:layout_marginEnd="8dp" />
-
-                        <!-- Reward Chip -->
+                        <!-- Progress ring + Content row -->
                         <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
                             android:orientation="horizontal"
-                            android:background="@drawable/reward_chip_background"
-                            android:padding="4dp"
                             android:gravity="center_vertical">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <!-- Left: Star Progress Text -->
+                            <LinearLayout
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:text="⭐"
-                                android:textSize="10sp"
-                                android:layout_marginEnd="2dp" />
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                                android:text="25"
-                                android:textSize="10sp"
-                                android:textStyle="bold"
-                                android:textColor="#FF8A65" />
+                                <!-- Star Progress Text with Icon -->
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical"
+                                    android:background="@drawable/reward_chip_background"
+                                    android:paddingStart="10dp"
+                                    android:paddingEnd="10dp"
+                                    android:paddingTop="6dp"
+                                    android:paddingBottom="6dp">
+
+                                    <!-- Star Icon -->
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="⭐"
+                                        android:textSize="14sp"
+                                        android:layout_marginEnd="4dp" />
+
+                                    <!-- Star Count Text -->
+                                    <TextView
+                                        android:id="@+id/questStarProgressText"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0 / 120"
+                                        android:textSize="13sp"
+                                        android:textStyle="bold"
+                                        android:textColor="#FF8A65"
+                                        android:fontFamily="sans-serif-medium" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <!-- Right: Progress Ring with Trophy -->
+                            <FrameLayout
+                                android:layout_width="110dp"
+                                android:layout_height="110dp"
+                                android:layout_marginStart="8dp">
+
+                                <!-- Progress Ring Background -->
+                                <ProgressBar
+                                    android:id="@+id/questProgressRing"
+                                    style="?android:attr/progressBarStyleHorizontal"
+                                    android:layout_width="110dp"
+                                    android:layout_height="110dp"
+                                    android:progress="65"
+                                    android:max="100"
+                                    android:progressDrawable="@drawable/quest_progress_ring"
+                                    android:background="@android:color/transparent" />
+
+                                <!-- Trophy Icon in Center -->
+                                <ImageView
+                                    android:layout_width="100dp"
+                                    android:layout_height="100dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/golden_icon"
+                                    android:scaleType="centerCrop" />
+
+                                <!-- New Badge Overlay -->
+                                <ImageView
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:layout_gravity="top|start"
+                                    android:src="@drawable/ic_badge_new"
+                                    android:layout_marginTop="-3dp"
+                                    android:layout_marginStart="-3dp" />
+                            </FrameLayout>
                         </LinearLayout>
                     </LinearLayout>
 
@@ -427,34 +415,34 @@
             <LinearLayout
                 android:id="@+id/btnContinuePlay"
                 android:layout_width="wrap_content"
-                android:layout_height="56dp"
+                android:layout_height="36dp"
                 android:layout_marginStart="24dp"
                 android:layout_marginEnd="24dp"
                 android:layout_marginBottom="18dp"
-                android:maxWidth="300dp"
+                android:maxWidth="250dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/cta_secondary_background"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingVertical="10dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingVertical="6dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:elevation="4dp"
                 android:visibility="gone">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:src="@drawable/ic_save"
-                    android:layout_marginEnd="12dp"
+                    android:layout_marginEnd="8dp"
                     app:tint="@android:color/white" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Continue"
-                    android:textSize="16sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:textColor="@android:color/white"
                     android:fontFamily="sans-serif-medium"
@@ -462,9 +450,9 @@
                     android:ellipsize="end" />
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_marginStart="12dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="8dp"
                     android:src="@drawable/ic_arrow_right"
                     app:tint="@android:color/white" />
 

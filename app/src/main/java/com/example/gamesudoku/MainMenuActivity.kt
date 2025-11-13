@@ -11,14 +11,12 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
-import android.app.AlertDialog
 import android.content.Context
 import android.widget.LinearLayout
 import android.view.MotionEvent
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.graphics.Color
-import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.ImageButton
 import java.text.SimpleDateFormat
@@ -32,7 +30,6 @@ class MainMenuActivity : AppCompatActivity() {
     
     private lateinit var questCodex: QuestCodex
     private lateinit var questProgressRing: ProgressBar
-    private lateinit var questLevelProgressBar: ProgressBar
     private lateinit var dailyChallengeManager: DailyChallengeManager
     private lateinit var dailyTimerHandler: Handler
     private lateinit var dailyTimerRunnable: Runnable
@@ -48,7 +45,6 @@ class MainMenuActivity : AppCompatActivity() {
         // Initialize quest system
         questCodex = QuestCodex(this)
         questProgressRing = findViewById(R.id.questProgressRing)
-        questLevelProgressBar = findViewById(R.id.questLevelProgressBar)
         
         // Initialize daily challenge system
         dailyChallengeManager = DailyChallengeManager(this)
@@ -138,7 +134,8 @@ class MainMenuActivity : AppCompatActivity() {
         }
         
         findViewById<View>(R.id.questCard).setOnClickListener {
-            showQuestProgressDialog()
+            val intent = Intent(this, RealmSelectionActivity::class.java)
+            startActivity(intent)
         }
         
         // Daily Challenge Button Handler
@@ -268,12 +265,14 @@ class MainMenuActivity : AppCompatActivity() {
         // Circular Ring: Show progress of all 40 games (0-100%)
         val gamesProgressPercentage = if (totalGames > 0) (completedGames * 100) / totalGames else 0
         
-        // Horizontal Bar: Show progress of 4 levels (0%, 25%, 50%, 75%, 100%)
-        val levelsProgressPercentage = (completedLevels * 25) // 25% per completed level
-        
-        // Animate both progress bars
+        // Animate progress ring
         animateProgressRing(gamesProgressPercentage)
-        animateLevelProgressBar(levelsProgressPercentage)
+        
+        // Update star progress text
+        val totalStars = questCodex.getTotalStars()
+        val maxStars = questCodex.getMaxStars()
+        val starProgressText = findViewById<TextView>(R.id.questStarProgressText)
+        starProgressText?.text = "$totalStars / $maxStars"
     }
     
     private fun animateProgressRing(targetProgress: Int) {
@@ -282,86 +281,6 @@ class MainMenuActivity : AppCompatActivity() {
         animator.duration = 1000
         animator.interpolator = AccelerateDecelerateInterpolator()
         animator.start()
-    }
-    
-    private fun animateLevelProgressBar(targetProgress: Int) {
-        val currentProgress = questLevelProgressBar.progress
-        val animator = ObjectAnimator.ofInt(questLevelProgressBar, "progress", currentProgress, targetProgress)
-        animator.duration = 1200
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.start()
-    }
-    
-    private fun showQuestProgressDialog() {
-        val inflater = LayoutInflater.from(this)
-        val dialogView = inflater.inflate(R.layout.dialog_quest_progress, null)
-        
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
-        
-        // Make dialog background transparent
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
-        
-        // Get quest data
-        val realms = questCodex.getRealms()
-        var totalGames = 0
-        var completedGames = 0
-        var completedLevels = 0
-        var unlockedRealms = 0
-        
-        realms.forEach { realm ->
-            totalGames += realm.totalPuzzles
-            completedGames += realm.puzzlesCompleted
-            if (realm.isUnlocked) unlockedRealms++
-            
-            // Count completed levels (a level is complete when all 10 games are done)
-            if (realm.puzzlesCompleted >= realm.totalPuzzles) {
-                completedLevels++
-            }
-        }
-        
-        // Circular Ring: Show progress of all 40 games (0-100%)
-        val gamesProgressPercentage = if (totalGames > 0) (completedGames * 100) / totalGames else 0
-        
-        // Horizontal Bar: Show progress of 4 levels (0%, 25%, 50%, 75%, 100%)
-        val levelsProgressPercentage = (completedLevels * 25) // 25% per completed level
-        
-        // Update dialog content
-        val progressRing = dialogView.findViewById<ProgressBar>(R.id.dialogProgressRing)
-        val progressText = dialogView.findViewById<TextView>(R.id.dialogProgressText)
-        val completedText = dialogView.findViewById<TextView>(R.id.dialogCompletedText)
-        val currentRealmText = dialogView.findViewById<TextView>(R.id.dialogCurrentRealmText)
-        val realmsText = dialogView.findViewById<TextView>(R.id.dialogRealmsText)
-        val playButton = dialogView.findViewById<Button>(R.id.dialogPlayButton)
-        val closeButton = dialogView.findViewById<Button>(R.id.dialogCloseButton)
-        
-        // Animate progress ring
-        progressRing?.let { ring ->
-            val animator = ObjectAnimator.ofInt(ring, "progress", 0, gamesProgressPercentage)
-            animator.duration = 1500
-            animator.interpolator = AccelerateDecelerateInterpolator()
-            animator.start()
-        }
-        
-        progressText?.text = "$gamesProgressPercentage%"
-        completedText?.text = "Games: $completedGames/$totalGames completed"
-        currentRealmText?.text = "Levels: $completedLevels/4 completed (${levelsProgressPercentage}%)"
-        realmsText?.text = "Unlocked Realms: $unlockedRealms/${realms.size}"
-        
-        // Button handlers
-        playButton?.setOnClickListener {
-            dialog.dismiss()
-            val intent = Intent(this, RealmSelectionActivity::class.java)
-            startActivity(intent)
-        }
-        
-        closeButton?.setOnClickListener {
-            dialog.dismiss()
-        }
-        
-        dialog.show()
     }
     
     override fun onResume() {
