@@ -951,12 +951,14 @@ class MainActivity : AppCompatActivity() {
             
             // Save game result
             val timeText = timerText.text.toString()
+            val performanceStars = statsManager.calculatePerformanceStars(secondsElapsed, totalMistakes, boardSize, currentDifficulty)
             val gameResult = GameResult(
                 boardSize = boardSize,
                 difficulty = currentDifficulty,
                 timeInSeconds = secondsElapsed,
                 mistakes = totalMistakes,
-                completed = true
+                completed = true,
+                performanceRating = performanceStars
             )
             statsManager.saveGameResult(gameResult)
             
@@ -996,7 +998,7 @@ class MainActivity : AppCompatActivity() {
         dialogView.findViewById<TextView>(R.id.completionDifficulty)?.text = difficultyText
         
         // Calculate performance stars based on time and mistakes
-        val performanceStars = calculatePerformanceStars(secondsElapsed, mistakes, boardSize)
+        val performanceStars = statsManager.calculatePerformanceStars(secondsElapsed, mistakes, boardSize, currentDifficulty)
         val starsText = dialogView.findViewById<TextView>(R.id.performanceStars)
         val starDisplay = "⭐".repeat(performanceStars) + "☆".repeat(5 - performanceStars)
         starsText?.text = starDisplay
@@ -1034,43 +1036,6 @@ class MainActivity : AppCompatActivity() {
         }
         
         dialog.show()
-    }
-    
-    private fun calculatePerformanceStars(timeSeconds: Int, mistakes: Int, boardSize: Int): Int {
-        var stars = 5
-        
-        // Deduct stars for mistakes
-        when (boardSize) {
-            6 -> {
-                // 6x6: more lenient
-                if (mistakes > 5) stars -= 2
-                else if (mistakes > 2) stars -= 1
-            }
-            9 -> {
-                // 9x9: stricter
-                if (mistakes > 3) stars -= 2
-                else if (mistakes > 1) stars -= 1
-            }
-        }
-        
-        // Deduct stars for slow completion (optional - time-based)
-        // This can be customized based on difficulty
-        val expectedTime = when (currentDifficulty) {
-            SudokuGenerator.Difficulty.EASY -> if (boardSize == 6) 300 else 600
-            SudokuGenerator.Difficulty.MEDIUM -> if (boardSize == 6) 600 else 1200
-            SudokuGenerator.Difficulty.HARD -> if (boardSize == 6) 900 else 1800
-            SudokuGenerator.Difficulty.EXPERT -> if (boardSize == 6) 1200 else 2400
-        }
-        
-        // Deduct stars if completion time is too slow
-        if (timeSeconds > expectedTime * 2) {
-            stars = (stars - 1).coerceAtLeast(1)
-        } else if (timeSeconds > (expectedTime * 1.5).toInt()) {
-            // Slightly slow, but no penalty (stars already adjusted for mistakes)
-            stars = stars.coerceAtLeast(1)
-        }
-        
-        return stars.coerceIn(1, 5)
     }
 
     private fun showQuestVictoryDialog(time: String, mistakes: Int) {

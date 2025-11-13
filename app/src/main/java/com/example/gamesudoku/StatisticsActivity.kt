@@ -64,6 +64,14 @@ class StatisticsActivity : AppCompatActivity() {
     }
 
     private fun setupSortButtons() {
+        // All button - reset to default sort (date, newest first)
+        findViewById<Button>(R.id.sortAllButton).setOnClickListener {
+            currentSortType = SortType.DATE
+            currentSortOrder = SortOrder.DESCENDING
+            updateSortDisplay()
+            loadStatistics()
+        }
+
         // Date sorting
         findViewById<Button>(R.id.sortDateButton).setOnClickListener {
             if (currentSortType == SortType.DATE) {
@@ -147,7 +155,9 @@ class StatisticsActivity : AppCompatActivity() {
     }
 
     private fun updateButtonStates() {
+        val allButton = findViewById<Button>(R.id.sortAllButton)
         val buttons = listOf(
+            allButton,
             findViewById<Button>(R.id.sortDateButton),
             findViewById<Button>(R.id.sortTimeButton),
             findViewById<Button>(R.id.sortDifficultyButton),
@@ -158,13 +168,18 @@ class StatisticsActivity : AppCompatActivity() {
             button.isSelected = false
         }
 
-        val activeButton = when (currentSortType) {
-            SortType.DATE -> findViewById<Button>(R.id.sortDateButton)
-            SortType.TIME -> findViewById<Button>(R.id.sortTimeButton)
-            SortType.DIFFICULTY -> findViewById<Button>(R.id.sortDifficultyButton)
-            SortType.BOARD_SIZE -> findViewById<Button>(R.id.sortBoardSizeButton)
+        // Highlight "All" button when sort is default (Date, Descending)
+        if (currentSortType == SortType.DATE && currentSortOrder == SortOrder.DESCENDING) {
+            allButton.isSelected = true
+        } else {
+            val activeButton = when (currentSortType) {
+                SortType.DATE -> findViewById<Button>(R.id.sortDateButton)
+                SortType.TIME -> findViewById<Button>(R.id.sortTimeButton)
+                SortType.DIFFICULTY -> findViewById<Button>(R.id.sortDifficultyButton)
+                SortType.BOARD_SIZE -> findViewById<Button>(R.id.sortBoardSizeButton)
+            }
+            activeButton.isSelected = true
         }
-        activeButton.isSelected = true
     }
 
     private fun loadStatistics() {
@@ -226,7 +241,7 @@ class StatisticsActivity : AppCompatActivity() {
                 }
             }
         }
-        return sortedResults.take(20) // Show last 20 games
+        return sortedResults // Show all games
     }
 
     private fun showClearDataDialog() {
@@ -307,27 +322,18 @@ class StatisticsActivity : AppCompatActivity() {
             private fun calculateStarRating(result: GameResult): Int {
                 if (!result.completed) return 0
                 
-                // Calculate rating based on time, mistakes, and difficulty
-                val baseRating = when (result.difficulty) {
-                    SudokuGenerator.Difficulty.EASY -> 1
-                    SudokuGenerator.Difficulty.MEDIUM -> 2
-                    SudokuGenerator.Difficulty.HARD -> 3
-                    SudokuGenerator.Difficulty.EXPERT -> 3
+                // Use saved performance rating if available (new games), otherwise calculate it
+                return if (result.performanceRating > 0) {
+                    result.performanceRating
+                } else {
+                    // For old games without saved rating, calculate it now
+                    statsManager.calculatePerformanceStars(
+                        result.timeInSeconds,
+                        result.mistakes,
+                        result.boardSize,
+                        result.difficulty
+                    )
                 }
-                
-                val timeBonus = when {
-                    result.timeInSeconds < 60 -> 2
-                    result.timeInSeconds < 300 -> 1
-                    else -> 0
-                }
-                
-                val mistakePenalty = when {
-                    result.mistakes == 0 -> 1
-                    result.mistakes <= 2 -> 0
-                    else -> -1
-                }
-                
-                return (baseRating + timeBonus + mistakePenalty).coerceIn(0, 3)
             }
         }
     }
@@ -352,9 +358,9 @@ class StatisticsActivity : AppCompatActivity() {
         dialogView.findViewById<TextView>(R.id.detailMistakes).text = result.mistakes.toString()
         dialogView.findViewById<TextView>(R.id.detailStatus).text = if (result.completed) "✅ Completed" else "❌ Incomplete"
         
-        // Calculate and set star rating
+        // Calculate and set star rating (5-star system)
         val stars = calculateStarRatingForResult(result)
-        dialogView.findViewById<TextView>(R.id.detailStars).text = "⭐".repeat(stars) + "☆".repeat(3 - stars)
+        dialogView.findViewById<TextView>(R.id.detailStars).text = "⭐".repeat(stars) + "☆".repeat(5 - stars)
         
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -375,26 +381,17 @@ class StatisticsActivity : AppCompatActivity() {
     private fun calculateStarRatingForResult(result: GameResult): Int {
         if (!result.completed) return 0
         
-        // Calculate rating based on time, mistakes, and difficulty
-        val baseRating = when (result.difficulty) {
-            SudokuGenerator.Difficulty.EASY -> 1
-            SudokuGenerator.Difficulty.MEDIUM -> 2
-            SudokuGenerator.Difficulty.HARD -> 3
-            SudokuGenerator.Difficulty.EXPERT -> 3
+        // Use saved performance rating if available (new games), otherwise calculate it
+        return if (result.performanceRating > 0) {
+            result.performanceRating
+        } else {
+            // For old games without saved rating, calculate it now
+            statsManager.calculatePerformanceStars(
+                result.timeInSeconds,
+                result.mistakes,
+                result.boardSize,
+                result.difficulty
+            )
         }
-        
-        val timeBonus = when {
-            result.timeInSeconds < 60 -> 2
-            result.timeInSeconds < 300 -> 1
-            else -> 0
-        }
-        
-        val mistakePenalty = when {
-            result.mistakes == 0 -> 1
-            result.mistakes <= 2 -> 0
-            else -> -1
-        }
-        
-        return (baseRating + timeBonus + mistakePenalty).coerceIn(0, 3)
     }
 }

@@ -171,17 +171,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Sort Label -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Sort by:"
-                    android:textColor="@color/text_medium_brown"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                android:padding="8dp">
 
                 <!-- Active Sort Display -->
                 <TextView
@@ -190,68 +180,85 @@
                     android:layout_height="wrap_content"
                     android:text="Sorted by: Most Recent"
                     android:textColor="@color/accent_orange"
-                    android:textSize="14sp"
+                    android:textSize="12sp"
                     android:textStyle="italic"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="6dp" />
 
-                <!-- Sort Buttons Row 1 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
-
-                    <Button
-                        android:id="@+id/sortDateButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="📅 Date"
-                        android:textSize="12sp"
-                        android:layout_marginEnd="4dp"
-                        android:background="@drawable/sort_button_background"
-                        android:textColor="@color/text_dark_brown" />
-
-                    <Button
-                        android:id="@+id/sortTimeButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="⏱ Time"
-                        android:textSize="12sp"
-                        android:layout_marginStart="4dp"
-                        android:background="@drawable/sort_button_background"
-                        android:textColor="@color/text_dark_brown" />
-
-                </LinearLayout>
-
-                <!-- Sort Buttons Row 2 -->
+                <!-- Sort Buttons - All in One Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
                     <Button
+                        android:id="@+id/sortAllButton"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:text="All"
+                        android:textSize="10sp"
+                        android:layout_marginEnd="2dp"
+                        android:background="@drawable/sort_button_background"
+                        android:textColor="@color/text_dark_brown"
+                        android:paddingHorizontal="2dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp" />
+
+                    <Button
+                        android:id="@+id/sortDateButton"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:text="📅 Date"
+                        android:textSize="10sp"
+                        android:layout_marginHorizontal="2dp"
+                        android:background="@drawable/sort_button_background"
+                        android:textColor="@color/text_dark_brown"
+                        android:paddingHorizontal="2dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp" />
+
+                    <Button
+                        android:id="@+id/sortTimeButton"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:text="⏱ Time"
+                        android:textSize="10sp"
+                        android:layout_marginHorizontal="2dp"
+                        android:background="@drawable/sort_button_background"
+                        android:textColor="@color/text_dark_brown"
+                        android:paddingHorizontal="2dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp" />
+
+                    <Button
                         android:id="@+id/sortDifficultyButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="32dp"
                         android:layout_weight="1"
-                        android:text="🎯 Difficulty"
-                        android:textSize="12sp"
-                        android:layout_marginEnd="4dp"
+                        android:text="🎯 Diff"
+                        android:textSize="10sp"
+                        android:layout_marginHorizontal="2dp"
                         android:background="@drawable/sort_button_background"
-                        android:textColor="@color/text_dark_brown" />
+                        android:textColor="@color/text_dark_brown"
+                        android:paddingHorizontal="2dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp" />
 
                     <Button
                         android:id="@+id/sortBoardSizeButton"
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="32dp"
                         android:layout_weight="1"
-                        android:text="🔲 Board Size"
-                        android:textSize="12sp"
-                        android:layout_marginStart="4dp"
+                        android:text="🔲 Size"
+                        android:textSize="10sp"
+                        android:layout_marginStart="2dp"
                         android:background="@drawable/sort_button_background"
-                        android:textColor="@color/text_dark_brown" />
+                        android:textColor="@color/text_dark_brown"
+                        android:paddingHorizontal="2dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp" />
 
                 </LinearLayout>
 
@@ -271,8 +278,8 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recentGamesRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false" />
+            android:layout_height="400dp"
+            android:nestedScrollingEnabled="true" />
 
         <!-- Action Buttons -->
         <LinearLayout
