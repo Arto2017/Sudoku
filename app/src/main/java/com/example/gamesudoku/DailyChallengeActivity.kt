@@ -28,6 +28,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     private lateinit var sudokuBoardView: SudokuBoardView
     private lateinit var dailyChallengeManager: DailyChallengeManager
+    private lateinit var dailyChallengeStateManager: DailyChallengeStateManager
     private lateinit var currentPuzzle: DailyChallengeGenerator.DailyPuzzle
     private lateinit var audioManager: AudioManager
     
@@ -46,6 +47,8 @@ class DailyChallengeActivity : AppCompatActivity() {
     private var hintsUsed = 0
     private var gameTimerHandler: Handler? = null
     private var gameTimerRunnable: Runnable? = null
+    private var selectedNumber = 0
+    private var gameResultSaved = false // Flag to prevent duplicate saves
     
     // Mistake tracking (like MainActivity)
     private var totalMistakes = 0
@@ -61,7 +64,13 @@ class DailyChallengeActivity : AppCompatActivity() {
         initializeViews()
         initializeGame()
         setupClickListeners()
-        startGame()
+        
+        // Start game timer if game is active (will resume if restoring saved state)
+        if (isGameActive) {
+            startGameTimer()
+        } else {
+            startGame()
+        }
     }
     
     private fun initializeViews() {
@@ -88,6 +97,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     private fun initializeGame() {
         dailyChallengeManager = DailyChallengeManager(this)
+        dailyChallengeStateManager = DailyChallengeStateManager(this)
         attemptStore = AttemptStateStore(this)
         audioManager = AudioManager.getInstance(this)
         
@@ -96,17 +106,90 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Setup Sudoku board
         sudokuBoardView.setBoardSize(9)
-        loadPuzzleToBoard()
         
-        // Load mistakes from store for daily challenge
-        val dailyChallengeId = "daily_${currentPuzzle.date}"
-        totalMistakes = attemptStore.getMistakes(dailyChallengeId)
-        updateMistakesHud(totalMistakes)
+        // Try to restore saved state first
+        val savedState = dailyChallengeStateManager.loadState()
+        
+        if (savedState != null && savedState.date == currentPuzzle.date) {
+            // Restore saved game state
+            restoreGameState(savedState)
+        } else {
+            // No saved state or date changed - start fresh
+            loadPuzzleToBoard()
+            
+            // Load mistakes from store for daily challenge
+            val dailyChallengeId = "daily_${currentPuzzle.date}"
+            totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+            updateMistakesHud(totalMistakes)
+        }
         
         // Update UI
         updateHeader()
         updateDifficulty()
-        
+    }
+    
+    private fun restoreGameState(savedState: DailyChallengeStateManager.DailyChallengeState) {
+        try {
+            // Restore board state
+            val boardArray = savedState.board.map { it.toIntArray() }.toTypedArray()
+            val fixedArray = savedState.fixed.map { it.toBooleanArray() }.toTypedArray()
+            
+            if (boardArray.size != 9 || fixedArray.size != 9) {
+                Log.w("DailyChallenge", "Invalid saved state, starting fresh")
+                loadPuzzleToBoard()
+                return
+            }
+            
+            sudokuBoardView.setBoardState(boardArray, fixedArray)
+            
+            // Restore solution
+            val solutionArray = savedState.solution.toIntArray()
+            if (solutionArray.size == 81) {
+                sudokuBoardView.setSolutionBoard(solutionArray)
+            }
+            
+            // Restore hints state
+            sudokuBoardView.setHintsState(
+                savedRemaining = savedState.hintsRemaining,
+                savedUsed = savedState.hintsUsed,
+                savedMax = savedState.maxHints
+            )
+            
+            // Restore game state
+            gameTime = savedState.gameTime
+            // Calculate new start time based on saved elapsed time
+            gameStartTime = System.currentTimeMillis() - gameTime
+            movesCount = savedState.movesCount
+            hintsUsed = savedState.hintsUsed
+            totalMistakes = savedState.mistakes
+            isGameActive = savedState.isGameActive
+            selectedNumber = savedState.selectedNumber
+            
+            // Update mistakes HUD
+            updateMistakesHud(totalMistakes)
+            
+            // Update timer display immediately
+            updateTimer()
+            
+            // Restore selected number highlighting
+            if (selectedNumber in 1..9) {
+                sudokuBoardView.highlightNumber(selectedNumber)
+                highlightActiveNumber(selectedNumber)
+            }
+            
+            // Update mistakes in attempt store
+            val dailyChallengeId = "daily_${currentPuzzle.date}"
+            attemptStore.setMistakes(dailyChallengeId, totalMistakes)
+            
+            Log.d("DailyChallenge", "Restored game state: time=${gameTime}ms, moves=$movesCount, hints=$hintsUsed, active=$isGameActive")
+        } catch (e: Exception) {
+            Log.e("DailyChallenge", "Error restoring game state", e)
+            // Fallback to fresh start
+            loadPuzzleToBoard()
+            val dailyChallengeId = "daily_${currentPuzzle.date}"
+            totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+            updateMistakesHud(totalMistakes)
+        }
     }
     
     private fun loadPuzzleToBoard() {
@@ -139,7 +222,8 @@ class DailyChallengeActivity : AppCompatActivity() {
         hintButton.setOnClickListener {
             if (sudokuBoardView.revealHint()) {
                 SoundManager.getInstance(this@DailyChallengeActivity).playClick()
-                hintsUsed++
+                // Sync hintsUsed with board (board tracks it internally)
+                hintsUsed = sudokuBoardView.getHintsUsed()
                 
                 // Highlight the number that was placed by the hint (same as manual placement)
                 val placedNumber = sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol())
@@ -389,6 +473,7 @@ class DailyChallengeActivity : AppCompatActivity() {
                     sudokuBoardView.setNumber(i)
                     sudokuBoardView.highlightNumber(i) // Highlight all cells with this number
                     movesCount++
+                    selectedNumber = i
                     highlightActiveNumber(i)
                     
                     // Check for completion after placing number
@@ -436,19 +521,23 @@ class DailyChallengeActivity : AppCompatActivity() {
     private fun completeGame() {
         isGameActive = false
         stopGameTimer()
+        gameResultSaved = true
         
         val timeSeconds = (gameTime / 1000).toInt()
         
-        // Save completion record
+        // Save completion record (use hintsUsed from board to ensure accuracy)
         val record = DailyChallengeManager.DailyRecord(
             date = currentPuzzle.date,
             timeSeconds = timeSeconds,
             moves = movesCount,
             difficulty = currentPuzzle.difficulty,
-            hintsUsed = hintsUsed
+            hintsUsed = sudokuBoardView.getHintsUsed()
         )
         
         dailyChallengeManager.saveDailyRecord(record)
+        
+        // Clear saved state since game is completed
+        dailyChallengeStateManager.clearState()
         
         // Show completion dialog
         showCompletionDialog(record)
@@ -511,12 +600,79 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     override fun onPause() {
         super.onPause()
-        // Keep timer running even when app is paused
+        // Save game state when paused (unless completed)
+        saveGameState()
     }
     
     override fun onDestroy() {
         super.onDestroy()
         stopGameTimer()
+        // Save game state when destroyed (unless completed)
+        saveGameState()
+    }
+    
+    private fun saveGameState() {
+        // Don't save if game is completed or already saved
+        if (gameResultSaved || sudokuBoardView.isBoardComplete()) {
+            dailyChallengeStateManager.clearState()
+            return
+        }
+        
+        // Check if there's any progress to save
+        val boardState = sudokuBoardView.getBoardState()
+        val fixedState = sudokuBoardView.getFixedState()
+        val hasProgress = hasUserPlacedNumbers(boardState, fixedState) || gameTime > 0 || totalMistakes > 0
+        
+        if (!hasProgress) {
+            // No progress to save, clear any existing state
+            dailyChallengeStateManager.clearState()
+            return
+        }
+        
+        // Update game time before saving
+        if (isGameActive) {
+            gameTime = System.currentTimeMillis() - gameStartTime
+        }
+        
+        // Get solution for saving
+        val solution = sudokuBoardView.getSolutionForSaving()
+        if (solution == null) {
+            Log.w("DailyChallenge", "No solution available for saving")
+            return
+        }
+        
+        // Save state
+        dailyChallengeStateManager.saveState(
+            date = currentPuzzle.date,
+            boardSize = 9,
+            difficulty = currentPuzzle.difficulty,
+            gameTime = gameTime,
+            gameStartTime = gameStartTime,
+            movesCount = movesCount,
+            hintsUsed = sudokuBoardView.getHintsUsed(),
+            hintsRemaining = sudokuBoardView.getHintsRemaining(),
+            maxHints = sudokuBoardView.getMaxHintsPerGame(),
+            mistakes = totalMistakes,
+            board = boardState,
+            fixed = fixedState,
+            solution = solution,
+            selectedNumber = selectedNumber,
+            isGameActive = isGameActive,
+            isCompleted = false
+        )
+        
+        Log.d("DailyChallenge", "Saved game state: time=${gameTime}ms, moves=$movesCount")
+    }
+    
+    private fun hasUserPlacedNumbers(board: Array<IntArray>, fixed: Array<BooleanArray>): Boolean {
+        for (row in board.indices) {
+            for (col in board[row].indices) {
+                if (board[row][col] != 0 && !fixed[row][col]) {
+                    return true
+                }
+            }
+        }
+        return false
     }
     
     override fun onBackPressed() {
@@ -530,6 +686,10 @@ class DailyChallengeActivity : AppCompatActivity() {
     private fun showFantasyExitDialog() {
         val dialogView = layoutInflater.inflate(R.layout.fantasy_exit_dialog, null)
         
+        // Update message text to reflect that progress will be saved
+        val messageText = dialogView.findViewById<TextView>(R.id.exitMessageText)
+        messageText.text = "Are you sure you want to leave? Your progress will be saved automatically and you can continue later today."
+        
         val dialog = android.app.AlertDialog.Builder(this)
             .setView(dialogView)
             .setCancelable(true)
@@ -542,6 +702,8 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         dialogView.findViewById<Button>(R.id.btnExit).setOnClickListener {
             dialog.dismiss()
+            // Save state before exiting
+            saveGameState()
             super.onBackPressed()
         }
         

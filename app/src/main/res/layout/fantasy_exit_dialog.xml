@@ -38,9 +38,10 @@
 
     <!-- Message Text -->
     <TextView
+        android:id="@+id/exitMessageText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Are you sure you want to leave? Your current progress will be lost and you won't be able to complete today's challenge."
+        android:text="Are you sure you want to leave? Your progress will be saved automatically and you can continue later today."
         android:textColor="#6B4423"
         android:textSize="16sp"
         android:fontFamily="serif"
