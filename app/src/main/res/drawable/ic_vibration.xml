@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Vibration icon - phone with vibration waves -->
+    <path
+        android:fillColor="#666666"
+        android:pathData="M15.5,1h-7C7.67,1 7,1.67 7,2.5v19C7,22.33 7.67,23 8.5,23h7c0.83,0 1.5,-0.67 1.5,-1.5v-19C17,1.67 16.33,1 15.5,1zM15,20H9V4h6V20z"/>
+    <!-- Vibration waves on left -->
+    <path
+        android:fillColor="#666666"
+        android:pathData="M3,8h1v8h-1V8z"/>
+    <path
+        android:fillColor="#666666"
+        android:pathData="M1,10h1v4h-1V10z"/>
+    <!-- Vibration waves on right -->
+    <path
+        android:fillColor="#666666"
+        android:pathData="M20,8h1v8h-1V8z"/>
+    <path
+        android:fillColor="#666666"
+        android:pathData="M22,10h1v4h-1V10z"/>
+</vector>
+

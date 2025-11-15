@@ -70,7 +70,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_menu"
+                    android:src="@drawable/ic_sound"
                     app:tint="#666666"
                     android:layout_marginEnd="16dp" />
 
@@ -132,7 +132,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_hint"
+                    android:src="@drawable/ic_vibration"
                     app:tint="#666666"
                     android:layout_marginEnd="16dp" />
 
@@ -193,8 +193,8 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_hint"
-                    app:tint="#666666"
+                    android:src="@drawable/ic_lightbulb"
+                    app:tint="#FFA500"
                     android:layout_marginEnd="16dp" />
 
                 <LinearLayout
