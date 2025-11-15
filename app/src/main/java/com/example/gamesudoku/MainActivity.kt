@@ -1045,13 +1045,67 @@ class MainActivity : AppCompatActivity() {
         
         questPuzzleId?.let { puzzleId ->
             realmId?.let { realmId ->
+                // Get puzzle chain
+                val puzzleChain = questCodex.getPuzzleChain(realmId) ?: return@let
+                val realm = questCodex.getRealmById(realmId) ?: return@let
+                
+                // Check if this puzzle was already completed before
+                val savedPuzzleBefore = questCodex.getSavedPuzzle(puzzleId)
+                val wasPuzzleAlreadyCompleted = savedPuzzleBefore?.isCompleted == true
+                
+                // Count completed puzzles BEFORE recording this one (excluding current puzzle)
+                val completedBefore = puzzleChain.puzzles.count { puzzle ->
+                    if (puzzle.id == puzzleId) {
+                        false // Don't count current puzzle
+                    } else {
+                        val saved = questCodex.getSavedPuzzle(puzzle.id)
+                        saved?.isCompleted == true
+                    }
+                }
+                
+                android.util.Log.d("MainActivity", "BEFORE: completedBefore=$completedBefore, wasPuzzleAlreadyCompleted=$wasPuzzleAlreadyCompleted, puzzleId=$puzzleId")
+                
+                // Record the puzzle completion (this will mark it as completed)
                 questCodex.recordPuzzleCompletion(realmId, puzzleId, timeSeconds, totalMistakes)
+                
+                // Count completed puzzles AFTER recording
+                val completedAfter = puzzleChain.puzzles.count { puzzle ->
+                    val saved = questCodex.getSavedPuzzle(puzzle.id)
+                    saved?.isCompleted == true
+                }
+                
+                val totalPuzzles = realm.totalPuzzles
+                
+                android.util.Log.d("MainActivity", "AFTER: completedAfter=$completedAfter, totalPuzzles=$totalPuzzles")
+                
+                // Check if this is the 10th puzzle being completed
+                // Show special dialog when: completedBefore was 9 and completedAfter is now 10
+                // This means the user just completed the final puzzle to finish the level
+                val isCompletingFinalPuzzle = completedBefore == (totalPuzzles - 1) && completedAfter >= totalPuzzles
+                
+                android.util.Log.d("MainActivity", "Realm completion check:")
+                android.util.Log.d("MainActivity", "  - wasPuzzleAlreadyCompleted: $wasPuzzleAlreadyCompleted")
+                android.util.Log.d("MainActivity", "  - completedBefore: $completedBefore")
+                android.util.Log.d("MainActivity", "  - completedAfter: $completedAfter")
+                android.util.Log.d("MainActivity", "  - totalPuzzles: $totalPuzzles")
+                android.util.Log.d("MainActivity", "  - isCompletingFinalPuzzle: $isCompletingFinalPuzzle")
                 
                 // Clear saved board state when puzzle is completed
                 questCodex.clearPuzzleBoardState(puzzleId)
-                android.util.Log.d("MainActivity", "Cleared quest puzzle state after completion: $puzzleId")
+                
+                // If this is the final puzzle completing the level, show special level completion dialog
+                if (isCompletingFinalPuzzle) {
+                    android.util.Log.d("MainActivity", "*** SHOWING LEVEL COMPLETION DIALOG *** for realm: $realmId")
+                    showLevelCompletionDialog(realmId, realm.name)
+                    return  // Exit function early, don't show regular dialog
+                } else {
+                    android.util.Log.d("MainActivity", "NOT showing level completion dialog - showing regular dialog instead")
+                }
             }
         }
+        
+        // If we reach here, show the regular game completion dialog
+        android.util.Log.d("MainActivity", "Showing regular quest victory dialog")
         
         val dialogView = layoutInflater.inflate(R.layout.dialog_quest_victory, null)
         
@@ -1267,6 +1321,336 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showLevelCompletionDialog(realmId: String, realmName: String) {
+        val questCodex = QuestCodex(this)
+        val realm = questCodex.getRealmById(realmId)
+        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_level_completion, null)
+        
+        // Set realm name
+        dialogView.findViewById<TextView>(R.id.levelName)?.text = realmName
+        dialogView.findViewById<TextView>(R.id.levelNameTitle)?.text = "Level Complete!"
+        
+        // Get total stars for this realm
+        val puzzleChain = questCodex.getPuzzleChain(realmId)
+        val totalStars = puzzleChain?.puzzles?.sumOf { puzzle ->
+            val saved = questCodex.getSavedPuzzle(puzzle.id)
+            saved?.stars ?: 0
+        } ?: 0
+        
+        dialogView.findViewById<TextView>(R.id.totalStarsText)?.text = "Total Stars: $totalStars"
+        
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        // Make background transparent
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        
+        // Setup button click listener
+        dialogView.findViewById<Button>(R.id.btnContinue)?.setOnClickListener {
+            fallingStarsActive = false
+            dialog.dismiss()
+            // Return to realm quest or main menu
+            if (realmId != null) {
+                val intent = Intent(this, RealmQuestActivity::class.java).apply {
+                    putExtra("realm_id", realmId)
+                }
+                startActivity(intent)
+                finish()
+            }
+        }
+        
+        // Reset flag when dialog is dismissed
+        dialog.setOnDismissListener {
+            fallingStarsActive = false
+        }
+        
+        // Animate dialog entrance and effects
+        dialog.setOnShowListener {
+            animateLevelCompletionDialog(dialogView)
+        }
+        
+        dialog.show()
+    }
+    
+    private fun animateLevelCompletionDialog(dialogView: android.view.View) {
+        val overlay = dialogView.findViewById<android.view.View>(R.id.completionOverlay)
+        val card = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.completionCard)
+        val starsContainer = dialogView.findViewById<FrameLayout>(R.id.starsConnectionContainer)
+        val title = dialogView.findViewById<TextView>(R.id.levelNameTitle)
+        val levelName = dialogView.findViewById<TextView>(R.id.levelName)
+        val message = dialogView.findViewById<TextView>(R.id.completionMessage)
+        val starsText = dialogView.findViewById<TextView>(R.id.totalStarsText)
+        val button = dialogView.findViewById<Button>(R.id.btnContinue)
+        
+        // Animate overlay fade in
+        overlay?.animate()?.alpha(1f)?.setDuration(400)?.start()
+        
+        // Animate card entrance (scale + fade)
+        card?.animate()
+            ?.alpha(1f)
+            ?.scaleX(1f)
+            ?.scaleY(1f)
+            ?.setDuration(500)
+            ?.setInterpolator(android.view.animation.OvershootInterpolator())
+            ?.start()
+        
+        // Animate title
+        title?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(200)
+            ?.setDuration(400)
+            ?.setInterpolator(android.view.animation.OvershootInterpolator())
+            ?.start()
+        
+        // Animate level name
+        levelName?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(300)
+            ?.setDuration(400)
+            ?.start()
+        
+        // Animate connecting stars
+        animateConnectingStars(starsContainer)
+        
+        // Start falling stars/balloons animation
+        startFallingStarsAnimation(dialogView)
+        
+        // Animate message and stats
+        message?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(600)
+            ?.setDuration(400)
+            ?.start()
+        
+        starsText?.animate()
+            ?.alpha(1f)
+            ?.translationY(0f)
+            ?.setStartDelay(700)
+            ?.setDuration(400)
+            ?.start()
+        
+        // Animate button
+        button?.animate()
+            ?.alpha(1f)
+            ?.scaleX(1f)
+            ?.scaleY(1f)
+            ?.setStartDelay(800)
+            ?.setDuration(400)
+            ?.setInterpolator(android.view.animation.OvershootInterpolator())
+            ?.start()
+    }
+    
+    private fun animateConnectingStars(container: FrameLayout?) {
+        container ?: return
+        
+        // Use post to get actual dimensions
+        container.post {
+            val width = container.width
+            val height = container.height
+            if (width == 0 || height == 0) return@post
+            
+            // Draw connecting lines between stars (using a custom view or canvas)
+            val lineView = object : android.view.View(this) {
+                override fun onDraw(canvas: android.graphics.Canvas) {
+                    super.onDraw(canvas)
+                    val paint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.parseColor("#FFD700")
+                        strokeWidth = 4f
+                        alpha = 150
+                    }
+                    
+                    val radius = minOf(width, height) * 0.3f
+                    val centerX = width / 2f
+                    val centerY = height / 2f
+                    
+                    // Draw lines connecting adjacent stars
+                    for (i in 0 until 10) {
+                        val angle1 = (i * 36.0) * kotlin.math.PI / 180.0
+                        val angle2 = ((i + 1) % 10 * 36.0) * kotlin.math.PI / 180.0
+                        
+                        val x1 = (centerX + radius * kotlin.math.cos(angle1)).toFloat()
+                        val y1 = (centerY + radius * kotlin.math.sin(angle1)).toFloat()
+                        val x2 = (centerX + radius * kotlin.math.cos(angle2)).toFloat()
+                        val y2 = (centerY + radius * kotlin.math.sin(angle2)).toFloat()
+                        
+                        canvas.drawLine(x1, y1, x2, y2, paint)
+                    }
+                }
+            }.apply {
+                layoutParams = FrameLayout.LayoutParams(width, height)
+                alpha = 0f
+            }
+            
+            container.addView(lineView, 0) // Add behind stars
+            
+            // Create 10 star views representing the 10 completed games
+            for (i in 0 until 10) {
+                val angle = (i * 36.0) * kotlin.math.PI / 180.0 // 360/10 = 36 degrees per star
+                val radius = minOf(width, height) * 0.3f
+                val centerX = width / 2f
+                val centerY = height / 2f
+                
+                val star = TextView(this).apply {
+                    text = "⭐"
+                    textSize = 32f
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        val x = (centerX + radius * kotlin.math.cos(angle) - 32).toInt()
+                        val y = (centerY + radius * kotlin.math.sin(angle) - 32).toInt()
+                        
+                        leftMargin = x
+                        topMargin = y
+                    }
+                    alpha = 0f
+                    scaleX = 0f
+                    scaleY = 0f
+                }
+                
+                container.addView(star)
+                
+                // Animate each star appearing and connecting
+                val delay = i * 100L
+                star.animate()
+                    ?.alpha(1f)
+                    ?.scaleX(1f)
+                    ?.scaleY(1f)
+                    ?.setStartDelay(delay)
+                    ?.setDuration(400)
+                    ?.setInterpolator(android.view.animation.OvershootInterpolator())
+                    ?.withEndAction {
+                        // Add pulsing effect
+                        star.animate()
+                            ?.scaleX(1.2f)
+                            ?.scaleY(1.2f)
+                            ?.setDuration(300)
+                            ?.withEndAction {
+                                star.animate()
+                                    ?.scaleX(1f)
+                                    ?.scaleY(1f)
+                                    ?.setDuration(300)
+                                    ?.start()
+                            }
+                            ?.start()
+                    }
+                    ?.start()
+            }
+            
+            // Animate line appearance
+            lineView.animate()
+                ?.alpha(1f)
+                ?.setStartDelay(500)
+                ?.setDuration(800)
+                ?.start()
+        }
+    }
+    
+    private var fallingStarsActive = false
+    
+    private fun startFallingStarsAnimation(parentView: android.view.View) {
+        val parent = parentView.findViewById<FrameLayout>(R.id.fallingStarsContainer) ?: return
+        
+        if (fallingStarsActive) return
+        fallingStarsActive = true
+        
+        // Use post to get actual dimensions
+        parent.post {
+            val width = parent.width
+            val height = parent.height
+            if (width == 0 || height == 0) {
+                fallingStarsActive = false
+                return@post
+            }
+            
+            // Create multiple falling stars/balloons
+            for (i in 0 until 15) {
+                val star = TextView(this).apply {
+                    text = if (i % 3 == 0) "🎈" else "⭐" // Mix balloons and stars
+                    textSize = 28f + (kotlin.random.Random.nextFloat() * 20)
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        leftMargin = (kotlin.random.Random.nextFloat() * width).toInt()
+                        topMargin = -100 // Start above screen
+                    }
+                    alpha = 0.8f
+                }
+                
+                parent.addView(star)
+                
+                // Animate falling
+                val duration = (2000 + kotlin.random.Random.nextFloat() * 2000).toLong()
+                val delay = (i * 200).toLong()
+                val endX = (kotlin.random.Random.nextFloat() * width)
+                val endY = height + 100f
+                
+                star.animate()
+                    ?.translationX(endX - star.left)
+                    ?.translationY(endY)
+                    ?.rotation((kotlin.random.Random.nextFloat() * 360))
+                    ?.setStartDelay(delay)
+                    ?.setDuration(duration)
+                    ?.setInterpolator(LinearInterpolator())
+                    ?.withEndAction {
+                        parent.removeView(star)
+                        // Create new falling star to continue animation
+                        if (parent.childCount < 5) {
+                            createSingleFallingStar(parent)
+                        }
+                    }
+                    ?.start()
+            }
+        }
+    }
+    
+    private fun createSingleFallingStar(parent: FrameLayout) {
+        val width = parent.width
+        val height = parent.height
+        if (width == 0 || height == 0) return
+        
+        val star = TextView(this).apply {
+            text = if (kotlin.random.Random.nextBoolean()) "🎈" else "⭐"
+            textSize = 28f + (kotlin.random.Random.nextFloat() * 20)
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                leftMargin = (kotlin.random.Random.nextFloat() * width).toInt()
+                topMargin = -100
+            }
+            alpha = 0.8f
+        }
+        
+        parent.addView(star)
+        
+        val duration = (2000 + kotlin.random.Random.nextFloat() * 2000).toLong()
+        val endX = (kotlin.random.Random.nextFloat() * width)
+        val endY = height + 100f
+        
+        star.animate()
+            ?.translationX(endX - star.left)
+            ?.translationY(endY)
+            ?.rotation((kotlin.random.Random.nextFloat() * 360))
+            ?.setDuration(duration)
+            ?.setInterpolator(LinearInterpolator())
+            ?.withEndAction {
+                parent.removeView(star)
+                // Continue creating stars if dialog is still showing
+                if (parent.parent != null) {
+                    createSingleFallingStar(parent)
+                }
+            }
+            ?.start()
+    }
+    
     // Disable phone back button - use UI back button instead
     override fun onBackPressed() {
         // Show dialog when back button is pressed
