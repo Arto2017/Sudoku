@@ -169,6 +169,25 @@ class QuestCodex(private val context: Context) {
             )
             savePuzzle(updatedPuzzle)
             
+            // Special handling: If puzzle 10 is completed, mark all previous puzzles (1-9) as completed too
+            if (questPuzzle.puzzleNumber == 10) {
+                android.util.Log.d("QuestCodex", "Puzzle 10 completed - marking all previous puzzles as completed")
+                puzzleChain.puzzles.filter { it.puzzleNumber < 10 }.forEach { prevPuzzle ->
+                    val savedPrevPuzzle = getSavedPuzzle(prevPuzzle.id)
+                    if (savedPrevPuzzle?.isCompleted != true) {
+                        // Mark as completed with default values (or keep existing best time/stars if better)
+                        val completedPrevPuzzle = prevPuzzle.copy(
+                            isCompleted = true,
+                            bestTime = savedPrevPuzzle?.bestTime ?: 0L,
+                            stars = savedPrevPuzzle?.stars ?: 0,
+                            isUnlocked = true
+                        )
+                        savePuzzle(completedPrevPuzzle)
+                        android.util.Log.d("QuestCodex", "Marked puzzle ${prevPuzzle.puzzleNumber} as completed")
+                    }
+                }
+            }
+            
             // Unlock codex fragment if this puzzle has one
             questPuzzle.codexFragmentId?.let { fragmentId ->
                 unlockCodexFragment(realmId, fragmentId)

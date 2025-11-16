@@ -100,6 +100,14 @@ class RealmQuestActivity : AppCompatActivity() {
                     questCodex.savePuzzle(unlockedPuzzle)
                 }
                 unlockedPuzzle
+            } else if (puzzle.puzzleNumber == 10) {
+                // For puzzle 10, always unlock it for testing purposes
+                val unlockedPuzzle = basePuzzle.copy(isUnlocked = true)
+                // Save the corrected state if it was different
+                if (savedPuzzle?.isUnlocked != true) {
+                    questCodex.savePuzzle(unlockedPuzzle)
+                }
+                unlockedPuzzle
             } else {
                 // For puzzles 2, 3, 4, etc., check if previous puzzle is completed
                 val previousPuzzle = puzzleChain.puzzles[index - 1]
@@ -249,6 +257,9 @@ class RealmQuestActivity : AppCompatActivity() {
             
             // For puzzle 1, ensure it's unlocked
             if (index == 0) {
+                basePuzzle.copy(isUnlocked = true)
+            } else if (puzzle.puzzleNumber == 10) {
+                // For puzzle 10, always unlock it for testing purposes
                 basePuzzle.copy(isUnlocked = true)
             } else {
                 // For puzzles 2, 3, 4, etc., check if previous puzzle is completed

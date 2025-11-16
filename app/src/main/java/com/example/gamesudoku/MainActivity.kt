@@ -1132,11 +1132,33 @@ class MainActivity : AppCompatActivity() {
         // Show the appropriate ad
         when {
             shouldShowRewarded -> {
-                android.util.Log.d("MainActivity", "Showing rewarded ad for Tier $tier, Puzzle $puzzleNumber")
+                android.util.Log.d("MainActivity", "=== showQuestAd: Showing rewarded ad for Tier $tier, Puzzle $puzzleNumber ===")
+                android.util.Log.d("MainActivity", "Rewarded ad loaded status: ${adManager.isRewardedAdLoaded()}")
+                
+                // Track if ad was shown and if onAdClosed was called to prevent race conditions
+                var adShown = false
+                var onAdClosedCalled = false
+                val handler = Handler(Looper.getMainLooper())
+                val isPuzzle10ForTier1Or2 = (tier == 1 || tier == 2) && puzzleNumber == 10
+                
+                android.util.Log.d("MainActivity", "isPuzzle10ForTier1Or2: $isPuzzle10ForTier1Or2")
+                
+                // Wrapper to ensure onAdClosed is only called once
+                val safeOnAdClosed: () -> Unit = {
+                    if (!onAdClosedCalled) {
+                        android.util.Log.d("MainActivity", "Calling onAdClosed callback")
+                        onAdClosedCalled = true
+                        onAdClosed()
+                    } else {
+                        android.util.Log.w("MainActivity", "onAdClosed already called, skipping")
+                    }
+                }
+                
                 // Check if rewarded ad is loaded
                 if (adManager.isRewardedAdLoaded()) {
-                    android.util.Log.d("MainActivity", "Rewarded ad is loaded, showing it")
-                    adManager.showRewardedAd(this, onAdClosed = onAdClosed)
+                    android.util.Log.d("MainActivity", "Rewarded ad is loaded, showing it immediately")
+                    adShown = true
+                    adManager.showRewardedAd(this, onAdClosed = safeOnAdClosed)
                     // Preload next rewarded ad
                     adManager.loadRewardedAd()
                 } else {
@@ -1144,31 +1166,65 @@ class MainActivity : AppCompatActivity() {
                     // Try to load it with callback
                     adManager.loadRewardedAd {
                         // Ad loaded callback
-                        android.util.Log.d("MainActivity", "Rewarded ad loaded via callback, showing it")
-                        if (adManager.isRewardedAdLoaded()) {
-                            adManager.showRewardedAd(this, onAdClosed = onAdClosed)
-                            // Preload next rewarded ad
-                            adManager.loadRewardedAd()
+                        android.util.Log.d("MainActivity", "Rewarded ad load callback fired - adShown: $adShown, onAdClosedCalled: $onAdClosedCalled")
+                        if (!adShown && !onAdClosedCalled) {
+                            if (adManager.isRewardedAdLoaded()) {
+                                android.util.Log.d("MainActivity", "Rewarded ad loaded via callback, showing it now")
+                                adShown = true
+                                adManager.showRewardedAd(this, onAdClosed = safeOnAdClosed)
+                                // Preload next rewarded ad
+                                adManager.loadRewardedAd()
+                            } else {
+                                android.util.Log.w("MainActivity", "Rewarded ad callback fired but ad still not available, proceeding without ad")
+                                safeOnAdClosed()
+                            }
                         } else {
-                            android.util.Log.w("MainActivity", "Rewarded ad callback fired but ad not available, proceeding")
-                            onAdClosed()
+                            android.util.Log.w("MainActivity", "Rewarded ad callback fired but ad already handled (adShown=$adShown, onAdClosedCalled=$onAdClosedCalled)")
                         }
                     }
                     
-                    // Also set up a timeout fallback (max 3 seconds)
-                    val handler = Handler(Looper.getMainLooper())
+                    // Also set up a timeout fallback (max 5 seconds)
+                    // For puzzle 10 (Tier 1 & 2), we must show rewarded ad, not interstitial
                     handler.postDelayed({
-                        if (!adManager.isRewardedAdLoaded()) {
-                            android.util.Log.w("MainActivity", "Rewarded ad failed to load after timeout, showing interstitial as fallback")
-                            if (adManager.isInterstitialAdLoaded()) {
-                                adManager.showInterstitialAd(this, onAdClosed = onAdClosed)
-                                adManager.loadInterstitialAd()
+                        android.util.Log.d("MainActivity", "Timeout handler fired - adShown: $adShown, onAdClosedCalled: $onAdClosedCalled, adLoaded: ${adManager.isRewardedAdLoaded()}")
+                        if (!adShown && !onAdClosedCalled && !adManager.isRewardedAdLoaded()) {
+                            if (isPuzzle10ForTier1Or2) {
+                                // For puzzle 10, we must show rewarded ad - wait longer or proceed without ad
+                                android.util.Log.w("MainActivity", "Rewarded ad failed to load after 5s timeout for puzzle 10. Waiting 5 more seconds...")
+                                // Try one more time with longer timeout (5 more seconds)
+                                handler.postDelayed({
+                                    android.util.Log.d("MainActivity", "Extended timeout handler fired - adShown: $adShown, onAdClosedCalled: $onAdClosedCalled, adLoaded: ${adManager.isRewardedAdLoaded()}")
+                                    if (!adShown && !onAdClosedCalled) {
+                                        if (adManager.isRewardedAdLoaded()) {
+                                            android.util.Log.d("MainActivity", "Rewarded ad loaded after extended wait (10s total), showing it")
+                                            adShown = true
+                                            adManager.showRewardedAd(this, onAdClosed = safeOnAdClosed)
+                                            adManager.loadRewardedAd()
+                                        } else {
+                                            android.util.Log.w("MainActivity", "Rewarded ad still not available after 10s wait, proceeding without ad")
+                                            safeOnAdClosed()
+                                        }
+                                    } else {
+                                        android.util.Log.d("MainActivity", "Extended timeout: Ad already handled, skipping")
+                                    }
+                                }, 5000) // Additional 5 second wait
                             } else {
-                                android.util.Log.w("MainActivity", "No ads available, proceeding without ad")
-                                onAdClosed()
+                                // For other cases, fallback to interstitial is acceptable
+                                android.util.Log.w("MainActivity", "Rewarded ad failed to load after timeout, showing interstitial as fallback")
+                                if (adManager.isInterstitialAdLoaded()) {
+                                    android.util.Log.d("MainActivity", "Showing interstitial ad as fallback")
+                                    adShown = true
+                                    adManager.showInterstitialAd(this, onAdClosed = safeOnAdClosed)
+                                    adManager.loadInterstitialAd()
+                                } else {
+                                    android.util.Log.w("MainActivity", "No ads available, proceeding without ad")
+                                    safeOnAdClosed()
+                                }
                             }
+                        } else {
+                            android.util.Log.d("MainActivity", "Timeout handler: Ad already handled or loaded, skipping")
                         }
-                    }, 3000) // 3 second timeout
+                    }, 5000) // Increased to 5 second timeout
                 }
             }
             shouldShowInterstitial -> {
@@ -1255,8 +1311,17 @@ class MainActivity : AppCompatActivity() {
                 }
                 if ((tier == 1 || tier == 2) && puzzleNumber == 9) {
                     // Preload rewarded ad for puzzle 10
-                    android.util.Log.d("MainActivity", "Preloading rewarded ad for puzzle 10")
+                    android.util.Log.d("MainActivity", "Preloading rewarded ad for puzzle 10 (completing puzzle 9)")
                     adManager.loadRewardedAd()
+                } else if ((tier == 1 || tier == 2) && puzzleNumber == 10) {
+                    // Also ensure rewarded ad is loaded when puzzle 10 is completed (backup preload)
+                    android.util.Log.d("MainActivity", "Puzzle 10 completed - ensuring rewarded ad is loaded")
+                    if (!adManager.isRewardedAdLoaded()) {
+                        android.util.Log.d("MainActivity", "Rewarded ad not loaded, loading it now")
+                        adManager.loadRewardedAd()
+                    } else {
+                        android.util.Log.d("MainActivity", "Rewarded ad already loaded, ready to show")
+                    }
                 } else if (tier == 4) {
                     // Always preload rewarded ad for Tier 4
                     adManager.loadRewardedAd()
