@@ -19,6 +19,7 @@ import android.widget.TextView
 import android.graphics.Color
 import android.widget.Button
 import android.widget.ImageButton
+import com.google.android.gms.ads.AdView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -37,6 +38,7 @@ class MainMenuActivity : AppCompatActivity() {
     private lateinit var playNowStateManager: PlayNowStateManager
     private lateinit var continueButton: View
     private lateinit var ctaSubtext: TextView
+    private lateinit var adManager: AdManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +55,15 @@ class MainMenuActivity : AppCompatActivity() {
         // Initialize sound manager
         soundManager = SoundManager.getInstance(this)
         playNowStateManager = PlayNowStateManager(this)
+        
+        // Initialize AdMob
+        adManager = AdManager(this)
+        
+        // Load banner ad
+        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
+        bannerAdView?.let {
+            adManager.loadBannerAd(it)
+        }
 
         // Start entrance animations
         startEntranceAnimations()
@@ -285,6 +296,10 @@ class MainMenuActivity : AppCompatActivity() {
     
     override fun onResume() {
         super.onResume()
+        // Resume banner ad
+        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
+        bannerAdView?.resume()
+        
         // Refresh quest progress when returning to main menu
         updateQuestProgress()
         // Refresh daily challenge card
@@ -294,12 +309,20 @@ class MainMenuActivity : AppCompatActivity() {
     
     override fun onPause() {
         super.onPause()
+        // Pause banner ad
+        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
+        bannerAdView?.pause()
+        
         // Stop daily challenge timer
         stopDailyChallengeTimer()
     }
     
     override fun onDestroy() {
         super.onDestroy()
+        // Destroy banner ad
+        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
+        bannerAdView?.destroy()
+        
         // Stop daily challenge timer
         stopDailyChallengeTimer()
     }

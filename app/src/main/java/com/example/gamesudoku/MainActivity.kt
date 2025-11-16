@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statsManager: StatsManager
     private lateinit var soundManager: SoundManager
     private lateinit var audioManager: AudioManager
+    private lateinit var adManager: AdManager
     private var secondsElapsed = 0
     private val handler = Handler(Looper.getMainLooper())
     private var running = false
@@ -263,6 +264,9 @@ class MainActivity : AppCompatActivity() {
         soundManager = SoundManager.getInstance(this)
         audioManager = AudioManager.getInstance(this)
         
+        // Initialize AdMob and load interstitial ad
+        adManager = AdManager(this)
+        adManager.loadInterstitialAd()
 
         sudokuBoard = findViewById(R.id.sudokuBoard)
         timerText = findViewById(R.id.timerText)
@@ -1011,8 +1015,11 @@ class MainActivity : AppCompatActivity() {
         // Make background transparent around card for nicer presentation
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
+        var shouldShowAdOnDismiss = true
+        
         // Setup button click listeners
         dialogView.findViewById<Button>(R.id.btnNewGame)?.setOnClickListener {
+            shouldShowAdOnDismiss = true
             dialog.dismiss()
             // Start new game with same settings
             sudokuBoard.resetPuzzle(currentDifficulty) // This now clears selection, highlighting, and animations
@@ -1025,14 +1032,31 @@ class MainActivity : AppCompatActivity() {
         }
         
         dialogView.findViewById<Button>(R.id.btnMenu)?.setOnClickListener {
+            shouldShowAdOnDismiss = false
             dialog.dismiss()
-            finish()
+            // Show interstitial ad before going to menu
+            adManager.showInterstitialAd(this) {
+                finish()
+            }
         }
         
         dialogView.findViewById<Button>(R.id.btnShare)?.setOnClickListener {
+            shouldShowAdOnDismiss = true
             dialog.dismiss()
             // Share functionality can be added here if needed
             Toast.makeText(this, "Share feature coming soon!", Toast.LENGTH_SHORT).show()
+        }
+        
+        // Show interstitial ad when dialog is dismissed (for New Game and Share buttons)
+        dialog.setOnDismissListener {
+            if (shouldShowAdOnDismiss) {
+                // Show interstitial ad after dialog closes (only if ad is loaded)
+                if (adManager.isInterstitialAdLoaded()) {
+                    adManager.showInterstitialAd(this, null)
+                }
+            }
+            // Preload next interstitial ad
+            adManager.loadInterstitialAd()
         }
         
         dialog.show()
@@ -1164,14 +1188,19 @@ class MainActivity : AppCompatActivity() {
         // Setup button click listener
         dialogView.findViewById<Button>(R.id.btnRealmMap)?.setOnClickListener {
             dialog.dismiss()
-            // Return to realm quest
-            if (realmId != null) {
-                val intent = Intent(this, RealmQuestActivity::class.java).apply {
-                    putExtra("realm_id", realmId)
+            // Show interstitial ad before returning to realm quest
+            adManager.showInterstitialAd(this) {
+                // Return to realm quest
+                if (realmId != null) {
+                    val intent = Intent(this, RealmQuestActivity::class.java).apply {
+                        putExtra("realm_id", realmId)
+                    }
+                    startActivity(intent)
+                    finish()
                 }
-                startActivity(intent)
-                finish()
             }
+            // Preload next interstitial ad
+            adManager.loadInterstitialAd()
         }
         
         // Animate dialog entrance
@@ -1352,14 +1381,19 @@ class MainActivity : AppCompatActivity() {
         dialogView.findViewById<Button>(R.id.btnContinue)?.setOnClickListener {
             fallingStarsActive = false
             dialog.dismiss()
-            // Return to realm quest or main menu
-            if (realmId != null) {
-                val intent = Intent(this, RealmQuestActivity::class.java).apply {
-                    putExtra("realm_id", realmId)
+            // Show interstitial ad before returning to realm quest
+            adManager.showInterstitialAd(this) {
+                // Return to realm quest or main menu
+                if (realmId != null) {
+                    val intent = Intent(this, RealmQuestActivity::class.java).apply {
+                        putExtra("realm_id", realmId)
+                    }
+                    startActivity(intent)
+                    finish()
                 }
-                startActivity(intent)
-                finish()
             }
+            // Preload next interstitial ad
+            adManager.loadInterstitialAd()
         }
         
         // Reset flag when dialog is dismissed

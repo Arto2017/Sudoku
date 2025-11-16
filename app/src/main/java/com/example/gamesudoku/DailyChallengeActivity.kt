@@ -31,6 +31,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     private lateinit var dailyChallengeStateManager: DailyChallengeStateManager
     private lateinit var currentPuzzle: DailyChallengeGenerator.DailyPuzzle
     private lateinit var audioManager: AudioManager
+    private lateinit var adManager: AdManager
     
     // UI Elements
     private lateinit var headerTitle: TextView
@@ -101,6 +102,10 @@ class DailyChallengeActivity : AppCompatActivity() {
         attemptStore = AttemptStateStore(this)
         audioManager = AudioManager.getInstance(this)
         
+        // Initialize AdMob and load interstitial ad
+        adManager = AdManager(this)
+        adManager.loadInterstitialAd()
+        
         // Generate today's puzzle
         currentPuzzle = DailyChallengeGenerator.generateDailyPuzzle()
         
@@ -149,11 +154,17 @@ class DailyChallengeActivity : AppCompatActivity() {
             }
             
             // Restore hints state
+            // Note: Don't restore savedMax - use current settings instead
+            // This allows hints to update when settings change
             sudokuBoardView.setHintsState(
-                savedRemaining = savedState.hintsRemaining,
+                savedRemaining = null, // Will be recalculated based on current settings
                 savedUsed = savedState.hintsUsed,
-                savedMax = savedState.maxHints
+                savedMax = null // Use current settings instead of saved value
             )
+            
+            // Update hints from current settings after restoring used count
+            // This recalculates remaining hints based on current maxHintsPerGame setting
+            sudokuBoardView.updateHintsFromSettings()
             
             // Restore game state
             gameTime = savedState.gameTime
@@ -562,15 +573,38 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Make background transparent around card for nicer presentation
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
+        var adShown = false
+        
         // Setup button click listeners
         dialogView.findViewById<Button>(R.id.btnShare).setOnClickListener {
+            adShown = true
             dialog.dismiss()
             shareResults()
+            // Show interstitial ad after sharing
+            if (adManager.isInterstitialAdLoaded()) {
+                adManager.showInterstitialAd(this, null)
+            }
+            // Preload next interstitial ad
+            adManager.loadInterstitialAd()
         }
         
         dialogView.findViewById<Button>(R.id.btnDone).setOnClickListener {
+            adShown = true
             dialog.dismiss()
-            finish()
+            // Show interstitial ad before finishing
+            adManager.showInterstitialAd(this) {
+                finish()
+            }
+        }
+        
+        // Show interstitial ad when dialog is dismissed (fallback - only if no button was clicked)
+        dialog.setOnDismissListener {
+            if (!adShown && adManager.isInterstitialAdLoaded()) {
+                // Show interstitial ad after dialog closes (only if ad is loaded and not already shown)
+                adManager.showInterstitialAd(this, null)
+            }
+            // Preload next interstitial ad
+            adManager.loadInterstitialAd()
         }
         
         dialog.show()
