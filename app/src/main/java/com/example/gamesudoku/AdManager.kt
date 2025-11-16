@@ -8,6 +8,9 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardItem
 
 class AdManager(private val context: Context) {
     
@@ -17,12 +20,15 @@ class AdManager(private val context: Context) {
         // Test Ad Unit IDs - These are Google's official test ad units
         private const val TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
         private const val TEST_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
+        private const val TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
         
         // Use test ads for now - replace with real ad unit IDs when ready for production
         private const val USE_TEST_ADS = true
     }
     
     private var interstitialAd: InterstitialAd? = null
+    private var rewardedAd: RewardedAd? = null
+    private var rewardedAdLoadCallback: (() -> Unit)? = null
     
     init {
         MobileAds.initialize(context) { initializationStatus ->
@@ -122,6 +128,84 @@ class AdManager(private val context: Context) {
      */
     fun isInterstitialAdLoaded(): Boolean {
         return interstitialAd != null
+    }
+    
+    /**
+     * Load a rewarded ad
+     */
+    fun loadRewardedAd(onLoaded: (() -> Unit)? = null) {
+        val adUnitId = if (USE_TEST_ADS) TEST_REWARDED_AD_UNIT_ID else TEST_REWARDED_AD_UNIT_ID
+        
+        // Store callback if provided
+        if (onLoaded != null) {
+            rewardedAdLoadCallback = onLoaded
+        }
+        
+        val adRequest = AdRequest.Builder().build()
+        
+        RewardedAd.load(
+            context,
+            adUnitId,
+            adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    Log.d(TAG, "Rewarded ad loaded successfully")
+                    rewardedAd = ad
+                    // Notify callback if set
+                    rewardedAdLoadCallback?.invoke()
+                    rewardedAdLoadCallback = null
+                }
+                
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    Log.e(TAG, "Rewarded ad failed to load: ${loadAdError.message}")
+                    rewardedAd = null
+                    // Clear callback on failure
+                    rewardedAdLoadCallback = null
+                }
+            }
+        )
+    }
+    
+    /**
+     * Show rewarded ad if loaded
+     */
+    fun showRewardedAd(activity: android.app.Activity, onAdClosed: (() -> Unit)? = null, onUserEarnedReward: ((RewardItem) -> Unit)? = null) {
+        rewardedAd?.let { ad ->
+            ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    Log.d(TAG, "Rewarded ad dismissed")
+                    rewardedAd = null
+                    // Load next ad
+                    loadRewardedAd()
+                    onAdClosed?.invoke()
+                }
+                
+                override fun onAdFailedToShowFullScreenContent(p0: com.google.android.gms.ads.AdError) {
+                    Log.e(TAG, "Rewarded ad failed to show: ${p0.message}")
+                    rewardedAd = null
+                    onAdClosed?.invoke()
+                }
+                
+                override fun onAdShowedFullScreenContent() {
+                    Log.d(TAG, "Rewarded ad showed")
+                }
+            }
+            
+            ad.show(activity) { rewardItem ->
+                Log.d(TAG, "User earned reward: ${rewardItem.amount} ${rewardItem.type}")
+                onUserEarnedReward?.invoke(rewardItem)
+            }
+        } ?: run {
+            Log.d(TAG, "Rewarded ad not loaded yet")
+            onAdClosed?.invoke()
+        }
+    }
+    
+    /**
+     * Check if rewarded ad is loaded
+     */
+    fun isRewardedAdLoaded(): Boolean {
+        return rewardedAd != null
     }
     
     /**

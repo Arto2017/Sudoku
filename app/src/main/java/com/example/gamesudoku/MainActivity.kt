@@ -264,9 +264,10 @@ class MainActivity : AppCompatActivity() {
         soundManager = SoundManager.getInstance(this)
         audioManager = AudioManager.getInstance(this)
         
-        // Initialize AdMob and load interstitial ad
+        // Initialize AdMob and load ads
         adManager = AdManager(this)
         adManager.loadInterstitialAd()
+        adManager.loadRewardedAd()
 
         sudokuBoard = findViewById(R.id.sudokuBoard)
         timerText = findViewById(R.id.timerText)
@@ -1062,6 +1063,127 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    /**
+     * Show ad based on tier and puzzle number
+     * Tier 1 (echoes): After puzzles 2, 4, 6, 8 show Interstitial, after puzzle 10 show Rewarded
+     * Tier 2 (trials): Same as Tier 1
+     * Tier 3 (flame): After puzzle 1 show Interstitial, after puzzle 2 show Rewarded, after puzzle 3 show Interstitial, etc. (alternating)
+     * Tier 4 (shadows): After every puzzle show Rewarded
+     */
+    private fun showQuestAd(realmId: String?, puzzleNumber: Int, onAdClosed: () -> Unit) {
+        android.util.Log.d("MainActivity", "showQuestAd called - realmId: $realmId, puzzleNumber: $puzzleNumber")
+        
+        if (realmId == null || puzzleNumber == 0) {
+            android.util.Log.d("MainActivity", "showQuestAd: Skipping ad - realmId is null or puzzleNumber is 0")
+            onAdClosed()
+            return
+        }
+        
+        // Determine tier based on realm ID
+        val tier = when (realmId) {
+            "echoes" -> 1
+            "trials" -> 2
+            "flame" -> 3
+            "shadows" -> 4
+            else -> {
+                android.util.Log.d("MainActivity", "showQuestAd: Unknown realmId: $realmId")
+                onAdClosed()
+                return
+            }
+        }
+        
+        android.util.Log.d("MainActivity", "showQuestAd: Tier determined as $tier for realmId: $realmId")
+        
+        // Determine which ad to show based on tier and puzzle number
+        val shouldShowInterstitial = when (tier) {
+            1, 2 -> {
+                // Tier 1 & 2: Show interstitial after puzzles 2, 4, 6, 8
+                puzzleNumber in listOf(2, 4, 6, 8)
+            }
+            3 -> {
+                // Tier 3: Show interstitial after odd-numbered puzzles (1, 3, 5, 7, 9)
+                puzzleNumber % 2 == 1
+            }
+            4 -> {
+                // Tier 4: Never show interstitial (always rewarded)
+                false
+            }
+            else -> false
+        }
+        
+        val shouldShowRewarded = when (tier) {
+            1, 2 -> {
+                // Tier 1 & 2: Show rewarded after puzzle 10
+                puzzleNumber == 10
+            }
+            3 -> {
+                // Tier 3: Show rewarded after even-numbered puzzles (2, 4, 6, 8, 10)
+                puzzleNumber % 2 == 0
+            }
+            4 -> {
+                // Tier 4: Show rewarded after every puzzle
+                true
+            }
+            else -> false
+        }
+        
+        android.util.Log.d("MainActivity", "showQuestAd: shouldShowInterstitial=$shouldShowInterstitial, shouldShowRewarded=$shouldShowRewarded")
+        
+        // Show the appropriate ad
+        when {
+            shouldShowRewarded -> {
+                android.util.Log.d("MainActivity", "Showing rewarded ad for Tier $tier, Puzzle $puzzleNumber")
+                // Check if rewarded ad is loaded
+                if (adManager.isRewardedAdLoaded()) {
+                    android.util.Log.d("MainActivity", "Rewarded ad is loaded, showing it")
+                    adManager.showRewardedAd(this, onAdClosed = onAdClosed)
+                    // Preload next rewarded ad
+                    adManager.loadRewardedAd()
+                } else {
+                    android.util.Log.w("MainActivity", "Rewarded ad is NOT loaded! Loading it now and waiting...")
+                    // Try to load it with callback
+                    adManager.loadRewardedAd {
+                        // Ad loaded callback
+                        android.util.Log.d("MainActivity", "Rewarded ad loaded via callback, showing it")
+                        if (adManager.isRewardedAdLoaded()) {
+                            adManager.showRewardedAd(this, onAdClosed = onAdClosed)
+                            // Preload next rewarded ad
+                            adManager.loadRewardedAd()
+                        } else {
+                            android.util.Log.w("MainActivity", "Rewarded ad callback fired but ad not available, proceeding")
+                            onAdClosed()
+                        }
+                    }
+                    
+                    // Also set up a timeout fallback (max 3 seconds)
+                    val handler = Handler(Looper.getMainLooper())
+                    handler.postDelayed({
+                        if (!adManager.isRewardedAdLoaded()) {
+                            android.util.Log.w("MainActivity", "Rewarded ad failed to load after timeout, showing interstitial as fallback")
+                            if (adManager.isInterstitialAdLoaded()) {
+                                adManager.showInterstitialAd(this, onAdClosed = onAdClosed)
+                                adManager.loadInterstitialAd()
+                            } else {
+                                android.util.Log.w("MainActivity", "No ads available, proceeding without ad")
+                                onAdClosed()
+                            }
+                        }
+                    }, 3000) // 3 second timeout
+                }
+            }
+            shouldShowInterstitial -> {
+                android.util.Log.d("MainActivity", "Showing interstitial ad for Tier $tier, Puzzle $puzzleNumber")
+                adManager.showInterstitialAd(this, onAdClosed = onAdClosed)
+                // Preload next interstitial ad
+                adManager.loadInterstitialAd()
+            }
+            else -> {
+                android.util.Log.d("MainActivity", "No ad for Tier $tier, Puzzle $puzzleNumber")
+                onAdClosed()
+            }
+        }
+    }
+    
     private fun showQuestVictoryDialog(time: String, mistakes: Int) {
         // Record quest completion
         val questCodex = QuestCodex(this)
@@ -1117,19 +1239,61 @@ class MainActivity : AppCompatActivity() {
                 // Clear saved board state when puzzle is completed
                 questCodex.clearPuzzleBoardState(puzzleId)
                 
+                // Get puzzle number for ad logic
+                val currentPuzzle = puzzleChain.puzzles.find { it.id == puzzleId }
+                val puzzleNumber = currentPuzzle?.puzzleNumber ?: 0
+                
+                android.util.Log.d("MainActivity", "Puzzle completion - puzzleId: $puzzleId, puzzleNumber: $puzzleNumber, isCompletingFinalPuzzle: $isCompletingFinalPuzzle")
+                
+                // Preload rewarded ad if next puzzle will need it (puzzle 9 for Tier 1 & 2, or any puzzle for Tier 4)
+                val tier = when (realmId) {
+                    "echoes" -> 1
+                    "trials" -> 2
+                    "flame" -> 3
+                    "shadows" -> 4
+                    else -> 0
+                }
+                if ((tier == 1 || tier == 2) && puzzleNumber == 9) {
+                    // Preload rewarded ad for puzzle 10
+                    android.util.Log.d("MainActivity", "Preloading rewarded ad for puzzle 10")
+                    adManager.loadRewardedAd()
+                } else if (tier == 4) {
+                    // Always preload rewarded ad for Tier 4
+                    adManager.loadRewardedAd()
+                }
+                
                 // If this is the final puzzle completing the level, show special level completion dialog
                 if (isCompletingFinalPuzzle) {
-                    android.util.Log.d("MainActivity", "*** SHOWING LEVEL COMPLETION DIALOG *** for realm: $realmId")
-                    showLevelCompletionDialog(realmId, realm.name)
-                    return  // Exit function early, don't show regular dialog
+                    android.util.Log.d("MainActivity", "*** SHOWING LEVEL COMPLETION DIALOG *** for realm: $realmId, puzzleNumber: $puzzleNumber")
+                    showLevelCompletionDialog(realmId, realm.name, puzzleNumber)
                 } else {
                     android.util.Log.d("MainActivity", "NOT showing level completion dialog - showing regular dialog instead")
+                    // Show regular dialog
+                    showRegularQuestVictoryDialog(time, mistakes, realmId, puzzleNumber)
                 }
+                return  // Exit function early
             }
         }
         
-        // If we reach here, show the regular game completion dialog
+        // If we reach here and realmId is null, this shouldn't happen for quest puzzles
+        // But if it does, show the regular dialog anyway
+        val currentRealmId = realmId
+        if (currentRealmId != null) {
+            // Get puzzle number if available
+            val puzzleNumber = questPuzzleId?.let { puzzleId ->
+                val codex = QuestCodex(this)
+                val chain = codex.getPuzzleChain(currentRealmId)
+                chain?.puzzles?.find { it.id == puzzleId }?.puzzleNumber ?: 0
+            } ?: 0
+            showRegularQuestVictoryDialog(time, mistakes, currentRealmId, puzzleNumber)
+        }
+    }
+    
+    private fun showRegularQuestVictoryDialog(time: String, mistakes: Int, realmId: String?, puzzleNumber: Int) {
         android.util.Log.d("MainActivity", "Showing regular quest victory dialog")
+        
+        val questCodex = this.questCodex ?: QuestCodex(this)
+        val timeSeconds = secondsElapsed.toLong()
         
         val dialogView = layoutInflater.inflate(R.layout.dialog_quest_victory, null)
         
@@ -1185,12 +1349,12 @@ class MainActivity : AppCompatActivity() {
         // Make background transparent
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
-        // Setup button click listener
+        // Setup button click listener - show ad when button is clicked
         dialogView.findViewById<Button>(R.id.btnRealmMap)?.setOnClickListener {
             dialog.dismiss()
-            // Show interstitial ad before returning to realm quest
-            adManager.showInterstitialAd(this) {
-                // Return to realm quest
+            // Show ad based on tier and puzzle number when button is clicked
+            showQuestAd(realmId, puzzleNumber) {
+                // Return to realm quest after ad
                 if (realmId != null) {
                     val intent = Intent(this, RealmQuestActivity::class.java).apply {
                         putExtra("realm_id", realmId)
@@ -1199,8 +1363,6 @@ class MainActivity : AppCompatActivity() {
                     finish()
                 }
             }
-            // Preload next interstitial ad
-            adManager.loadInterstitialAd()
         }
         
         // Animate dialog entrance
@@ -1350,7 +1512,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLevelCompletionDialog(realmId: String, realmName: String) {
+    private fun showLevelCompletionDialog(realmId: String, realmName: String, puzzleNumber: Int) {
         val questCodex = QuestCodex(this)
         val realm = questCodex.getRealmById(realmId)
         
@@ -1377,13 +1539,14 @@ class MainActivity : AppCompatActivity() {
         // Make background transparent
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         
-        // Setup button click listener
+        // Setup button click listener - show ad when button is clicked
         dialogView.findViewById<Button>(R.id.btnContinue)?.setOnClickListener {
             fallingStarsActive = false
             dialog.dismiss()
-            // Show interstitial ad before returning to realm quest
-            adManager.showInterstitialAd(this) {
-                // Return to realm quest or main menu
+            // Show ad based on tier and puzzle number when button is clicked
+            android.util.Log.d("MainActivity", "Level completion dialog button clicked - realmId: $realmId, puzzleNumber: $puzzleNumber")
+            showQuestAd(realmId, puzzleNumber) {
+                // Return to realm quest or main menu after ad
                 if (realmId != null) {
                     val intent = Intent(this, RealmQuestActivity::class.java).apply {
                         putExtra("realm_id", realmId)
@@ -1392,8 +1555,6 @@ class MainActivity : AppCompatActivity() {
                     finish()
                 }
             }
-            // Preload next interstitial ad
-            adManager.loadInterstitialAd()
         }
         
         // Reset flag when dialog is dismissed
