@@ -93,13 +93,7 @@ class RealmSelectionActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
                 
-                // DEV: Long-press to mark realm as incomplete and lock others (no-op for unlocked)
-                card.setOnLongClickListener {
-                    if (DEV_MODE) {
-                        Toast.makeText(this, "[DEV] ${questRealm.name} already unlocked", Toast.LENGTH_SHORT).show()
-                        true
-                    } else false
-                }
+                // Hold functionality removed - players must complete levels sequentially
             } else {
                 // Realm is locked
                 lockIcon?.visibility = View.VISIBLE
@@ -111,22 +105,14 @@ class RealmSelectionActivity : AppCompatActivity() {
                     Toast.makeText(this, "Complete the previous tier to unlock $tierName!", Toast.LENGTH_LONG).show()
                 }
                 
-                // DEV: Long-press to unlock this realm and first puzzles for testing
-                card.setOnLongClickListener {
-                    if (DEV_MODE) {
-                        questCodex.devUnlockRealm(questRealm.id)
-                        Toast.makeText(this, "[DEV] Unlocked ${questRealm.name}", Toast.LENGTH_SHORT).show()
-                        setupRealmButtons()
-                        true
-                    } else false
-                }
+                // Hold functionality removed - players must complete previous tier to unlock
             }
         }
     }
 
     companion object {
         // Toggle to false to revert test behavior
-        private const val DEV_MODE = true
+        private const val DEV_MODE = false
     }
 
     private fun getLockIconId(cardId: Int): Int {

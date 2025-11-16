@@ -138,16 +138,7 @@ class RealmQuestActivity : AppCompatActivity() {
                     GameNotification.showError(this, "Complete previous puzzles to unlock this one!", 2000)
                 }
             },
-            onPuzzleLongClick = { puzzle ->
-                // Test mode: Long-press to simulate completion and test the victory dialog
-                // Works even for locked puzzles in test mode
-                if (TEST_MODE && !puzzle.isCompleted) {
-                    testPuzzleCompletion(puzzle)
-                    true
-                } else {
-                    false
-                }
-            }
+            onPuzzleLongClick = null // Removed hold functionality
         )
         
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -281,7 +272,7 @@ class RealmQuestActivity : AppCompatActivity() {
     
     companion object {
         // Toggle to false to disable test mode
-        private const val TEST_MODE = true
+        private const val TEST_MODE = false
     }
     
     private fun testPuzzleCompletion(puzzle: QuestPuzzle) {
@@ -416,11 +407,7 @@ class PuzzleChainAdapter(
             onPuzzleClick(puzzle)
         }
         
-        // Long-press for test mode
-        holder.card.setOnLongClickListener {
-            onPuzzleLongClick?.invoke(puzzle)
-            true // Always consume the long-press event
-        }
+        // Hold functionality removed - players must complete puzzles sequentially
     }
 
     override fun getItemCount() = puzzles.size
