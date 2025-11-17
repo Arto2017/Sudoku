@@ -562,6 +562,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Set the stats data
         dialogView.findViewById<TextView>(R.id.completionTime).text = timeFormatted
+        dialogView.findViewById<TextView>(R.id.completionMistakes).text = totalMistakes.toString()
         dialogView.findViewById<TextView>(R.id.completionHints).text = record.hintsUsed.toString()
         dialogView.findViewById<TextView>(R.id.completionStreak).text = "${stats.streakDays} days"
         
