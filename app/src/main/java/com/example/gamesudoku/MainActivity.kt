@@ -672,37 +672,43 @@ class MainActivity : AppCompatActivity() {
         // Reveal Hint button
         val hintButton = findViewById<Button>(R.id.revealHintButton)
         hintButton.setOnClickListener {
-            if (sudokuBoard.revealHint()) {
-                soundManager.playClick()
-                startTimer() // Start timer when hint is used (player is playing)
-                updateProgress()
-                
-                // Highlight the number that was placed by the hint (same as manual placement)
-                val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
-                if (placedNumber > 0) {
-                    sudokuBoard.highlightNumber(placedNumber)
-                    selectedNumber = placedNumber
-                    highlightActiveNumber(placedNumber)
-                }
-                
-                // Show success feedback
-                showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
-                
-                // Check for completion after revealing hint (in case hint fills last cell)
-                if (sudokuBoard.isBoardComplete()) {
-                    checkVictory()
+            // Check if player has free hints remaining
+            if (sudokuBoard.getHintsRemaining() > 0) {
+                // Player has free hints - use hint normally
+                if (sudokuBoard.revealHint()) {
+                    soundManager.playClick()
+                    startTimer() // Start timer when hint is used (player is playing)
+                    updateProgress()
+                    
+                    // Highlight the number that was placed by the hint (same as manual placement)
+                    val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
+                    if (placedNumber > 0) {
+                        sudokuBoard.highlightNumber(placedNumber)
+                        selectedNumber = placedNumber
+                        highlightActiveNumber(placedNumber)
+                    }
+                    
+                    // Show success feedback
+                    showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
+                    
+                    // Check for completion after revealing hint (in case hint fills last cell)
+                    if (sudokuBoard.isBoardComplete()) {
+                        checkVictory()
+                    }
+                } else {
+                    // Show error message
+                    val errorMsg = sudokuBoard.getLastHintErrorMessage()
+                    val message = when {
+                        errorMsg != null -> errorMsg
+                        sudokuBoard.getSelectedRow() == -1 || sudokuBoard.getSelectedCol() == -1 -> "Select cell first"
+                        sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol()) != 0 -> "Cell not empty"
+                        else -> "Cannot hint"
+                    }
+                    showTooltip(hintButton, message)
                 }
             } else {
-                // Show error message
-                val errorMsg = sudokuBoard.getLastHintErrorMessage()
-                val message = when {
-                    errorMsg != null -> errorMsg
-                    sudokuBoard.getHintsRemaining() <= 0 -> "No hints left"
-                    sudokuBoard.getSelectedRow() == -1 || sudokuBoard.getSelectedCol() == -1 -> "Select cell first"
-                    sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol()) != 0 -> "Cell not empty"
-                    else -> "Cannot hint"
-                }
-                showTooltip(hintButton, message)
+                // No free hints remaining - show popup asking to watch ad
+                showHintAdDialog(hintButton)
             }
         }
 
@@ -806,6 +812,72 @@ class MainActivity : AppCompatActivity() {
         }, 1500)
     }
 
+    private fun showHintAddedAnimation(hintButton: Button) {
+        // Use post to ensure button is laid out before getting position
+        hintButton.post {
+            // Create a TextView for the "+1" text
+            val plusOneText = TextView(this).apply {
+                text = "+1"
+                setTextColor(Color.parseColor("#4CAF50")) // Green color for positive feedback
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+                setTypeface(Typeface.create("serif", Typeface.BOLD))
+                gravity = Gravity.CENTER
+            }
+            
+            // Get the root view to add overlay
+            val rootView = findViewById<ViewGroup>(android.R.id.content)
+            
+            // Get button position relative to root
+            val buttonLocation = IntArray(2)
+            hintButton.getLocationOnScreen(buttonLocation)
+            val rootLocation = IntArray(2)
+            rootView.getLocationOnScreen(rootLocation)
+            
+            // Create layout params to position the text on top of the button
+            val layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                // Position at the center of the button
+                leftMargin = buttonLocation[0] - rootLocation[0] + (hintButton.width / 2) - 20
+                topMargin = buttonLocation[1] - rootLocation[1] + (hintButton.height / 2) - 15
+            }
+            
+            rootView.addView(plusOneText, layoutParams)
+            
+            // Set initial state (invisible, slightly below)
+            plusOneText.alpha = 0f
+            plusOneText.translationY = 10f
+            plusOneText.scaleX = 0.5f
+            plusOneText.scaleY = 0.5f
+            
+            // Animate: fade in, scale up, move up slightly
+            plusOneText.animate()
+                .alpha(1f)
+                .translationY(-20f)
+                .scaleX(1.2f)
+                .scaleY(1.2f)
+                .setDuration(300)
+                .setInterpolator(OvershootInterpolator())
+                .withEndAction {
+                    // Hold for a moment, then fade out
+                    plusOneText.animate()
+                        .alpha(0f)
+                        .translationY(-40f)
+                        .scaleX(0.8f)
+                        .scaleY(0.8f)
+                        .setStartDelay(1700) // Show for 2 seconds total (300ms in + 1700ms hold)
+                        .setDuration(300)
+                        .withEndAction {
+                            // Remove the view
+                            rootView.removeView(plusOneText)
+                        }
+                        .start()
+                }
+                .start()
+        }
+    }
+
     private fun showBackToMenuDialog() {
         val inflater = LayoutInflater.from(this)
         val view = inflater.inflate(R.layout.dialog_back_to_menu, null)
@@ -847,6 +919,70 @@ class MainActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
                 finish()
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showHintAdDialog(hintButton: Button) {
+        val inflater = LayoutInflater.from(this)
+        val view = inflater.inflate(R.layout.dialog_hint_ad, null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .create()
+
+        // Make background transparent around card for nicer presentation
+        dialog.window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        view.findViewById<Button>(R.id.dialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        view.findViewById<Button>(R.id.dialogWatchAd).setOnClickListener {
+            dialog.dismiss()
+            // Show rewarded ad
+            if (adManager.isRewardedAdLoaded()) {
+                adManager.showRewardedAd(this, onAdClosed = {
+                    // After ad is watched, grant 1 hint
+                    sudokuBoard.grantHint()
+                    
+                    // Check if a cell is selected - if yes, use the hint immediately
+                    val hasSelectedCell = sudokuBoard.getSelectedRow() != -1 && sudokuBoard.getSelectedCol() != -1
+                    if (hasSelectedCell && sudokuBoard.revealHint()) {
+                        soundManager.playClick()
+                        startTimer() // Start timer when hint is used (player is playing)
+                        updateProgress()
+                        
+                        // Highlight the number that was placed by the hint (same as manual placement)
+                        val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
+                        if (placedNumber > 0) {
+                            sudokuBoard.highlightNumber(placedNumber)
+                            selectedNumber = placedNumber
+                            highlightActiveNumber(placedNumber)
+                        }
+                        
+                        // Show success feedback
+                        showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
+                        
+                        // Check for completion after revealing hint (in case hint fills last cell)
+                        if (sudokuBoard.isBoardComplete()) {
+                            checkVictory()
+                        }
+                    } else {
+                        // No cell selected or hint couldn't be used - just show +1 animation
+                        showHintAddedAnimation(hintButton)
+                    }
+                    // Preload next rewarded ad
+                    adManager.loadRewardedAd()
+                }, onUserEarnedReward = {
+                    // Reward earned callback - hint is granted in onAdClosed
+                })
+            } else {
+                // Ad not loaded - try to load it and show message
+                showTooltip(hintButton, "Ad not ready, please try again")
+                adManager.loadRewardedAd()
             }
         }
 

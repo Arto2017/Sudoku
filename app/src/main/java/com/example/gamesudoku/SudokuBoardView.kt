@@ -2110,6 +2110,14 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     fun getMaxHintsPerGame(): Int = maxHintsPerGame
     
     /**
+     * Grant an additional hint (increment hintsRemaining by 1)
+     * Used when player watches an ad to get a hint
+     */
+    fun grantHint() {
+        hintsRemaining++
+    }
+    
+    /**
      * Update hint limits based on current settings and recalculate remaining hints
      * This is called when settings change during gameplay
      */
