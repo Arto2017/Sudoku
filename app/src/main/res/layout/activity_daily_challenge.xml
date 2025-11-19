@@ -233,18 +233,38 @@
                         android:textStyle="bold"
                         android:fontFamily="serif" />
 
-                    <Button
-                        android:id="@+id/btnDailyHint"
-                        style="@style/ActionButtonStyle"
+                    <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginStart="2dp"
-                        android:layout_marginEnd="2dp"
-                        android:text="💡"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:fontFamily="serif" />
+                        android:layout_marginEnd="2dp">
+                        
+                        <Button
+                            android:id="@+id/btnDailyHint"
+                            style="@style/ActionButtonStyle"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="💡"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:fontFamily="serif" />
+                        
+                        <TextView
+                            android:id="@+id/hintBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top|center_horizontal"
+                            android:layout_marginTop="-1dp"
+                            android:layout_marginStart="14dp"
+                            android:gravity="center"
+                            android:text="2"
+                            android:textColor="#4CAF50"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="visible"
+                            android:elevation="4dp" />
+                    </FrameLayout>
 
                     <Button
                         android:id="@+id/btnDailyNotes"

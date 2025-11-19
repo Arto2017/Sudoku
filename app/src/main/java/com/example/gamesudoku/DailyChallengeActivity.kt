@@ -82,6 +82,9 @@ class DailyChallengeActivity : AppCompatActivity() {
         hintButton = findViewById(R.id.btnDailyHint)
         notesButton = findViewById(R.id.btnDailyNotes)
         
+        // Initialize hint badge
+        updateHintBadge()
+        
         // Setup back button
         findViewById<ImageButton>(R.id.btnDailyBack).setOnClickListener {
             onBackPressed()
@@ -102,9 +105,10 @@ class DailyChallengeActivity : AppCompatActivity() {
         attemptStore = AttemptStateStore(this)
         audioManager = AudioManager.getInstance(this)
         
-        // Initialize AdMob and load interstitial ad
+        // Initialize AdMob and load ads
         adManager = AdManager(this)
         adManager.loadInterstitialAd()
+        adManager.loadRewardedAd()
         
         // Generate today's puzzle
         currentPuzzle = DailyChallengeGenerator.generateDailyPuzzle()
@@ -165,6 +169,7 @@ class DailyChallengeActivity : AppCompatActivity() {
             // Update hints from current settings after restoring used count
             // This recalculates remaining hints based on current maxHintsPerGame setting
             sudokuBoardView.updateHintsFromSettings()
+            updateHintBadge()
             
             // Restore game state
             gameTime = savedState.gameTime
@@ -231,35 +236,42 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     private fun setupClickListeners() {
         hintButton.setOnClickListener {
-            if (sudokuBoardView.revealHint()) {
-                SoundManager.getInstance(this@DailyChallengeActivity).playClick()
-                // Sync hintsUsed with board (board tracks it internally)
-                hintsUsed = sudokuBoardView.getHintsUsed()
-                
-                // Highlight the number that was placed by the hint (same as manual placement)
-                val placedNumber = sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol())
-                if (placedNumber > 0) {
-                    sudokuBoardView.highlightNumber(placedNumber)
-                    highlightActiveNumber(placedNumber)
-                }
-                
-                showTooltip(hintButton, "Hint! (${sudokuBoardView.getHintsRemaining()} left)")
-                
-                // Check for completion after revealing hint (in case hint fills last cell)
-                if (sudokuBoardView.isBoardComplete()) {
-                    completeGame()
+            // Check if player has free hints remaining
+            if (sudokuBoardView.getHintsRemaining() > 0) {
+                // Player has free hints - use hint normally
+                if (sudokuBoardView.revealHint()) {
+                    SoundManager.getInstance(this@DailyChallengeActivity).playClick()
+                    // Sync hintsUsed with board (board tracks it internally)
+                    hintsUsed = sudokuBoardView.getHintsUsed()
+                    
+                    // Highlight the number that was placed by the hint (same as manual placement)
+                    val placedNumber = sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol())
+                    if (placedNumber > 0) {
+                        sudokuBoardView.highlightNumber(placedNumber)
+                        highlightActiveNumber(placedNumber)
+                    }
+                    
+                    // Update badge after using hint
+                    updateHintBadge()
+                    
+                    // Check for completion after revealing hint (in case hint fills last cell)
+                    if (sudokuBoardView.isBoardComplete()) {
+                        completeGame()
+                    }
+                } else {
+                    // Show error message
+                    val errorMsg = sudokuBoardView.getLastHintErrorMessage()
+                    val message = when {
+                        errorMsg != null -> errorMsg
+                        sudokuBoardView.getSelectedRow() == -1 || sudokuBoardView.getSelectedCol() == -1 -> "Select cell first"
+                        sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol()) != 0 -> "Cell not empty"
+                        else -> "Cannot hint"
+                    }
+                    showTooltip(hintButton, message)
                 }
             } else {
-                // Show error message
-                val errorMsg = sudokuBoardView.getLastHintErrorMessage()
-                val message = when {
-                    errorMsg != null -> errorMsg
-                    sudokuBoardView.getHintsRemaining() <= 0 -> "No hints left"
-                    sudokuBoardView.getSelectedRow() == -1 || sudokuBoardView.getSelectedCol() == -1 -> "Select cell first"
-                    sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol()) != 0 -> "Cell not empty"
-                    else -> "Cannot hint"
-                }
-                showTooltip(hintButton, message)
+                // No free hints remaining - show ad directly (no dialog)
+                showRewardedAdForHint(hintButton)
             }
         }
         
@@ -407,6 +419,141 @@ class DailyChallengeActivity : AppCompatActivity() {
                 currentTooltip = null
             }
         }, 1500)
+    }
+    
+    private fun showRewardedAdForHint(hintButton: Button) {
+        // Show rewarded ad directly (no dialog)
+        if (adManager.isRewardedAdLoaded()) {
+            adManager.showRewardedAd(this, onAdClosed = {
+                // After ad is watched, grant 1 hint
+                sudokuBoardView.grantHint()
+                
+                // Update badge after granting hint
+                updateHintBadge()
+                
+                // Check if a cell is selected - if yes, use the hint immediately
+                val hasSelectedCell = sudokuBoardView.getSelectedRow() != -1 && sudokuBoardView.getSelectedCol() != -1
+                if (hasSelectedCell && sudokuBoardView.revealHint()) {
+                    SoundManager.getInstance(this@DailyChallengeActivity).playClick()
+                    // Sync hintsUsed with board (board tracks it internally)
+                    hintsUsed = sudokuBoardView.getHintsUsed()
+                    
+                    // Highlight the number that was placed by the hint (same as manual placement)
+                    val placedNumber = sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol())
+                    if (placedNumber > 0) {
+                        sudokuBoardView.highlightNumber(placedNumber)
+                        highlightActiveNumber(placedNumber)
+                    }
+                    
+                    // Update badge after using hint
+                    updateHintBadge()
+                    
+                    // Check for completion after revealing hint (in case hint fills last cell)
+                    if (sudokuBoardView.isBoardComplete()) {
+                        completeGame()
+                    }
+                } else {
+                    // No cell selected or hint couldn't be used - badge already updated
+                }
+                // Preload next rewarded ad
+                adManager.loadRewardedAd()
+            }, onUserEarnedReward = {
+                // Reward earned callback - hint is granted in onAdClosed
+            })
+        } else {
+            // Ad not loaded - try to load it and show message
+            showTooltip(hintButton, "Ad not ready, please try again")
+            adManager.loadRewardedAd()
+        }
+    }
+    
+    private fun updateHintBadge() {
+        val hintBadge = findViewById<TextView>(R.id.hintBadge)
+        val hintsRemaining = sudokuBoardView.getHintsRemaining()
+        
+        if (hintsRemaining > 0) {
+            // Show number badge (no background)
+            hintBadge?.apply {
+                text = hintsRemaining.toString()
+                background = null
+                setTextColor(Color.parseColor("#4CAF50")) // Green color
+                visibility = View.VISIBLE
+            }
+        } else {
+            // Show ad icon (no background)
+            hintBadge?.apply {
+                text = "📺"  // TV icon to indicate ad/video
+                background = null
+                setTextColor(Color.parseColor("#FF6B35")) // Orange color for ad
+                visibility = View.VISIBLE
+            }
+        }
+    }
+    
+    private fun showHintAddedAnimation(hintButton: Button) {
+        // Use post to ensure button is laid out before getting position
+        hintButton.post {
+            // Create a TextView for the "+1" text
+            val plusOneText = TextView(this).apply {
+                text = "+1"
+                setTextColor(Color.parseColor("#4CAF50")) // Green color for positive feedback
+                setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20f)
+                typeface = android.graphics.Typeface.create("serif", android.graphics.Typeface.BOLD)
+                gravity = android.view.Gravity.CENTER
+            }
+            
+            // Get the root view to add overlay
+            val rootView = findViewById<ViewGroup>(android.R.id.content)
+            
+            // Get button position relative to root
+            val buttonLocation = IntArray(2)
+            hintButton.getLocationOnScreen(buttonLocation)
+            val rootLocation = IntArray(2)
+            rootView.getLocationOnScreen(rootLocation)
+            
+            // Create layout params to position the text on top of the button
+            val layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                // Position at the center of the button
+                leftMargin = buttonLocation[0] - rootLocation[0] + (hintButton.width / 2) - 20
+                topMargin = buttonLocation[1] - rootLocation[1] + (hintButton.height / 2) - 15
+            }
+            
+            rootView.addView(plusOneText, layoutParams)
+            
+            // Set initial state (invisible, slightly below)
+            plusOneText.alpha = 0f
+            plusOneText.translationY = 10f
+            plusOneText.scaleX = 0.5f
+            plusOneText.scaleY = 0.5f
+            
+            // Animate: fade in, scale up, move up slightly
+            plusOneText.animate()
+                .alpha(1f)
+                .translationY(-20f)
+                .scaleX(1.2f)
+                .scaleY(1.2f)
+                .setDuration(300)
+                .setInterpolator(android.view.animation.OvershootInterpolator())
+                .withEndAction {
+                    // Hold for a moment, then fade out
+                    plusOneText.animate()
+                        .alpha(0f)
+                        .translationY(-40f)
+                        .scaleX(0.8f)
+                        .scaleY(0.8f)
+                        .setStartDelay(1700) // Show for 2 seconds total (300ms in + 1700ms hold)
+                        .setDuration(300)
+                        .withEndAction {
+                            // Remove the view
+                            rootView.removeView(plusOneText)
+                        }
+                        .start()
+                }
+                .start()
+        }
     }
     
     private fun updateMistakesHud(count: Int) {

@@ -116,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                 savedUsed = savedState.hintsUsed,
                 savedMax = savedState.maxHints
             )
+            updateHintBadge()
             updateTimerText()
 
             val hasProgress = hasUserPlacedNumbers(boardArray, fixedArray)
@@ -150,6 +151,7 @@ class MainActivity : AppCompatActivity() {
                 savedUsed = savedState.hintsUsed,
                 savedMax = savedState.maxHints
             )
+            updateHintBadge()
 
             secondsElapsed = savedState.secondsElapsed
             totalMistakes = savedState.mistakes
@@ -282,6 +284,9 @@ class MainActivity : AppCompatActivity() {
         timerText = findViewById(R.id.timerText)
         titleText = findViewById(R.id.titleText)
         val titleBanner = findViewById<LinearLayout>(R.id.titleBanner)
+        
+        // Initialize hint badge
+        updateHintBadge()
 
         // Set board size and generate initial puzzle
         sudokuBoard.setBoardSize(boardSize)
@@ -688,8 +693,8 @@ class MainActivity : AppCompatActivity() {
                         highlightActiveNumber(placedNumber)
                     }
                     
-                    // Show success feedback
-                    showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
+                    // Update badge after using hint
+                    updateHintBadge()
                     
                     // Check for completion after revealing hint (in case hint fills last cell)
                     if (sudokuBoard.isBoardComplete()) {
@@ -707,8 +712,8 @@ class MainActivity : AppCompatActivity() {
                     showTooltip(hintButton, message)
                 }
             } else {
-                // No free hints remaining - show popup asking to watch ad
-                showHintAdDialog(hintButton)
+                // No free hints remaining - show ad directly (no dialog)
+                showRewardedAdForHint(hintButton)
             }
         }
 
@@ -925,68 +930,74 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showHintAdDialog(hintButton: Button) {
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.dialog_hint_ad, null)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(view)
-            .create()
-
-        // Make background transparent around card for nicer presentation
-        dialog.window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
-
-        view.findViewById<Button>(R.id.dialogCancel).setOnClickListener {
-            dialog.dismiss()
-        }
-
-        view.findViewById<Button>(R.id.dialogWatchAd).setOnClickListener {
-            dialog.dismiss()
-            // Show rewarded ad
-            if (adManager.isRewardedAdLoaded()) {
-                adManager.showRewardedAd(this, onAdClosed = {
-                    // After ad is watched, grant 1 hint
-                    sudokuBoard.grantHint()
+    private fun showRewardedAdForHint(hintButton: Button) {
+        // Show rewarded ad directly (no dialog)
+        if (adManager.isRewardedAdLoaded()) {
+            adManager.showRewardedAd(this, onAdClosed = {
+                // After ad is watched, grant 1 hint
+                sudokuBoard.grantHint()
+                
+                // Update badge after granting hint
+                updateHintBadge()
+                
+                // Check if a cell is selected - if yes, use the hint immediately
+                val hasSelectedCell = sudokuBoard.getSelectedRow() != -1 && sudokuBoard.getSelectedCol() != -1
+                if (hasSelectedCell && sudokuBoard.revealHint()) {
+                    soundManager.playClick()
+                    startTimer() // Start timer when hint is used (player is playing)
+                    updateProgress()
                     
-                    // Check if a cell is selected - if yes, use the hint immediately
-                    val hasSelectedCell = sudokuBoard.getSelectedRow() != -1 && sudokuBoard.getSelectedCol() != -1
-                    if (hasSelectedCell && sudokuBoard.revealHint()) {
-                        soundManager.playClick()
-                        startTimer() // Start timer when hint is used (player is playing)
-                        updateProgress()
-                        
-                        // Highlight the number that was placed by the hint (same as manual placement)
-                        val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
-                        if (placedNumber > 0) {
-                            sudokuBoard.highlightNumber(placedNumber)
-                            selectedNumber = placedNumber
-                            highlightActiveNumber(placedNumber)
-                        }
-                        
-                        // Show success feedback
-                        showTooltip(hintButton, "Hint! (${sudokuBoard.getHintsRemaining()} left)")
-                        
-                        // Check for completion after revealing hint (in case hint fills last cell)
-                        if (sudokuBoard.isBoardComplete()) {
-                            checkVictory()
-                        }
-                    } else {
-                        // No cell selected or hint couldn't be used - just show +1 animation
-                        showHintAddedAnimation(hintButton)
+                    // Highlight the number that was placed by the hint (same as manual placement)
+                    val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
+                    if (placedNumber > 0) {
+                        sudokuBoard.highlightNumber(placedNumber)
+                        selectedNumber = placedNumber
+                        highlightActiveNumber(placedNumber)
                     }
-                    // Preload next rewarded ad
-                    adManager.loadRewardedAd()
-                }, onUserEarnedReward = {
-                    // Reward earned callback - hint is granted in onAdClosed
-                })
-            } else {
-                // Ad not loaded - try to load it and show message
-                showTooltip(hintButton, "Ad not ready, please try again")
+                    
+                    // Update badge after using hint
+                    updateHintBadge()
+                    
+                    // Check for completion after revealing hint (in case hint fills last cell)
+                    if (sudokuBoard.isBoardComplete()) {
+                        checkVictory()
+                    }
+                } else {
+                    // No cell selected or hint couldn't be used - badge already updated
+                }
+                // Preload next rewarded ad
                 adManager.loadRewardedAd()
+            }, onUserEarnedReward = {
+                // Reward earned callback - hint is granted in onAdClosed
+            })
+        } else {
+            // Ad not loaded - try to load it and show message
+            showTooltip(hintButton, "Ad not ready, please try again")
+            adManager.loadRewardedAd()
+        }
+    }
+    
+    private fun updateHintBadge() {
+        val hintBadge = findViewById<TextView>(R.id.hintBadge)
+        val hintsRemaining = sudokuBoard.getHintsRemaining()
+        
+        if (hintsRemaining > 0) {
+            // Show number badge (no background)
+            hintBadge?.apply {
+                text = hintsRemaining.toString()
+                background = null
+                setTextColor(Color.parseColor("#4CAF50")) // Green color
+                visibility = View.VISIBLE
+            }
+        } else {
+            // Show ad icon (no background)
+            hintBadge?.apply {
+                text = "📺"  // TV icon to indicate ad/video
+                background = null
+                setTextColor(Color.parseColor("#FF6B35")) // Orange color for ad
+                visibility = View.VISIBLE
             }
         }
-
-        dialog.show()
     }
 
     private fun startTimer() {
@@ -1077,6 +1088,7 @@ class MainActivity : AppCompatActivity() {
         
         // Update hint count if settings changed while in settings
         sudokuBoard.updateHintsFromSettings()
+        updateHintBadge()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
