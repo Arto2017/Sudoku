@@ -449,6 +449,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<ImageButton>(R.id.systemSettingsButton)?.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
+            // Pass flag if this is a quest game
+            if (questPuzzleId != null) {
+                intent.putExtra("from_quest_game", true)
+            }
             startActivity(intent)
         }
 

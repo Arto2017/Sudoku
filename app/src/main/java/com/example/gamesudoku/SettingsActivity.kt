@@ -1,6 +1,7 @@
 package com.example.gamesudoku
 
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +23,13 @@ class SettingsActivity : AppCompatActivity() {
         setupListeners()
         setupResetButton()
         loadCurrentSettings()
+        
+        // Hide reset card if opened from quest game
+        val fromQuestGame = intent.getBooleanExtra("from_quest_game", false)
+        if (fromQuestGame) {
+            val resetCard = findViewById<MaterialCardView>(R.id.resetCard)
+            resetCard.visibility = View.GONE
+        }
     }
     
     private fun initializeViews() {
