@@ -40,29 +40,29 @@
                     android:layout_height="40dp"
                     android:layout_gravity="start|center_vertical"
                     android:background="@drawable/back_button_gold"
+                    android:contentDescription="Back"
                     android:padding="0dp"
                     android:src="@drawable/ic_arrow_left"
-                    android:tint="#2D1810"
-                    android:contentDescription="Back" />
+                    android:tint="#2D1810" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end|center_vertical"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/settingsButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:background="@drawable/back_button_gold"
+                        android:clickable="true"
+                        android:contentDescription="Change Difficulty"
+                        android:focusable="true"
+                        android:gravity="center"
                         android:text="🧩"
                         android:textSize="20sp"
-                        android:gravity="center"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:contentDescription="Change Difficulty"
                         android:visibility="gone" />
 
                     <ImageButton
@@ -71,12 +71,12 @@
                         android:layout_height="40dp"
                         android:layout_marginStart="6dp"
                         android:background="@drawable/back_button_gold"
+                        android:clickable="true"
+                        android:contentDescription="Settings"
+                        android:focusable="true"
                         android:padding="0dp"
                         android:src="@drawable/ic_settings_new"
-                        android:tint="#2D1810"
-                        android:contentDescription="Settings"
-                        android:clickable="true"
-                        android:focusable="true" />
+                        android:tint="#2D1810" />
                 </LinearLayout>
 
                 <!-- Decorative Fantasy Banner Background -->
@@ -85,32 +85,32 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:orientation="horizontal"
-                    android:gravity="center"
                     android:background="@drawable/fantasy_banner_background"
-                    android:padding="8dp"
-                    android:elevation="3dp">
+                    android:elevation="3dp"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:padding="8dp">
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:src="@drawable/ic_ancient_book"
                         android:layout_marginEnd="6dp"
+                        android:src="@drawable/ic_ancient_book"
                         app:tint="#6B4423" />
 
                     <TextView
                         android:id="@+id/titleText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="6×6 Realm of Echoes"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="#6B4423"
                         android:fontFamily="serif"
                         android:shadowColor="#8B7355"
                         android:shadowDx="1"
                         android:shadowDy="1"
-                        android:shadowRadius="1" />
+                        android:shadowRadius="1"
+                        android:text="6×6 Realm of Echoes"
+                        android:textColor="#6B4423"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </FrameLayout>
 
@@ -118,28 +118,28 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:layout_marginBottom="12dp"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:orientation="horizontal">
 
                 <!-- Timer Display - Left -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
                     android:gravity="start|center_vertical"
+                    android:orientation="horizontal"
                     android:padding="6dp">
 
                     <TextView
                         android:id="@+id/timerText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
                         android:text="00:00"
                         android:textColor="#6B4423"
                         android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:fontFamily="monospace" />
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <!-- Difficulty Display - Center -->
@@ -148,8 +148,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
                     android:gravity="center"
+                    android:orientation="horizontal"
                     android:padding="6dp">
 
                     <Spinner
@@ -158,16 +158,16 @@
                         android:layout_height="wrap_content"
                         android:background="@android:color/transparent"
                         android:popupBackground="#FFFFFF" />
-                        
+
                     <TextView
                         android:id="@+id/difficultyText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="serif"
                         android:text="Medium"
                         android:textColor="#6B4423"
                         android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:fontFamily="serif" />
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <!-- Mistakes Display - Right -->
@@ -176,19 +176,19 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="horizontal"
                     android:gravity="end|center_vertical"
+                    android:orientation="horizontal"
                     android:padding="6dp">
 
                     <TextView
                         android:id="@+id/mistakesText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="serif"
                         android:text="0 / ∞"
                         android:textColor="#6B4C2A"
                         android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:fontFamily="serif" />
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -225,7 +225,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
             android:orientation="vertical"
             android:padding="12dp">
 
@@ -234,8 +234,8 @@
                 android:id="@+id/numberButtonsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:columnCount="6"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp"
+                android:columnCount="6" />
 
             <!-- Enhanced Control buttons with fantasy styling -->
             <LinearLayout
@@ -247,54 +247,54 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_marginBottom="6dp"
                     android:gravity="center"
-                    android:layout_marginBottom="6dp">
+                    android:orientation="horizontal">
 
                     <Button
                         android:id="@+id/clearButton"
                         style="@style/ActionButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
-                        android:layout_weight="1"
                         android:layout_marginEnd="2dp"
+                        android:layout_weight="1"
+                        android:fontFamily="serif"
                         android:text="X"
                         android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:fontFamily="serif" />
+                        android:textStyle="bold" />
 
 
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="40dp"
-                        android:layout_weight="1"
                         android:layout_marginStart="2dp"
-                        android:layout_marginEnd="2dp">
-                        
+                        android:layout_marginEnd="2dp"
+                        android:layout_weight="1">
+
                         <Button
                             android:id="@+id/revealHintButton"
                             style="@style/ActionButtonStyle"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
+                            android:fontFamily="serif"
                             android:text="💡"
                             android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:fontFamily="serif" />
-                        
+                            android:textStyle="bold" />
+
                         <TextView
                             android:id="@+id/hintBadge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="top|center_horizontal"
-                            android:layout_marginTop="-1dp"
                             android:layout_marginStart="14dp"
+                            android:layout_marginTop="-1dp"
+                            android:elevation="4dp"
                             android:gravity="center"
                             android:text="2"
                             android:textColor="#4CAF50"
                             android:textSize="12sp"
                             android:textStyle="bold"
-                            android:visibility="visible"
-                            android:elevation="4dp" />
+                            android:visibility="visible" />
                     </FrameLayout>
 
                     <Button
@@ -302,42 +302,42 @@
                         style="@style/ActionButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
-                        android:layout_weight="1"
                         android:layout_marginStart="2dp"
+                        android:layout_weight="1"
+                        android:fontFamily="serif"
                         android:text="📝"
                         android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:fontFamily="serif" />
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <!-- Compact Separator line -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="@drawable/fantasy_separator_background"
-                    android:layout_marginVertical="6dp" />
+                    android:layout_marginVertical="6dp"
+                    android:background="@drawable/fantasy_separator_background" />
 
                 <!-- Compact Game actions group -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
                     <Button
                         android:id="@+id/resetButton"
                         style="@style/GameButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
-                        android:layout_weight="1"
                         android:layout_marginEnd="3dp"
+                        android:layout_weight="1"
                         android:text="Reset"
                         android:textSize="10sp"
                         android:textStyle="bold"
                         app:icon="@drawable/ic_reset"
                         app:iconGravity="top"
-                        app:iconSize="18dp"
-                        app:iconPadding="3dp" />
+                        app:iconPadding="3dp"
+                        app:iconSize="18dp" />
 
 
                     <Button
@@ -345,15 +345,15 @@
                         style="@style/GameButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
-                        android:layout_weight="1"
                         android:layout_marginStart="3dp"
+                        android:layout_weight="1"
                         android:text="Menu"
                         android:textSize="10sp"
                         android:textStyle="bold"
                         app:icon="@drawable/ic_menu"
                         app:iconGravity="top"
-                        app:iconSize="18dp"
-                        app:iconPadding="3dp" />
+                        app:iconPadding="3dp"
+                        app:iconSize="18dp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

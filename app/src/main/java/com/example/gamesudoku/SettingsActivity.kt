@@ -10,18 +10,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var audioManager: AudioManager
     private lateinit var masterToggle: Switch
     private lateinit var hapticsToggle: Switch
-    private lateinit var hintsToggle: Switch
-    private lateinit var hintsCard: MaterialCardView
-    private lateinit var hintsSummaryText: TextView
     private lateinit var questCodex: QuestCodex
-    private lateinit var gameSettings: GameSettings
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         
         audioManager = AudioManager.getInstance(this)
-        gameSettings = GameSettings.getInstance(this)
         questCodex = QuestCodex(this)
         initializeViews()
         setupListeners()
@@ -32,9 +27,6 @@ class SettingsActivity : AppCompatActivity() {
     private fun initializeViews() {
         masterToggle = findViewById(R.id.masterToggle)
         hapticsToggle = findViewById(R.id.hapticsToggle)
-        hintsToggle = findViewById(R.id.hintsToggle)
-        hintsCard = findViewById(R.id.hintsCard)
-        hintsSummaryText = findViewById(R.id.hintsSummaryText)
         
         // Setup back button
         findViewById<ImageButton>(R.id.settingsBackButton).setOnClickListener {
@@ -56,18 +48,6 @@ class SettingsActivity : AppCompatActivity() {
         // Haptics toggle
         hapticsToggle.setOnCheckedChangeListener { _, isChecked ->
             audioManager.updateHapticsEnabled(isChecked)
-        }
-        
-        // Extended hints toggle
-        hintsToggle.setOnCheckedChangeListener { _, isChecked ->
-            gameSettings.setExtendedHintsEnabled(isChecked)
-            updateHintSummary()
-            val message = if (isChecked) "Extended hints enabled (50 per puzzle)" else "Extended hints disabled (2 per puzzle)"
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        }
-        
-        hintsCard.setOnClickListener {
-            hintsToggle.isChecked = !hintsToggle.isChecked
         }
     }
     
@@ -116,8 +96,6 @@ class SettingsActivity : AppCompatActivity() {
         
         masterToggle.isChecked = settings.masterEnabled
         hapticsToggle.isChecked = settings.hapticsEnabled
-        hintsToggle.isChecked = gameSettings.isExtendedHintsEnabled()
-        updateHintSummary()
         
         updateUIState()
     }
@@ -126,15 +104,6 @@ class SettingsActivity : AppCompatActivity() {
         // Haptics remain available even if sounds are muted
         hapticsToggle.isEnabled = true
         hapticsToggle.alpha = 1.0f
-    }
-    
-    private fun updateHintSummary() {
-        val isExtended = hintsToggle.isChecked
-        hintsSummaryText.text = if (isExtended) {
-            "Currently 50 hints per puzzle"
-        } else {
-            "Currently 2 hints per puzzle"
-        }
     }
     
     override fun onDestroy() {
