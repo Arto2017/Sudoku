@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainLayout"
     android:layout_width="match_parent"
@@ -14,7 +15,7 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
+        android:layout_marginBottom="4dp"
         app:cardBackgroundColor="#FEFEFE"
         app:cardCornerRadius="10dp"
         app:cardElevation="4dp"
@@ -25,30 +26,43 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="6dp">
 
             <!-- Ultra Compact Fantasy Banner Title Area with overlayed back button -->
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_marginBottom="6dp">
 
+                <!-- Back button on the left -->
                 <ImageButton
                     android:id="@+id/btnDailyBack"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
+                    android:layout_gravity="start|center_vertical"
                     android:background="@drawable/back_button_gold"
                     android:padding="0dp"
                     android:src="@drawable/ic_arrow_left"
                     android:tint="#2D1810"
                     android:contentDescription="Back" />
 
+                <!-- Settings button on the right -->
+                <ImageButton
+                    android:id="@+id/btnDailySettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="@android:color/transparent"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_settings_new"
+                    android:tint="#6B4423"
+                    android:contentDescription="Settings" />
+
+                <!-- Date dialog centered between the two buttons -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_gravity="center"
                     android:orientation="horizontal"
                     android:gravity="center"
                     android:background="@drawable/fantasy_banner_background"
@@ -76,17 +90,7 @@
                         android:shadowDy="1"
                         android:shadowRadius="1" />
                 </LinearLayout>
-
-                <ImageButton
-                    android:id="@+id/btnDailySettings"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@android:color/transparent"
-                    android:padding="4dp"
-                    android:src="@drawable/ic_settings_new"
-                    android:tint="#6B4423"
-                    android:contentDescription="Settings" />
-            </LinearLayout>
+            </FrameLayout>
 
             <!-- Timer, Difficulty, and Status Row -->
             <LinearLayout
@@ -94,7 +98,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="6dp">
 
                 <!-- Small Timer Display - Left -->
                 <LinearLayout
@@ -170,8 +174,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         android:background="@drawable/fantasy_board_container_background">
 
         <com.example.gamesudoku.SudokuBoardView
@@ -186,7 +190,7 @@
         android:id="@+id/controlCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         app:cardBackgroundColor="#FEFEFE"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
@@ -197,7 +201,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="8dp">
 
             <!-- Compact Number buttons container -->
             <GridLayout
@@ -205,7 +209,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:columnCount="6"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="4dp" />
 
             <!-- Enhanced Control buttons with fantasy styling -->
             <LinearLayout
@@ -219,7 +223,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:layout_marginBottom="6dp">
+                    android:layout_marginBottom="4dp">
 
                     <Button
                         android:id="@+id/btnDailyClear"
@@ -284,9 +288,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:background="@drawable/fantasy_separator_background"
-                    android:layout_marginVertical="6dp" />
+                    android:layout_marginVertical="4dp" />
 
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- Banner Ad at Bottom -->
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/bannerAdView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="50dp"
+        android:layout_marginTop="4dp"
+        android:background="#FFFFFF"
+        android:visibility="visible"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
+
 </LinearLayout>

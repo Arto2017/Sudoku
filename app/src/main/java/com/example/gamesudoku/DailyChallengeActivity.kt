@@ -20,6 +20,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
 import android.widget.PopupWindow
 import android.graphics.drawable.ColorDrawable
+import com.google.android.gms.ads.AdView
 import androidx.appcompat.app.AppCompatActivity
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,9 +59,23 @@ class DailyChallengeActivity : AppCompatActivity() {
     // Tooltip management
     private var currentTooltip: PopupWindow? = null
     
+    // Banner ad
+    private var bannerAdView: AdView? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_daily_challenge)
+        
+        // Initialize AdMob and load banner ad first (like MainActivity)
+        adManager = AdManager(this)
+        bannerAdView = findViewById<AdView>(R.id.bannerAdView)
+        if (bannerAdView != null) {
+            Log.d("DailyChallenge", "Banner ad view found, loading ad...")
+            bannerAdView!!.visibility = View.VISIBLE
+            adManager.loadBannerAd(bannerAdView!!)
+        } else {
+            Log.e("DailyChallenge", "Banner ad view NOT found!")
+        }
         
         initializeViews()
         initializeGame()
@@ -105,8 +120,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         attemptStore = AttemptStateStore(this)
         audioManager = AudioManager.getInstance(this)
         
-        // Initialize AdMob and load ads
-        adManager = AdManager(this)
+        // Load other ads (banner ad already loaded in onCreate)
         adManager.loadInterstitialAd()
         adManager.loadRewardedAd()
         
