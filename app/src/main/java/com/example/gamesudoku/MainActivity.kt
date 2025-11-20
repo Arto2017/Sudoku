@@ -27,6 +27,7 @@ import android.graphics.Typeface
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ImageView
+import com.google.android.gms.ads.AdView
 import kotlinx.coroutines.*
 
 
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var soundManager: SoundManager
     private lateinit var audioManager: AudioManager
     private lateinit var adManager: AdManager
+    private var bannerAdView: AdView? = null
     private var secondsElapsed = 0
     private val handler = Handler(Looper.getMainLooper())
     private var running = false
@@ -270,6 +272,12 @@ class MainActivity : AppCompatActivity() {
         adManager = AdManager(this)
         adManager.loadInterstitialAd()
         adManager.loadRewardedAd()
+        
+        // Load banner ad
+        bannerAdView = findViewById(R.id.bannerAdView)
+        bannerAdView?.let {
+            adManager.loadBannerAd(it)
+        }
         
         // Preload rewarded ad if this is a 9x9 Hard/Expert Quick Play game
         if (isQuickPlay && boardSize == 9 && 
@@ -1078,6 +1086,9 @@ class MainActivity : AppCompatActivity() {
         stopTimer()
         persistQuestPuzzleState()
         persistPlayNowState()
+        
+        // Pause banner ad
+        bannerAdView?.pause()
     }
 
     override fun onResume() {
@@ -1089,6 +1100,9 @@ class MainActivity : AppCompatActivity() {
         // Update hint count if settings changed while in settings
         sudokuBoard.updateHintsFromSettings()
         updateHintBadge()
+        
+        // Resume banner ad
+        bannerAdView?.resume()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -1103,6 +1117,9 @@ class MainActivity : AppCompatActivity() {
         stopTimer()
         persistQuestPuzzleState()
         persistPlayNowState()
+        
+        // Destroy banner ad
+        bannerAdView?.destroy()
     }
 
     // Check for victory

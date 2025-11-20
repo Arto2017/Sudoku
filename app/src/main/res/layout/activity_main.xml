@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainLayout"
     android:layout_width="match_parent"
@@ -15,10 +16,10 @@
         android:id="@+id/topCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
+        android:layout_marginBottom="4dp"
         app:cardBackgroundColor="#FEFEFE"
-        app:cardCornerRadius="10dp"
-        app:cardElevation="4dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="3dp"
         app:strokeColor="#E0E0E0"
         app:strokeWidth="1dp">
 
@@ -26,18 +27,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="4dp">
 
             <!-- Ultra Compact Fantasy Banner Title Area with overlayed back button -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp">
+                android:layout_marginBottom="4dp">
 
                 <ImageButton
                     android:id="@+id/gameBackButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_gravity="start|center_vertical"
                     android:background="@drawable/back_button_gold"
                     android:contentDescription="Back"
@@ -54,22 +55,22 @@
 
                     <TextView
                         android:id="@+id/settingsButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
                         android:background="@drawable/back_button_gold"
                         android:clickable="true"
                         android:contentDescription="Change Difficulty"
                         android:focusable="true"
                         android:gravity="center"
                         android:text="🧩"
-                        android:textSize="20sp"
+                        android:textSize="16sp"
                         android:visibility="gone" />
 
                     <ImageButton
                         android:id="@+id/systemSettingsButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="6dp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="4dp"
                         android:background="@drawable/back_button_gold"
                         android:clickable="true"
                         android:contentDescription="Settings"
@@ -86,15 +87,15 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:background="@drawable/fantasy_banner_background"
-                    android:elevation="3dp"
+                    android:elevation="2dp"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:padding="8dp">
+                    android:padding="4dp">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="4dp"
                         android:src="@drawable/ic_ancient_book"
                         app:tint="#6B4423" />
 
@@ -109,7 +110,7 @@
                         android:shadowRadius="1"
                         android:text="6×6 Realm of Echoes"
                         android:textColor="#6B4423"
-                        android:textSize="16sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </FrameLayout>
@@ -118,7 +119,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="0dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -129,7 +130,7 @@
                     android:layout_weight="1"
                     android:gravity="start|center_vertical"
                     android:orientation="horizontal"
-                    android:padding="6dp">
+                    android:padding="2dp">
 
                     <TextView
                         android:id="@+id/timerText"
@@ -138,7 +139,7 @@
                         android:fontFamily="monospace"
                         android:text="00:00"
                         android:textColor="#6B4423"
-                        android:textSize="14sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -150,7 +151,7 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:padding="6dp">
+                    android:padding="2dp">
 
                     <Spinner
                         android:id="@+id/difficultySpinner"
@@ -166,7 +167,7 @@
                         android:fontFamily="serif"
                         android:text="Medium"
                         android:textColor="#6B4423"
-                        android:textSize="14sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -178,7 +179,7 @@
                     android:layout_weight="1"
                     android:gravity="end|center_vertical"
                     android:orientation="horizontal"
-                    android:padding="6dp">
+                    android:padding="2dp">
 
                     <TextView
                         android:id="@+id/mistakesText"
@@ -187,7 +188,7 @@
                         android:fontFamily="serif"
                         android:text="0 / ∞"
                         android:textColor="#6B4C2A"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -200,8 +201,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         android:background="@drawable/fantasy_board_container_background">
 
         <com.example.gamesudoku.SudokuBoardView
@@ -216,7 +217,8 @@
         android:id="@+id/controlCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         app:cardBackgroundColor="#FEFEFE"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
@@ -225,16 +227,16 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="8dp">
 
             <!-- Compact Number buttons container -->
             <GridLayout
                 android:id="@+id/numberButtonsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="6dp"
                 android:columnCount="6" />
 
             <!-- Enhanced Control buttons with fantasy styling -->
@@ -247,7 +249,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
+                    android:layout_marginBottom="4dp"
                     android:gravity="center"
                     android:orientation="horizontal">
 
@@ -255,18 +257,18 @@
                         android:id="@+id/clearButton"
                         style="@style/ActionButtonStyle"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="36dp"
                         android:layout_marginEnd="2dp"
                         android:layout_weight="1"
                         android:fontFamily="serif"
                         android:text="X"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
 
 
                     <FrameLayout
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="36dp"
                         android:layout_marginStart="2dp"
                         android:layout_marginEnd="2dp"
                         android:layout_weight="1">
@@ -278,7 +280,7 @@
                             android:layout_height="match_parent"
                             android:fontFamily="serif"
                             android:text="💡"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -286,13 +288,13 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="top|center_horizontal"
-                            android:layout_marginStart="14dp"
+                            android:layout_marginStart="12dp"
                             android:layout_marginTop="-1dp"
                             android:elevation="4dp"
                             android:gravity="center"
                             android:text="2"
                             android:textColor="#4CAF50"
-                            android:textSize="12sp"
+                            android:textSize="11sp"
                             android:textStyle="bold"
                             android:visibility="visible" />
                     </FrameLayout>
@@ -301,12 +303,12 @@
                         android:id="@+id/pencilMarksButton"
                         style="@style/ActionButtonStyle"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="36dp"
                         android:layout_marginStart="2dp"
                         android:layout_weight="1"
                         android:fontFamily="serif"
                         android:text="📝"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -314,7 +316,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="6dp"
+                    android:layout_marginVertical="4dp"
                     android:background="@drawable/fantasy_separator_background" />
 
                 <!-- Compact Game actions group -->
@@ -328,34 +330,45 @@
                         android:id="@+id/resetButton"
                         style="@style/GameButtonStyle"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="36dp"
                         android:layout_marginEnd="3dp"
                         android:layout_weight="1"
                         android:text="Reset"
-                        android:textSize="10sp"
+                        android:textSize="9sp"
                         android:textStyle="bold"
                         app:icon="@drawable/ic_reset"
                         app:iconGravity="top"
-                        app:iconPadding="3dp"
-                        app:iconSize="18dp" />
+                        app:iconPadding="2dp"
+                        app:iconSize="16dp" />
 
 
                     <Button
                         android:id="@+id/backToMenuButton"
                         style="@style/GameButtonStyle"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="36dp"
                         android:layout_marginStart="3dp"
                         android:layout_weight="1"
                         android:text="Menu"
-                        android:textSize="10sp"
+                        android:textSize="9sp"
                         android:textStyle="bold"
                         app:icon="@drawable/ic_menu"
                         app:iconGravity="top"
-                        app:iconPadding="3dp"
-                        app:iconSize="18dp" />
+                        app:iconPadding="2dp"
+                        app:iconSize="16dp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- Banner Ad at Bottom -->
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/bannerAdView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="#FFFFFF"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
+
 </LinearLayout>
