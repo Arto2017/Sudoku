@@ -19,7 +19,6 @@ import android.widget.TextView
 import android.graphics.Color
 import android.widget.Button
 import android.widget.ImageButton
-import com.google.android.gms.ads.AdView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -58,12 +57,6 @@ class MainMenuActivity : AppCompatActivity() {
         
         // Initialize AdMob
         adManager = AdManager(this)
-        
-        // Load banner ad
-        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
-        bannerAdView?.let {
-            adManager.loadBannerAd(it)
-        }
 
         // Start entrance animations
         startEntranceAnimations()
@@ -296,10 +289,6 @@ class MainMenuActivity : AppCompatActivity() {
     
     override fun onResume() {
         super.onResume()
-        // Resume banner ad
-        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
-        bannerAdView?.resume()
-        
         // Refresh quest progress when returning to main menu
         updateQuestProgress()
         // Refresh daily challenge card
@@ -309,20 +298,12 @@ class MainMenuActivity : AppCompatActivity() {
     
     override fun onPause() {
         super.onPause()
-        // Pause banner ad
-        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
-        bannerAdView?.pause()
-        
         // Stop daily challenge timer
         stopDailyChallengeTimer()
     }
     
     override fun onDestroy() {
         super.onDestroy()
-        // Destroy banner ad
-        val bannerAdView = findViewById<AdView>(R.id.bannerAdView)
-        bannerAdView?.destroy()
-        
         // Stop daily challenge timer
         stopDailyChallengeTimer()
     }

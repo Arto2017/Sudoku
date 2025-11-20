@@ -202,8 +202,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/fantasy_board_container_background">
+        android:layout_marginBottom="4dp">
 
         <com.example.gamesudoku.SudokuBoardView
             android:id="@+id/sudokuBoard"
