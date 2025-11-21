@@ -8,4 +8,8 @@
     <string name="theme_blue">Blue</string>
     <string name="theme_yellow">Yellow</string>
     <string name="back_to_menu">Menu</string>
+    
+    <!-- AdMob Ad Unit IDs - Replace with your real ad unit IDs from AdMob dashboard -->
+    <!-- Get these from: https://admob.google.com → Apps → Your App → Ad units -->
+    <string name="banner_ad_unit_id">ca-app-pub-2049534800625732/8506433174</string>
 </resources>

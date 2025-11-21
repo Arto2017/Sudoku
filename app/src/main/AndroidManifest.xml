@@ -18,10 +18,10 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         
-        <!-- AdMob App ID (Test ID) -->
+        <!-- AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-2049534800625732~1014670551"/>
         <activity
             android:name=".MainMenuActivity"
             android:exported="true"

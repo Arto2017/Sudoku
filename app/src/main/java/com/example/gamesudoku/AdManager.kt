@@ -22,8 +22,13 @@ class AdManager(private val context: Context) {
         private const val TEST_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
         private const val TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
         
-        // Use test ads for now - replace with real ad unit IDs when ready for production
-        private const val USE_TEST_ADS = true
+        // Real Ad Unit IDs - All configured with your AdMob ad unit IDs
+        private const val REAL_BANNER_AD_UNIT_ID = "ca-app-pub-2049534800625732/8506433174"
+        private const val REAL_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-2049534800625732/8282964095"
+        private const val REAL_REWARDED_AD_UNIT_ID = "ca-app-pub-2049534800625732/6071841522"
+        
+        // Set to false to use real ads (make sure to replace the REAL_*_AD_UNIT_ID values above first!)
+        private const val USE_TEST_ADS = false
     }
     
     private var interstitialAd: InterstitialAd? = null
@@ -44,24 +49,40 @@ class AdManager(private val context: Context) {
      * Load a banner ad
      */
     fun loadBannerAd(adView: AdView) {
+        val adUnitId = if (USE_TEST_ADS) TEST_BANNER_AD_UNIT_ID else REAL_BANNER_AD_UNIT_ID
+        Log.d(TAG, "Loading banner ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)")
+        
         val adRequest = AdRequest.Builder().build()
         adView.loadAd(adRequest)
         
         adView.adListener = object : com.google.android.gms.ads.AdListener() {
             override fun onAdLoaded() {
-                Log.d(TAG, "Banner ad loaded successfully")
+                Log.d(TAG, "✅ Banner ad loaded successfully! Ad Unit ID: $adUnitId")
             }
             
             override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                Log.e(TAG, "Banner ad failed to load: ${loadAdError.message}")
+                Log.e(TAG, "❌ Banner ad failed to load")
+                Log.e(TAG, "   Error Code: ${loadAdError.code}")
+                Log.e(TAG, "   Error Message: ${loadAdError.message}")
+                Log.e(TAG, "   Error Domain: ${loadAdError.domain}")
+                Log.e(TAG, "   Ad Unit ID: $adUnitId")
+                // Common error codes:
+                // 0 = ERROR_CODE_INTERNAL_ERROR
+                // 1 = ERROR_CODE_INVALID_REQUEST
+                // 2 = ERROR_CODE_NETWORK_ERROR
+                // 3 = ERROR_CODE_NO_FILL (no ads available - normal for new accounts)
             }
             
             override fun onAdOpened() {
-                Log.d(TAG, "Banner ad opened")
+                Log.d(TAG, "Banner ad opened (user clicked)")
             }
             
             override fun onAdClosed() {
                 Log.d(TAG, "Banner ad closed")
+            }
+            
+            override fun onAdImpression() {
+                Log.d(TAG, "✅ Banner ad impression recorded (ad was shown)")
             }
         }
     }
@@ -70,7 +91,8 @@ class AdManager(private val context: Context) {
      * Load an interstitial ad
      */
     fun loadInterstitialAd() {
-        val adUnitId = if (USE_TEST_ADS) TEST_INTERSTITIAL_AD_UNIT_ID else TEST_INTERSTITIAL_AD_UNIT_ID
+        val adUnitId = if (USE_TEST_ADS) TEST_INTERSTITIAL_AD_UNIT_ID else REAL_INTERSTITIAL_AD_UNIT_ID
+        Log.d(TAG, "Loading interstitial ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)")
         
         val adRequest = AdRequest.Builder().build()
         
@@ -80,12 +102,16 @@ class AdManager(private val context: Context) {
             adRequest,
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
-                    Log.d(TAG, "Interstitial ad loaded successfully")
+                    Log.d(TAG, "✅ Interstitial ad loaded successfully! Ad Unit ID: $adUnitId")
                     interstitialAd = ad
                 }
                 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    Log.e(TAG, "Interstitial ad failed to load: ${loadAdError.message}")
+                    Log.e(TAG, "❌ Interstitial ad failed to load")
+                    Log.e(TAG, "   Error Code: ${loadAdError.code}")
+                    Log.e(TAG, "   Error Message: ${loadAdError.message}")
+                    Log.e(TAG, "   Error Domain: ${loadAdError.domain}")
+                    Log.e(TAG, "   Ad Unit ID: $adUnitId")
                     interstitialAd = null
                 }
             }
@@ -97,9 +123,10 @@ class AdManager(private val context: Context) {
      */
     fun showInterstitialAd(activity: android.app.Activity, onAdClosed: (() -> Unit)? = null) {
         interstitialAd?.let { ad ->
+            Log.d(TAG, "Showing interstitial ad...")
             ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
-                    Log.d(TAG, "Interstitial ad dismissed")
+                    Log.d(TAG, "✅ Interstitial ad dismissed (user closed it)")
                     interstitialAd = null
                     // Load next ad
                     loadInterstitialAd()
@@ -107,18 +134,19 @@ class AdManager(private val context: Context) {
                 }
                 
                 override fun onAdFailedToShowFullScreenContent(p0: com.google.android.gms.ads.AdError) {
-                    Log.e(TAG, "Interstitial ad failed to show: ${p0.message}")
+                    Log.e(TAG, "❌ Interstitial ad failed to show: ${p0.message}")
+                    Log.e(TAG, "   Error Code: ${p0.code}")
                     interstitialAd = null
                     onAdClosed?.invoke()
                 }
                 
                 override fun onAdShowedFullScreenContent() {
-                    Log.d(TAG, "Interstitial ad showed")
+                    Log.d(TAG, "✅ Interstitial ad showed successfully (full screen)")
                 }
             }
             ad.show(activity)
         } ?: run {
-            Log.d(TAG, "Interstitial ad not loaded yet")
+            Log.w(TAG, "⚠️ Interstitial ad not loaded yet - cannot show")
             onAdClosed?.invoke()
         }
     }
@@ -134,7 +162,8 @@ class AdManager(private val context: Context) {
      * Load a rewarded ad
      */
     fun loadRewardedAd(onLoaded: (() -> Unit)? = null) {
-        val adUnitId = if (USE_TEST_ADS) TEST_REWARDED_AD_UNIT_ID else TEST_REWARDED_AD_UNIT_ID
+        val adUnitId = if (USE_TEST_ADS) TEST_REWARDED_AD_UNIT_ID else REAL_REWARDED_AD_UNIT_ID
+        Log.d(TAG, "Loading rewarded ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)")
         
         // Store callback if provided
         if (onLoaded != null) {
@@ -149,7 +178,7 @@ class AdManager(private val context: Context) {
             adRequest,
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
-                    Log.d(TAG, "Rewarded ad loaded successfully")
+                    Log.d(TAG, "✅ Rewarded ad loaded successfully! Ad Unit ID: $adUnitId")
                     rewardedAd = ad
                     // Notify callback if set
                     rewardedAdLoadCallback?.invoke()
@@ -157,7 +186,11 @@ class AdManager(private val context: Context) {
                 }
                 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    Log.e(TAG, "Rewarded ad failed to load: ${loadAdError.message}")
+                    Log.e(TAG, "❌ Rewarded ad failed to load")
+                    Log.e(TAG, "   Error Code: ${loadAdError.code}")
+                    Log.e(TAG, "   Error Message: ${loadAdError.message}")
+                    Log.e(TAG, "   Error Domain: ${loadAdError.domain}")
+                    Log.e(TAG, "   Ad Unit ID: $adUnitId")
                     rewardedAd = null
                     // Clear callback on failure
                     rewardedAdLoadCallback = null
@@ -171,9 +204,10 @@ class AdManager(private val context: Context) {
      */
     fun showRewardedAd(activity: android.app.Activity, onAdClosed: (() -> Unit)? = null, onUserEarnedReward: ((RewardItem) -> Unit)? = null) {
         rewardedAd?.let { ad ->
+            Log.d(TAG, "Showing rewarded ad...")
             ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
-                    Log.d(TAG, "Rewarded ad dismissed")
+                    Log.d(TAG, "✅ Rewarded ad dismissed (user closed it)")
                     rewardedAd = null
                     // Load next ad
                     loadRewardedAd()
@@ -181,22 +215,23 @@ class AdManager(private val context: Context) {
                 }
                 
                 override fun onAdFailedToShowFullScreenContent(p0: com.google.android.gms.ads.AdError) {
-                    Log.e(TAG, "Rewarded ad failed to show: ${p0.message}")
+                    Log.e(TAG, "❌ Rewarded ad failed to show: ${p0.message}")
+                    Log.e(TAG, "   Error Code: ${p0.code}")
                     rewardedAd = null
                     onAdClosed?.invoke()
                 }
                 
                 override fun onAdShowedFullScreenContent() {
-                    Log.d(TAG, "Rewarded ad showed")
+                    Log.d(TAG, "✅ Rewarded ad showed successfully (full screen)")
                 }
             }
             
             ad.show(activity) { rewardItem ->
-                Log.d(TAG, "User earned reward: ${rewardItem.amount} ${rewardItem.type}")
+                Log.d(TAG, "🎁 User earned reward: ${rewardItem.amount} ${rewardItem.type}")
                 onUserEarnedReward?.invoke(rewardItem)
             }
         } ?: run {
-            Log.d(TAG, "Rewarded ad not loaded yet")
+            Log.w(TAG, "⚠️ Rewarded ad not loaded yet - cannot show")
             onAdClosed?.invoke()
         }
     }
@@ -209,10 +244,10 @@ class AdManager(private val context: Context) {
     }
     
     /**
-     * Get test banner ad unit ID
+     * Get banner ad unit ID (test or real based on USE_TEST_ADS flag)
      */
-    fun getTestBannerAdUnitId(): String {
-        return TEST_BANNER_AD_UNIT_ID
+    fun getBannerAdUnitId(): String {
+        return if (USE_TEST_ADS) TEST_BANNER_AD_UNIT_ID else REAL_BANNER_AD_UNIT_ID
     }
 }
 
