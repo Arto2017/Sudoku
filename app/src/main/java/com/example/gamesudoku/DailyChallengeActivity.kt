@@ -475,9 +475,72 @@ class DailyChallengeActivity : AppCompatActivity() {
                 // Reward earned callback - hint is granted in onAdClosed
             })
         } else {
-            // Ad not loaded - try to load it and show message
-            showTooltip(hintButton, "Ad not ready, please try again")
-            adManager.loadRewardedAd()
+            // Ad not loaded - show loading message and load with callback
+            showTooltip(hintButton, "Loading ad...")
+            
+            // Track if ad was shown to prevent multiple callbacks
+            var adShown = false
+            
+            // Create the callback for when ad is loaded
+            val onAdLoadedCallback: () -> Unit = {
+                if (!adShown && adManager.isRewardedAdLoaded()) {
+                    adShown = true
+                    // Automatically show the ad when it's loaded
+                    adManager.showRewardedAd(this, onAdClosed = {
+                        // After ad is watched, grant 1 hint
+                        sudokuBoardView.grantHint()
+                        
+                        // Update badge after granting hint
+                        updateHintBadge()
+                        
+                        // Check if a cell is selected - if yes, use the hint immediately
+                        val hasSelectedCell = sudokuBoardView.getSelectedRow() != -1 && sudokuBoardView.getSelectedCol() != -1
+                        if (hasSelectedCell && sudokuBoardView.revealHint()) {
+                            SoundManager.getInstance(this@DailyChallengeActivity).playClick()
+                            // Sync hintsUsed with board (board tracks it internally)
+                            hintsUsed = sudokuBoardView.getHintsUsed()
+                            
+                            // Highlight the number that was placed by the hint (same as manual placement)
+                            val placedNumber = sudokuBoardView.getBoardValue(sudokuBoardView.getSelectedRow(), sudokuBoardView.getSelectedCol())
+                            if (placedNumber > 0) {
+                                sudokuBoardView.highlightNumber(placedNumber)
+                                highlightActiveNumber(placedNumber)
+                            }
+                            
+                            // Update badge after using hint
+                            updateHintBadge()
+                            
+                            // Check for completion after revealing hint (in case hint fills last cell)
+                            if (sudokuBoardView.isBoardComplete()) {
+                                completeGame()
+                            }
+                        } else {
+                            // No cell selected or hint couldn't be used - badge already updated
+                        }
+                        // Preload next rewarded ad
+                        adManager.loadRewardedAd()
+                    }, onUserEarnedReward = {
+                        // Reward earned callback - hint is granted in onAdClosed
+                    })
+                }
+            }
+            
+            // Load ad with callback
+            adManager.loadRewardedAd(onAdLoadedCallback)
+            
+            // Set up timeout fallback (10 seconds)
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (!adShown) {
+                    if (adManager.isRewardedAdLoaded()) {
+                        // Ad loaded but callback didn't fire - show it now
+                        adShown = true
+                        onAdLoadedCallback()
+                    } else {
+                        // Ad failed to load after timeout
+                        showTooltip(hintButton, "Ad failed to load. Please try again.")
+                    }
+                }
+            }, 10000) // 10 second timeout
         }
     }
     

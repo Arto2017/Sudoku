@@ -1481,7 +1481,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         maxHintsPerGame = if (gameSettings.isExtendedHintsEnabled()) {
             EXTENDED_HINTS_PER_GAME
         } else {
-            DEFAULT_HINTS_PER_GAME
+            // 6x6 games get 1 hint, other games get 2 hints
+            if (boardSize == 6) 1 else DEFAULT_HINTS_PER_GAME
         }
         hintsRemaining = maxHintsPerGame // Reset hints remaining based on settings
         isRevealedByHint = Array(boardSize) { BooleanArray(boardSize) }
@@ -2125,7 +2126,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         val newMaxHints = if (gameSettings.isExtendedHintsEnabled()) {
             EXTENDED_HINTS_PER_GAME
         } else {
-            DEFAULT_HINTS_PER_GAME
+            // 6x6 games get 1 hint, other games get 2 hints
+            if (boardSize == 6) 1 else DEFAULT_HINTS_PER_GAME
         }
         
         // Only update if the max hints changed
