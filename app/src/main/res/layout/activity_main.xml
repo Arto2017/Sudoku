@@ -53,10 +53,23 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
+                    <ImageButton
+                        android:id="@+id/systemSettingsButton"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/back_button_gold"
+                        android:clickable="true"
+                        android:contentDescription="Settings"
+                        android:focusable="true"
+                        android:padding="0dp"
+                        android:src="@drawable/ic_settings_new"
+                        android:tint="#2D1810" />
+
                     <TextView
                         android:id="@+id/settingsButton"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
+                        android:layout_marginStart="4dp"
                         android:background="@drawable/back_button_gold"
                         android:clickable="true"
                         android:contentDescription="Change Difficulty"
@@ -65,19 +78,6 @@
                         android:text="🧩"
                         android:textSize="16sp"
                         android:visibility="gone" />
-
-                    <ImageButton
-                        android:id="@+id/systemSettingsButton"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:layout_marginStart="4dp"
-                        android:background="@drawable/back_button_gold"
-                        android:clickable="true"
-                        android:contentDescription="Settings"
-                        android:focusable="true"
-                        android:padding="0dp"
-                        android:src="@drawable/ic_settings_new"
-                        android:tint="#2D1810" />
                 </LinearLayout>
 
                 <!-- Decorative Fantasy Banner Background -->
