@@ -6,6 +6,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -22,6 +23,8 @@ import android.widget.PopupWindow
 import android.graphics.drawable.ColorDrawable
 import com.google.android.gms.ads.AdView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowCompat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,6 +67,10 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Enable fullscreen/immersive mode
+        enableFullscreen()
+        
         setContentView(R.layout.activity_daily_challenge)
         
         // Initialize AdMob and load banner ad first (like MainActivity)
@@ -969,5 +976,41 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Style the dialog
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.show()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Re-enable fullscreen mode when resuming
+        enableFullscreen()
+    }
+    
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            enableFullscreen()
+        }
+    }
+    
+    /**
+     * Enable fullscreen/immersive mode to hide status bar and navigation bar
+     */
+    private fun enableFullscreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11 (API 30+) - Use WindowInsetsController
+            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+            insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars() or androidx.core.view.WindowInsetsCompat.Type.navigationBars())
+            insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            // Older Android versions
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            )
+        }
     }
 }

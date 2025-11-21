@@ -1,10 +1,13 @@
 package com.example.gamesudoku
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowInsetsCompat
 import android.widget.*
 import android.view.View
 import android.graphics.Color
@@ -24,6 +27,10 @@ class RealmQuestActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Enable fullscreen/immersive mode
+        enableFullscreen()
+        
         setContentView(R.layout.activity_realm_quest)
 
         questCodex = QuestCodex(this)
@@ -201,6 +208,10 @@ class RealmQuestActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        
+        // Re-enable fullscreen mode when resuming
+        enableFullscreen()
+        
         // Refresh puzzle status when returning from game
         realm = questCodex.getRealmById(realm.id) ?: realm
         puzzleChain = questCodex.getPuzzleChain(realm.id) ?: puzzleChain
@@ -315,6 +326,34 @@ class RealmQuestActivity : AppCompatActivity() {
             }
             .map { it.id }
             .toSet()
+    }
+    
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            enableFullscreen()
+        }
+    }
+    
+    /**
+     * Enable fullscreen/immersive mode to hide status bar and navigation bar
+     */
+    private fun enableFullscreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+            insetsController.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
+            insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            )
+        }
     }
 }
 

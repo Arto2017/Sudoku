@@ -29,6 +29,9 @@ import android.widget.LinearLayout
 import android.widget.ImageView
 import com.google.android.gms.ads.AdView
 import kotlinx.coroutines.*
+import android.os.Build
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowInsetsCompat
 
 
 class MainActivity : AppCompatActivity() {
@@ -230,6 +233,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Enable fullscreen/immersive mode
+        enableFullscreen()
+        
         setContentView(R.layout.activity_main)
 
         playNowStateManager = if (questPuzzleId == null) PlayNowStateManager(this) else null
@@ -1161,6 +1168,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        
+        // Re-enable fullscreen mode when resuming
+        enableFullscreen()
+        
         if (gameStarted) {
             startTimer() // Resume timer if game was started
         }
@@ -1171,6 +1182,36 @@ class MainActivity : AppCompatActivity() {
         
         // Resume banner ad
         bannerAdView?.resume()
+    }
+    
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            enableFullscreen()
+        }
+    }
+    
+    /**
+     * Enable fullscreen/immersive mode to hide status bar and navigation bar
+     */
+    private fun enableFullscreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11 (API 30+) - Use WindowInsetsController
+            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+            insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars() or androidx.core.view.WindowInsetsCompat.Type.navigationBars())
+            insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            // Older Android versions
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            )
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

@@ -3,6 +3,7 @@ package com.example.gamesudoku
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -10,6 +11,8 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowInsetsCompat
 import android.widget.Toast
 import android.content.Context
 import android.widget.LinearLayout
@@ -41,7 +44,19 @@ class MainMenuActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Set window background to match app background (prevent phone background showing)
+        window.setBackgroundDrawableResource(R.drawable.bg_gradient_warm)
+        
+        // Enable fullscreen/immersive mode BEFORE setContentView
+        enableFullscreen()
+        
         setContentView(R.layout.activity_main_menu)
+        
+        // Re-apply fullscreen after setContentView to ensure it sticks
+        window.decorView.post {
+            enableFullscreen()
+        }
 
         // Initialize quest system
         questCodex = QuestCodex(this)
@@ -289,11 +304,50 @@ class MainMenuActivity : AppCompatActivity() {
     
     override fun onResume() {
         super.onResume()
+        
+        // Re-enable fullscreen mode when resuming
+        enableFullscreen()
+        
         // Refresh quest progress when returning to main menu
         updateQuestProgress()
         // Refresh daily challenge card
         updateDailyChallengeCard()
         updateContinueButton()
+    }
+    
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            enableFullscreen()
+        }
+    }
+    
+    /**
+     * Enable fullscreen/immersive mode to hide status bar and navigation bar
+     */
+    private fun enableFullscreen() {
+        // Make window draw behind system bars
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11 (API 30+) - Use WindowInsetsController
+            window.setDecorFitsSystemWindows(false)
+            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+            insetsController.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
+            insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            // Older Android versions
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            )
+        }
+        
+        // Ensure window background matches app background
+        window.setBackgroundDrawableResource(R.drawable.bg_gradient_warm)
     }
     
     override fun onPause() {
