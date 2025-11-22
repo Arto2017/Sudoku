@@ -68,6 +68,9 @@ class DailyChallengeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Set window background to match game background (prevent wrong color in status bar area)
+        window.setBackgroundDrawableResource(R.drawable.parchment_background)
+        
         // Enable fullscreen/immersive mode
         enableFullscreen()
         
@@ -1004,6 +1007,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     private fun enableFullscreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11 (API 30+) - Use WindowInsetsController
+            window.setDecorFitsSystemWindows(false)
             val insetsController = WindowInsetsControllerCompat(window, window.decorView)
             insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.statusBars() or androidx.core.view.WindowInsetsCompat.Type.navigationBars())
             insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -1019,5 +1023,8 @@ class DailyChallengeActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
             )
         }
+        
+        // Ensure window background matches game background
+        window.setBackgroundDrawableResource(R.drawable.parchment_background)
     }
 }
