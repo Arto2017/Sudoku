@@ -208,7 +208,10 @@ class DailyChallengeActivity : AppCompatActivity() {
             // Update timer display immediately
             updateTimer()
             
-            // Restore selected number highlighting
+            // Clear any selected cell first to prevent unwanted row highlighting
+            sudokuBoardView.clearCellSelection()
+            
+            // Restore selected number highlighting (without selecting a cell)
             if (selectedNumber in 1..9) {
                 sudokuBoardView.highlightNumber(selectedNumber)
                 highlightActiveNumber(selectedNumber)
@@ -250,6 +253,10 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Initialize hint system (won't overwrite explicitly set solution)
         sudokuBoardView.initializeHintSystem()
+        
+        // Clear any selected cell to prevent row highlighting on start
+        sudokuBoardView.clearCellSelection()
+        sudokuBoardView.clearNumberHighlight()
         
         // Verify solution was set correctly
         Log.d("DailyChallenge", "Hint system initialized")

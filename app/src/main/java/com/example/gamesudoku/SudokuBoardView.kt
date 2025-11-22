@@ -881,6 +881,15 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     }
     
 
+    /**
+     * Clear the selected cell (deselect) without clearing cell content
+     */
+    fun clearCellSelection() {
+        selectedRow = -1
+        selectedCol = -1
+        invalidate()
+    }
+    
     fun isValidSolution(): Boolean {
         // Check rows
         for (row in 0 until boardSize) {

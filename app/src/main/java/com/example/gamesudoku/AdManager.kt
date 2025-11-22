@@ -1,6 +1,8 @@
 package com.example.gamesudoku
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
@@ -35,6 +37,12 @@ class AdManager(private val context: Context) {
     private var rewardedAd: RewardedAd? = null
     private var rewardedAdLoadCallback: (() -> Unit)? = null
     
+    // Retry logic for banner ads
+    private var bannerAdRetryCount = 0
+    private val maxBannerRetries = 3
+    private val bannerRetryHandler = Handler(Looper.getMainLooper())
+    private var currentBannerAdView: AdView? = null
+    
     init {
         MobileAds.initialize(context) { initializationStatus ->
             val statusMap = initializationStatus.adapterStatusMap
@@ -46,11 +54,20 @@ class AdManager(private val context: Context) {
     }
     
     /**
-     * Load a banner ad
+     * Load a banner ad with automatic retry for network errors
      */
     fun loadBannerAd(adView: AdView) {
+        currentBannerAdView = adView
+        bannerAdRetryCount = 0
+        loadBannerAdInternal(adView)
+    }
+    
+    /**
+     * Internal method to load banner ad with retry logic
+     */
+    private fun loadBannerAdInternal(adView: AdView) {
         val adUnitId = if (USE_TEST_ADS) TEST_BANNER_AD_UNIT_ID else REAL_BANNER_AD_UNIT_ID
-        Log.d(TAG, "Loading banner ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)")
+        Log.d(TAG, "Loading banner ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)${if (bannerAdRetryCount > 0) " [Retry $bannerAdRetryCount/$maxBannerRetries]" else ""}")
         
         val adRequest = AdRequest.Builder().build()
         adView.loadAd(adRequest)
@@ -58,6 +75,8 @@ class AdManager(private val context: Context) {
         adView.adListener = object : com.google.android.gms.ads.AdListener() {
             override fun onAdLoaded() {
                 Log.d(TAG, "✅ Banner ad loaded successfully! Ad Unit ID: $adUnitId")
+                // Reset retry count on success
+                bannerAdRetryCount = 0
             }
             
             override fun onAdFailedToLoad(loadAdError: LoadAdError) {
@@ -66,11 +85,34 @@ class AdManager(private val context: Context) {
                 Log.e(TAG, "   Error Message: ${loadAdError.message}")
                 Log.e(TAG, "   Error Domain: ${loadAdError.domain}")
                 Log.e(TAG, "   Ad Unit ID: $adUnitId")
+                
                 // Common error codes:
                 // 0 = ERROR_CODE_INTERNAL_ERROR
-                // 1 = ERROR_CODE_INVALID_REQUEST
-                // 2 = ERROR_CODE_NETWORK_ERROR
-                // 3 = ERROR_CODE_NO_FILL (no ads available - normal for new accounts)
+                // 1 = ERROR_CODE_INVALID_REQUEST (usually transient, but don't retry as it might be config issue)
+                // 2 = ERROR_CODE_NETWORK_ERROR (retry with exponential backoff)
+                // 3 = ERROR_CODE_NO_FILL (no ads available - normal for new accounts, don't retry)
+                
+                // Only retry on network errors (Error Code 2) and limit retries
+                if (loadAdError.code == 2 && bannerAdRetryCount < maxBannerRetries) {
+                    bannerAdRetryCount++
+                    val retryDelay = (1000 * bannerAdRetryCount).toLong() // Exponential backoff: 1s, 2s, 3s
+                    Log.w(TAG, "   Network error detected. Retrying in ${retryDelay}ms... (Attempt $bannerAdRetryCount/$maxBannerRetries)")
+                    
+                    bannerRetryHandler.postDelayed({
+                        // Only retry if the ad view is still valid
+                        currentBannerAdView?.let {
+                            loadBannerAdInternal(it)
+                        }
+                    }, retryDelay)
+                } else {
+                    // Reset retry count after max retries or non-retryable error
+                    if (loadAdError.code == 2) {
+                        Log.w(TAG, "   Max retries reached. Giving up on banner ad load.")
+                    } else {
+                        Log.d(TAG, "   Error code ${loadAdError.code} is not retryable. Check your ad configuration if this persists.")
+                    }
+                    bannerAdRetryCount = 0
+                }
             }
             
             override fun onAdOpened() {
