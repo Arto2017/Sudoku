@@ -114,14 +114,36 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </FrameLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-            <!-- Timer, Difficulty, and Mistakes Row -->
+    <!-- Sudoku Board Container -->
+    <FrameLayout
+        android:id="@+id/boardContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="4dp">
+
+        <!-- Container that centers both stats row and board together -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_gravity="center">
+
+            <!-- Timer, Difficulty, and Mistakes Row - Just above board -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="0dp"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="4dp"
+                android:background="@android:color/transparent">
 
                 <!-- Timer Display - Left -->
                 <LinearLayout
@@ -130,7 +152,7 @@
                     android:layout_weight="1"
                     android:gravity="start|center_vertical"
                     android:orientation="horizontal"
-                    android:padding="2dp">
+                    android:padding="4dp">
 
                     <TextView
                         android:id="@+id/timerText"
@@ -151,7 +173,9 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:padding="2dp">
+                    android:padding="4dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp">
 
                     <Spinner
                         android:id="@+id/difficultySpinner"
@@ -179,7 +203,7 @@
                     android:layout_weight="1"
                     android:gravity="end|center_vertical"
                     android:orientation="horizontal"
-                    android:padding="2dp">
+                    android:padding="4dp">
 
                     <TextView
                         android:id="@+id/mistakesText"
@@ -192,23 +216,14 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
+
+            <!-- Sudoku Board View - Centered below stats row -->
+            <com.example.gamesudoku.SudokuBoardView
+                android:id="@+id/sudokuBoard"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Sudoku Board Container -->
-    <FrameLayout
-        android:id="@+id/boardContainer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp">
-
-        <com.example.gamesudoku.SudokuBoardView
-            android:id="@+id/sudokuBoard"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center" />
     </FrameLayout>
 
     <!-- Compact Enhanced Control Panel with Fantasy Design -->
