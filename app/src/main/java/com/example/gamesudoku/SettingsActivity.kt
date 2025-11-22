@@ -1,7 +1,10 @@
 package com.example.gamesudoku
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -29,6 +32,7 @@ class SettingsActivity : AppCompatActivity() {
         initializeViews()
         setupListeners()
         setupResetButton()
+        setupRateButton()
         loadCurrentSettings()
         
         // Hide reset card if opened from quest game
@@ -70,6 +74,38 @@ class SettingsActivity : AppCompatActivity() {
         val resetCard = findViewById<MaterialCardView>(R.id.resetCard)
         resetCard.setOnClickListener {
             showResetConfirmationDialog()
+        }
+    }
+    
+    private fun setupRateButton() {
+        val rateCard = findViewById<MaterialCardView>(R.id.rateCard)
+        rateCard.setOnClickListener {
+            openPlayStoreRating()
+        }
+    }
+    
+    private fun openPlayStoreRating() {
+        val packageName = packageName
+        Log.d("SettingsActivity", "Opening Play Store rating for package: $packageName")
+        
+        try {
+            // Try to open the Play Store app directly
+            val marketUri = Uri.parse("market://details?id=$packageName")
+            val intent = Intent(Intent.ACTION_VIEW, marketUri)
+            startActivity(intent)
+            Log.d("SettingsActivity", "Opened Play Store app with URI: $marketUri")
+        } catch (e: Exception) {
+            // If Play Store app is not available, open in browser
+            Log.d("SettingsActivity", "Play Store app not available, trying browser: ${e.message}")
+            try {
+                val webUri = Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                val intent = Intent(Intent.ACTION_VIEW, webUri)
+                startActivity(intent)
+                Log.d("SettingsActivity", "Opened Play Store in browser with URI: $webUri")
+            } catch (e2: Exception) {
+                Log.e("SettingsActivity", "Failed to open Play Store: ${e2.message}")
+                Toast.makeText(this, "Unable to open Play Store", Toast.LENGTH_SHORT).show()
+            }
         }
     }
     

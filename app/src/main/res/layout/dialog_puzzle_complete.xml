@@ -200,62 +200,84 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:gravity="center"
         android:layout_marginTop="8dp">
 
-        <!-- New Game Button -->
+        <!-- First Row: New Game, Share, Menu -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+
+            <!-- New Game Button -->
+            <Button
+                android:id="@+id/btnNewGame"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="New Game"
+                android:textColor="#6B4423"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:background="@drawable/fantasy_continue_button"
+                android:elevation="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingHorizontal="4dp" />
+
+            <!-- Share Button -->
+            <Button
+                android:id="@+id/btnShare"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="4dp"
+                android:text="Share"
+                android:textColor="#6B4423"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:background="@drawable/fantasy_continue_button"
+                android:elevation="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingHorizontal="4dp" />
+
+            <!-- Menu Button -->
+            <Button
+                android:id="@+id/btnMenu"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Menu"
+                android:textColor="#6B4423"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:background="@drawable/fantasy_exit_button"
+                android:elevation="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingHorizontal="4dp" />
+        </LinearLayout>
+
+        <!-- Rate Game Button -->
         <Button
-            android:id="@+id/btnNewGame"
-            android:layout_width="0dp"
+            android:id="@+id/btnRate"
+            android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="New Game"
+            android:text="⭐ Rate Game"
             android:textColor="#6B4423"
             android:textSize="13sp"
             android:textStyle="bold"
             android:fontFamily="serif"
             android:background="@drawable/fantasy_continue_button"
-            android:elevation="2dp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:paddingHorizontal="4dp" />
-
-        <!-- Share Button -->
-        <Button
-            android:id="@+id/btnShare"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
-            android:text="Share"
-            android:textColor="#6B4423"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:fontFamily="serif"
-            android:background="@drawable/fantasy_continue_button"
-            android:elevation="2dp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:paddingHorizontal="4dp" />
-
-        <!-- Menu Button -->
-        <Button
-            android:id="@+id/btnMenu"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Menu"
-            android:textColor="#6B4423"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:fontFamily="serif"
-            android:background="@drawable/fantasy_exit_button"
-            android:elevation="2dp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:paddingHorizontal="4dp" />
+            android:elevation="2dp" />
     </LinearLayout>
 </LinearLayout>

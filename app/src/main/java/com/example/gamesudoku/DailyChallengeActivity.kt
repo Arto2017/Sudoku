@@ -6,6 +6,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -839,6 +840,10 @@ class DailyChallengeActivity : AppCompatActivity() {
             }
         }
         
+        dialogView.findViewById<Button>(R.id.btnRate).setOnClickListener {
+            openPlayStoreRating()
+        }
+        
         // Show interstitial ad when dialog is dismissed (fallback - only if no button was clicked)
         dialog.setOnDismissListener {
             if (!adShown && adManager.isInterstitialAdLoaded()) {
@@ -872,6 +877,31 @@ class DailyChallengeActivity : AppCompatActivity() {
         }
         
         startActivity(Intent.createChooser(shareIntent, "Share your achievement"))
+    }
+    
+    private fun openPlayStoreRating() {
+        val packageName = packageName
+        Log.d("DailyChallenge", "Opening Play Store rating for package: $packageName")
+        
+        try {
+            // Try to open the Play Store app directly
+            val marketUri = Uri.parse("market://details?id=$packageName")
+            val intent = Intent(Intent.ACTION_VIEW, marketUri)
+            startActivity(intent)
+            Log.d("DailyChallenge", "Opened Play Store app with URI: $marketUri")
+        } catch (e: Exception) {
+            // If Play Store app is not available, open in browser
+            Log.d("DailyChallenge", "Play Store app not available, trying browser: ${e.message}")
+            try {
+                val webUri = Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                val intent = Intent(Intent.ACTION_VIEW, webUri)
+                startActivity(intent)
+                Log.d("DailyChallenge", "Opened Play Store in browser with URI: $webUri")
+            } catch (e2: Exception) {
+                Log.e("DailyChallenge", "Failed to open Play Store: ${e2.message}")
+                Toast.makeText(this, "Unable to open Play Store", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
     override fun onPause() {

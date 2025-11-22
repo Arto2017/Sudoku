@@ -18,6 +18,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.animation.ObjectAnimator
 import android.util.TypedValue
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -1435,6 +1436,10 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Share feature coming soon!", Toast.LENGTH_SHORT).show()
         }
         
+        dialogView.findViewById<Button>(R.id.btnRate)?.setOnClickListener {
+            openPlayStoreRating()
+        }
+        
         // Show appropriate ad when dialog is dismissed (for New Game and Share buttons)
         dialog.setOnDismissListener {
             if (shouldShowAdOnDismiss) {
@@ -1822,6 +1827,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
+        dialogView.findViewById<Button>(R.id.btnRate)?.setOnClickListener {
+            openPlayStoreRating()
+        }
+        
         // Animate dialog entrance
         dialog.setOnShowListener {
             animateQuestVictoryDialog(dialogView)
@@ -1840,6 +1849,7 @@ class MainActivity : AppCompatActivity() {
         val message = dialogView.findViewById<TextView>(R.id.congratulationsMessage)
         val statsContainer = dialogView.findViewById<LinearLayout>(R.id.statsContainer)
         val button = dialogView.findViewById<Button>(R.id.btnRealmMap)
+        val rateButton = dialogView.findViewById<Button>(R.id.btnRate)
         val nextMessage = dialogView.findViewById<TextView>(R.id.nextPuzzleMessage)
         
         // Animate overlay fade in
@@ -1933,6 +1943,12 @@ class MainActivity : AppCompatActivity() {
         button?.animate()
             ?.alpha(1f)
             ?.setStartDelay(800)
+            ?.setDuration(400)
+            ?.start()
+        
+        rateButton?.animate()
+            ?.alpha(1f)
+            ?.setStartDelay(900)
             ?.setDuration(400)
             ?.start()
     }
@@ -2301,6 +2317,31 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             ?.start()
+    }
+    
+    private fun openPlayStoreRating() {
+        val packageName = packageName
+        android.util.Log.d("MainActivity", "Opening Play Store rating for package: $packageName")
+        
+        try {
+            // Try to open the Play Store app directly
+            val marketUri = Uri.parse("market://details?id=$packageName")
+            val intent = Intent(Intent.ACTION_VIEW, marketUri)
+            startActivity(intent)
+            android.util.Log.d("MainActivity", "Opened Play Store app with URI: $marketUri")
+        } catch (e: Exception) {
+            // If Play Store app is not available, open in browser
+            android.util.Log.d("MainActivity", "Play Store app not available, trying browser: ${e.message}")
+            try {
+                val webUri = Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                val intent = Intent(Intent.ACTION_VIEW, webUri)
+                startActivity(intent)
+                android.util.Log.d("MainActivity", "Opened Play Store in browser with URI: $webUri")
+            } catch (e2: Exception) {
+                android.util.Log.e("MainActivity", "Failed to open Play Store: ${e2.message}")
+                Toast.makeText(this, "Unable to open Play Store", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
     // Disable phone back button - use UI back button instead

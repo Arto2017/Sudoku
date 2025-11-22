@@ -209,45 +209,67 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:gravity="center"
         android:layout_marginTop="8dp">
 
-        <!-- Share Button -->
+        <!-- First Row: Share and Done -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+
+            <!-- Share Button -->
+            <Button
+                android:id="@+id/btnShare"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Share Achievement"
+                android:textColor="#6B4423"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:background="@drawable/fantasy_continue_button"
+                android:elevation="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingHorizontal="4dp" />
+
+            <!-- Done Button -->
+            <Button
+                android:id="@+id/btnDone"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Done"
+                android:textColor="#6B4423"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:background="@drawable/fantasy_exit_button"
+                android:elevation="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingHorizontal="4dp" />
+        </LinearLayout>
+
+        <!-- Rate Game Button -->
         <Button
-            android:id="@+id/btnShare"
-            android:layout_width="0dp"
+            android:id="@+id/btnRate"
+            android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="Share Achievement"
+            android:text="⭐ Rate Game"
             android:textColor="#6B4423"
             android:textSize="13sp"
             android:textStyle="bold"
             android:fontFamily="serif"
             android:background="@drawable/fantasy_continue_button"
-            android:elevation="2dp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:paddingHorizontal="4dp" />
-
-        <!-- Done Button -->
-        <Button
-            android:id="@+id/btnDone"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Done"
-            android:textColor="#6B4423"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:fontFamily="serif"
-            android:background="@drawable/fantasy_exit_button"
-            android:elevation="2dp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:paddingHorizontal="4dp" />
+            android:elevation="2dp" />
     </LinearLayout>
 </LinearLayout>
 
