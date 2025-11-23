@@ -2129,7 +2129,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     
     /**
      * Update hint limits based on current settings and recalculate remaining hints
-     * This is called when settings change during gameplay
+     * This is called when settings change during gameplay or when restoring game state
      */
     fun updateHintsFromSettings() {
         val newMaxHints = if (gameSettings.isExtendedHintsEnabled()) {
@@ -2139,13 +2139,15 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             if (boardSize == 6) 1 else DEFAULT_HINTS_PER_GAME
         }
         
-        // Only update if the max hints changed
+        // Update maxHintsPerGame if it changed
         if (newMaxHints != maxHintsPerGame) {
             maxHintsPerGame = newMaxHints
-            
-            // Recalculate remaining hints: new remaining = new max - hints used
-            hintsRemaining = (newMaxHints - hintsUsed).coerceAtLeast(0)
         }
+        
+        // Always recalculate remaining hints when hints have been used
+        // This ensures correct restoration of game state even if maxHints didn't change
+        // For fresh games (hintsUsed == 0), this will set hintsRemaining = maxHintsPerGame
+        hintsRemaining = (maxHintsPerGame - hintsUsed).coerceAtLeast(0)
     }
     
     /**

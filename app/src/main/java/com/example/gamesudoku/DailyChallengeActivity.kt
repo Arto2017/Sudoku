@@ -193,6 +193,8 @@ class DailyChallengeActivity : AppCompatActivity() {
             
             // Update hints from current settings after restoring used count
             // This recalculates remaining hints based on current maxHintsPerGame setting
+            // updateHintsFromSettings() now always recalculates hintsRemaining, fixing the bug
+            // where hintsRemaining wasn't updated if maxHints didn't change
             sudokuBoardView.updateHintsFromSettings()
             updateHintBadge()
             
