@@ -14,7 +14,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GameSudoku"
+        android:theme="@style/Theme.SudokuPro"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         
@@ -27,7 +27,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku">
+            android:theme="@style/Theme.SudokuPro">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -38,37 +38,37 @@
             android:name=".MainActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
         <activity
             android:name=".StatisticsActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
         <activity
             android:name=".QuickPlayActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
         <activity
             android:name=".RealmSelectionActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
         <activity
             android:name=".RealmQuestActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
         <activity
             android:name=".DailyChallengeActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GameSudoku" />
+            android:theme="@style/Theme.SudokuPro" />
     </application>
 
 </manifest>
