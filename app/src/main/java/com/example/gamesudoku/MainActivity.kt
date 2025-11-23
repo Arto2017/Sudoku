@@ -1,4 +1,4 @@
-package com.example.gamesudoku
+package com.artashes.sudoku
 
 import android.graphics.Color
 import android.os.Bundle

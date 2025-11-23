@@ -1,11 +1,11 @@
-package com.example.gamesudoku
+package com.artashes.sudoku
 
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
 import kotlin.math.min
-import com.example.gamesudoku.SudokuGenerator.Difficulty
+import com.artashes.sudoku.SudokuGenerator.Difficulty
 
 class DifficultyChartView @JvmOverloads constructor(
     context: Context,

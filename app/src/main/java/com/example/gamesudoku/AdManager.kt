@@ -1,4 +1,4 @@
-package com.example.gamesudoku
+package com.artashes.sudoku
 
 import android.content.Context
 import android.os.Handler
@@ -68,6 +68,19 @@ class AdManager(private val context: Context) {
     private fun loadBannerAdInternal(adView: AdView) {
         val adUnitId = if (USE_TEST_ADS) TEST_BANNER_AD_UNIT_ID else REAL_BANNER_AD_UNIT_ID
         Log.d(TAG, "Loading banner ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)${if (bannerAdRetryCount > 0) " [Retry $bannerAdRetryCount/$maxBannerRetries]" else ""}")
+        
+        // Only set ad unit ID if it's not already set (from XML or previous call)
+        // The ad unit ID can only be set once, so we check first
+        if (adView.adUnitId == null || adView.adUnitId!!.isEmpty()) {
+            try {
+                adView.adUnitId = adUnitId
+                Log.d(TAG, "Set ad unit ID to: $adUnitId")
+            } catch (e: IllegalStateException) {
+                Log.w(TAG, "Ad unit ID already set to: ${adView.adUnitId}, using existing ID")
+            }
+        } else {
+            Log.d(TAG, "AdView already has ad unit ID: ${adView.adUnitId}, using existing ID")
+        }
         
         val adRequest = AdRequest.Builder().build()
         adView.loadAd(adRequest)

@@ -1,4 +1,4 @@
-package com.example.gamesudoku
+package com.artashes.sudoku
 
 import android.content.Context
 import android.util.Log

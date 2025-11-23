@@ -123,7 +123,7 @@
         android:layout_weight="1"
         android:layout_marginHorizontal="8dp">
 
-        <com.example.gamesudoku.MysticForestQuestView
+        <com.artashes.sudoku.MysticForestQuestView
             android:id="@+id/mysticForestQuestView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

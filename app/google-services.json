@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:967223055204:android:489b473f460aa998dd2071",
         "android_client_info": {
-          "package_name": "com.example.gamesudoku"
+          "package_name": "com.artashes.sudoku"
         }
       },
       "oauth_client": [],

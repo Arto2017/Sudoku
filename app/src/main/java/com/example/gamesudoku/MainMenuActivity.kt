@@ -1,4 +1,4 @@
-package com.example.gamesudoku
+package com.artashes.sudoku
 
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator

@@ -219,7 +219,7 @@
             </LinearLayout>
 
             <!-- Sudoku Board View - Centered below stats row -->
-            <com.example.gamesudoku.SudokuBoardView
+            <com.artashes.sudoku.SudokuBoardView
                 android:id="@+id/sudokuBoard"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
