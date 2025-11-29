@@ -1725,12 +1725,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             return false // No hints remaining
         }
         
-        // Check for incorrect user numbers FIRST - prevent hints if there are conflicts
-        // Player must fix or remove incorrect numbers before using hints
-        if (hasIncorrectUserEnteredNumbers()) {
-            lastHintErrorMessage = "Incorrect answers in board, fix or remove them first"
-            return false
-        }
+        // Note: hasIncorrectUserEnteredNumbers() check is now handled by activities
+        // They show a dialog and call revealHintWithAutoFix() if user wants to proceed
         
         // SIMPLIFIED: If solution board exists, read directly from it using (row, col)
         // This is exactly what the user suggested - read from the array and place on board
@@ -1831,7 +1827,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      * Check if there are any incorrect user-entered numbers on the board
      * Returns true if any conflicts found (user-entered numbers that violate Sudoku rules)
      */
-    private fun hasIncorrectUserEnteredNumbers(): Boolean {
+    fun hasIncorrectUserEnteredNumbers(): Boolean {
         // Check all non-empty cells for conflicts
         for (row in 0 until boardSize) {
             for (col in 0 until boardSize) {
@@ -1858,6 +1854,47 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             }
         }
         return false // No incorrect numbers found
+    }
+    
+    /**
+     * Remove all incorrect user-entered numbers from the board
+     * Then place the hint for the selected cell
+     */
+    fun revealHintWithAutoFix(): Boolean {
+        // First, remove all incorrect numbers
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                if (board[row][col] != 0) {
+                    // Only check user-entered values (not fixed cells or hints)
+                    if (!fixed[row][col] && !isRevealedByHint[row][col]) {
+                        var isIncorrect = false
+                        
+                        // Check if this number conflicts with other cells
+                        val conflicts = findConflicts(row, col, board[row][col])
+                        if (conflicts.isNotEmpty()) {
+                            isIncorrect = true
+                        }
+                        
+                        // Also check if the number is correct according to solution
+                        if (solutionBoard != null) {
+                            if (board[row][col] != solutionBoard!![row][col]) {
+                                isIncorrect = true
+                            }
+                        }
+                        
+                        // Remove incorrect number
+                        if (isIncorrect) {
+                            board[row][col] = 0
+                            candidates[row][col].clear()
+                            numberCorrectness.remove(Pair(row, col))
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Now place the hint
+        return revealHint()
     }
     
     /**
