@@ -3076,27 +3076,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun openPlayStoreRating() {
-        val packageName = packageName
-        android.util.Log.d("MainActivity", "Opening Play Store rating for package: $packageName")
-        
-        try {
-            // Try to open the Play Store app directly
-            val marketUri = Uri.parse("market://details?id=$packageName")
-            val intent = Intent(Intent.ACTION_VIEW, marketUri)
-            startActivity(intent)
-            android.util.Log.d("MainActivity", "Opened Play Store app with URI: $marketUri")
-        } catch (e: Exception) {
-            // If Play Store app is not available, open in browser
-            android.util.Log.d("MainActivity", "Play Store app not available, trying browser: ${e.message}")
-            try {
-                val webUri = Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
-                val intent = Intent(Intent.ACTION_VIEW, webUri)
-                startActivity(intent)
-                android.util.Log.d("MainActivity", "Opened Play Store in browser with URI: $webUri")
-            } catch (e2: Exception) {
-                android.util.Log.e("MainActivity", "Failed to open Play Store: ${e2.message}")
-                Toast.makeText(this, "Unable to open Play Store", Toast.LENGTH_SHORT).show()
-            }
+        // Use Google Play In-App Review API for beautiful native rating dialog
+        val reviewManager = InAppReviewManager(this)
+        reviewManager.requestReview {
+            // Review flow completed
+            Log.d("MainActivity", "In-app review completed")
         }
     }
     
