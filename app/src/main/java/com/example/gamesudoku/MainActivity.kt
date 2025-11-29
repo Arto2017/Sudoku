@@ -10,6 +10,7 @@ import android.widget.PopupWindow
 import android.widget.*
 import android.view.Gravity
 import android.util.DisplayMetrics
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
 import android.view.LayoutInflater
@@ -52,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedNumber = 1
     private var currentDifficulty = SudokuGenerator.Difficulty.EASY
     private var totalMistakes = 0
+    private var currentMaxMistakes = 0 // Current max mistakes (increases after each ad watch)
     private lateinit var attemptStore: AttemptStateStore
     private var questCodex: QuestCodex? = null
     private var playNowStateManager: PlayNowStateManager? = null
@@ -375,11 +377,36 @@ class MainActivity : AppCompatActivity() {
                 soundManager.playError()
                 
                 // Increment mistake counter
+                val previousMistakes = totalMistakes
                 questPuzzleId?.let { id ->
                     totalMistakes = attemptStore.incrementMistakes(id)
                 } ?: run {
                     totalMistakes++
                 }
+                // Ensure max mistakes is initialized
+                if (currentMaxMistakes <= 0) {
+                    initializeMaxMistakes()
+                }
+                // Get fresh max from store
+                val defaultMax = getInitialMaxMistakes()
+                val maxMistakes = questPuzzleId?.let { id ->
+                    val storedMax = attemptStore.getMaxMistakes(id, defaultMax)
+                    currentMaxMistakes = if (storedMax > 0) storedMax else defaultMax
+                    currentMaxMistakes
+                } ?: currentMaxMistakes.let { if (it > 0) it else defaultMax }
+                currentMaxMistakes = maxMistakes
+                Log.d("MainActivity", "Mistake detected! Previous: $previousMistakes, New total: $totalMistakes, Max: $maxMistakes")
+                
+                // Update UI immediately - we're already on main thread from conflict detection
+                val text = findViewById<TextView>(R.id.mistakesText)
+                if (text != null) {
+                    text.text = "$totalMistakes / $maxMistakes"
+                    Log.d("MainActivity", "Updated TextView directly to: ${text.text}")
+                } else {
+                    Log.e("MainActivity", "mistakesText TextView is null!")
+                }
+                
+                // Also call the update function for color changes
                 updateMistakesHud(totalMistakes)
                 
                 // Provide haptic feedback
@@ -393,9 +420,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // Mistakes are unlimited (infinity) for all game modes
-                // No game over dialog - player can continue playing regardless of mistake count
-                // This applies to Play Now, Quest puzzles, and Daily Challenge
+                // Check if mistakes reached the limit
+                if (totalMistakes >= maxMistakes) {
+                    showMistakesExhaustedDialog()
+                }
             }
         })
         
@@ -502,6 +530,8 @@ class MainActivity : AppCompatActivity() {
         // Start timer
         startTimer()
         updateProgress()
+        // Initialize max mistakes
+        initializeMaxMistakes()
         // Load mistakes from store (quest only)
         questPuzzleId?.let { id ->
             totalMistakes = attemptStore.getMistakes(id)
@@ -1425,11 +1455,63 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getInitialMaxMistakes(): Int {
+        return if (boardSize == 6) 2 else 3
+    }
+    
+    private fun getMaxMistakes(): Int {
+        // Always get fresh value from store to ensure it's up to date
+        val defaultMax = getInitialMaxMistakes()
+        val storedMax = questPuzzleId?.let { id ->
+            attemptStore.getMaxMistakes(id, defaultMax)
+        } ?: defaultMax
+        // Update cached value
+        currentMaxMistakes = if (storedMax > 0) storedMax else defaultMax
+        return currentMaxMistakes
+    }
+    
+    private fun initializeMaxMistakes() {
+        val defaultMax = getInitialMaxMistakes()
+        currentMaxMistakes = questPuzzleId?.let { id ->
+            val max = attemptStore.getMaxMistakes(id, defaultMax)
+            if (max <= 0) {
+                attemptStore.setMaxMistakes(id, defaultMax)
+                defaultMax
+            } else {
+                max
+            }
+        } ?: defaultMax
+        // Ensure it's at least the default
+        if (currentMaxMistakes <= 0) {
+            currentMaxMistakes = defaultMax
+        }
+    }
+    
+    private fun incrementMaxMistakes() {
+        val defaultMax = getInitialMaxMistakes()
+        currentMaxMistakes = questPuzzleId?.let { id ->
+            attemptStore.incrementMaxMistakes(id, defaultMax)
+        } ?: run {
+            currentMaxMistakes + 1
+        }
+    }
+    
     private fun updateMistakesHud(count: Int) {
         val text = findViewById<TextView>(R.id.mistakesText)
-        text.text = "$count / ∞"
+        // Always get fresh max from store (don't use cached value)
+        val defaultMax = getInitialMaxMistakes()
+        val maxMistakes = questPuzzleId?.let { id ->
+            val storedMax = attemptStore.getMaxMistakes(id, defaultMax)
+            currentMaxMistakes = if (storedMax > 0) storedMax else defaultMax
+            currentMaxMistakes
+        } ?: currentMaxMistakes.let { if (it > 0) it else defaultMax }
+        // Update cached value
+        currentMaxMistakes = maxMistakes
+        val displayText = "$count / $maxMistakes"
+        Log.d("MainActivity", "updateMistakesHud: count=$count, max=$maxMistakes, display='$displayText'")
+        text.text = displayText
         when {
-            count >= 4 -> {
+            count >= maxMistakes -> {
                 text.setTextColor(Color.parseColor("#C62828"))
             }
             count >= 1 -> {
@@ -1440,7 +1522,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         // Content description for accessibility
-        text.contentDescription = "Mistakes: $count of infinity"
+        text.contentDescription = "Mistakes: $count of $maxMistakes"
     }
 
     private fun showPuzzleFailedDialog() {
@@ -1456,11 +1538,17 @@ class MainActivity : AppCompatActivity() {
 
         view.findViewById<Button>(R.id.dialogRetry).setOnClickListener {
             dialog.dismiss()
-            // Reset attempt state and restart puzzle
-            questPuzzleId?.let { id -> attemptStore.clear(id) }
+            // Reset attempt state and clear user entries (keep same puzzle)
+            val defaultMax = getInitialMaxMistakes()
+            questPuzzleId?.let { id -> 
+                attemptStore.clear(id)
+                attemptStore.resetMaxMistakes(id, defaultMax)
+            }
+            currentMaxMistakes = defaultMax
             totalMistakes = 0
             updateMistakesHud(0)
-            sudokuBoard.resetPuzzle(currentDifficulty)
+            // Reset to initial state (clears user entries, keeps puzzle clues - same game)
+            sudokuBoard.resetToInitialState()
             sudokuBoard.clearNumberHighlight() // Clear number highlighting when retrying
             secondsElapsed = 0
             totalMistakes = 0
@@ -1482,6 +1570,163 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.setCancelable(false)
+        dialog.show()
+    }
+    
+    private fun showMistakesExhaustedDialog() {
+        stopTimer()
+        val inflater = LayoutInflater.from(this)
+        val view = inflater.inflate(R.layout.dialog_mistakes_exhausted, null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        view.findViewById<Button>(R.id.btnRestart).setOnClickListener {
+            dialog.dismiss()
+            SoundManager.getInstance(this).playClick()
+            // Reset attempt state and clear user entries (keep same puzzle)
+            val defaultMax = getInitialMaxMistakes()
+            questPuzzleId?.let { id -> 
+                attemptStore.clear(id)
+                attemptStore.resetMaxMistakes(id, defaultMax)
+            }
+            currentMaxMistakes = defaultMax
+            totalMistakes = 0
+            updateMistakesHud(0)
+            // Reset to initial state (clears user entries, keeps puzzle clues - same game)
+            // For quest puzzles, this keeps the same puzzle. For Play Now, it also keeps the same puzzle.
+            sudokuBoard.resetToInitialState()
+            sudokuBoard.clearNumberHighlight()
+            secondsElapsed = 0
+            totalMistakes = 0
+            gameResultSaved = false
+            updateTimerText()
+            startTimer()
+            updateProgress()
+        }
+
+        view.findViewById<Button>(R.id.btnWatchAd).setOnClickListener {
+            dialog.dismiss()
+            SoundManager.getInstance(this).playClick()
+            // Show rewarded ad to continue playing
+            if (adManager.isRewardedAdLoaded()) {
+                adManager.showRewardedAd(this, onAdClosed = {
+                    // After ad is watched, increment max mistakes only (keep current mistakes)
+                    // Example: 3/3 → 3/4, then if user makes mistake: 4/4
+                    val defaultMax = getInitialMaxMistakes()
+                    var newMax = defaultMax
+                    
+                    // Increment max mistakes only (don't increment mistakes)
+                    questPuzzleId?.let { id ->
+                        newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
+                        currentMaxMistakes = newMax
+                    } ?: run {
+                        // For non-quest games, increment local variable
+                        currentMaxMistakes++
+                        newMax = currentMaxMistakes
+                    }
+                    Log.d("MainActivity", "Max mistakes incremented to: $newMax")
+                    
+                    // Keep current mistakes (don't increment them)
+                    questPuzzleId?.let { id ->
+                        totalMistakes = attemptStore.getMistakes(id)
+                    }
+                    // For non-quest games, totalMistakes is already correct
+                    Log.d("MainActivity", "After ad: mistakes=$totalMistakes, max=$newMax")
+                    
+                    // Update UI with both values directly
+                    val text = findViewById<TextView>(R.id.mistakesText)
+                    if (text != null) {
+                        text.text = "$totalMistakes / $newMax"
+                        Log.d("MainActivity", "Updated TextView to: ${text.text}")
+                    }
+                    updateMistakesHud(totalMistakes)
+                    // Restart timer to continue playing
+                    startTimer()
+                    // Preload next rewarded ad
+                    adManager.loadRewardedAd()
+                }, onUserEarnedReward = {
+                    // Reward earned - mistakes incremented in onAdClosed
+                })
+            } else {
+                // Ad not loaded - show loading message and load with callback
+                val handler = Handler(Looper.getMainLooper())
+                var adShown = false
+                
+                val onAdLoadedCallback: () -> Unit = {
+                    if (!adShown && adManager.isRewardedAdLoaded()) {
+                        adShown = true
+                        adManager.showRewardedAd(this, onAdClosed = {
+                            // After ad is watched, increment max mistakes only (keep current mistakes)
+                            // Example: 3/3 → 3/4, then if user makes mistake: 4/4
+                            val defaultMax = getInitialMaxMistakes()
+                            var newMax = defaultMax
+                            
+                            // Increment max mistakes only (don't increment mistakes)
+                            questPuzzleId?.let { id ->
+                                newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
+                                currentMaxMistakes = newMax
+                            } ?: run {
+                                // For non-quest games, increment local variable
+                                currentMaxMistakes++
+                                newMax = currentMaxMistakes
+                            }
+                            Log.d("MainActivity", "Max mistakes incremented to: $newMax")
+                            
+                            // Keep current mistakes (don't increment them)
+                            questPuzzleId?.let { id ->
+                                totalMistakes = attemptStore.getMistakes(id)
+                            }
+                            // For non-quest games, totalMistakes is already correct
+                            Log.d("MainActivity", "After ad: mistakes=$totalMistakes, max=$newMax")
+                            
+                            // Update UI with both values directly
+                            val text = findViewById<TextView>(R.id.mistakesText)
+                            if (text != null) {
+                                text.text = "$totalMistakes / $newMax"
+                                Log.d("MainActivity", "Updated TextView to: ${text.text}")
+                            }
+                            updateMistakesHud(totalMistakes)
+                            // Restart timer to continue playing
+                            startTimer()
+                            adManager.loadRewardedAd()
+                        }, onUserEarnedReward = {
+                            // Reward earned
+                        })
+                    }
+                }
+                
+                adManager.loadRewardedAd(onAdLoadedCallback)
+                
+                // Timeout fallback - if ad doesn't load, restart game
+                handler.postDelayed({
+                    if (!adShown) {
+                        if (adManager.isRewardedAdLoaded()) {
+                            adShown = true
+                            onAdLoadedCallback()
+                        } else {
+                            // Ad failed to load - restart game instead
+                            questPuzzleId?.let { id -> attemptStore.clear(id) }
+                            totalMistakes = 0
+                            updateMistakesHud(0)
+                            sudokuBoard.resetPuzzle(currentDifficulty)
+                            sudokuBoard.clearNumberHighlight()
+                            secondsElapsed = 0
+                            totalMistakes = 0
+                            gameResultSaved = false
+                            updateTimerText()
+                            startTimer()
+                            updateProgress()
+                        }
+                    }
+                }, 10000) // 10 second timeout
+            }
+        }
+
         dialog.show()
     }
 

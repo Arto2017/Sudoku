@@ -58,6 +58,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     
     // Mistake tracking (like MainActivity)
     private var totalMistakes = 0
+    private var currentMaxMistakes = 0 // Current max mistakes (increases after each ad watch)
     private lateinit var attemptStore: AttemptStateStore
     
     // Tooltip management
@@ -156,6 +157,7 @@ class DailyChallengeActivity : AppCompatActivity() {
             // Load mistakes from store for daily challenge
             val dailyChallengeId = "daily_${currentPuzzle.date}"
             totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+            initializeMaxMistakes()
             updateMistakesHud(totalMistakes)
         }
         
@@ -228,6 +230,7 @@ class DailyChallengeActivity : AppCompatActivity() {
             // Update mistakes in attempt store
             val dailyChallengeId = "daily_${currentPuzzle.date}"
             attemptStore.setMistakes(dailyChallengeId, totalMistakes)
+            initializeMaxMistakes()
             
             Log.d("DailyChallenge", "Restored game state: time=${gameTime}ms, moves=$movesCount, hints=$hintsUsed, active=$isGameActive")
         } catch (e: Exception) {
@@ -236,6 +239,7 @@ class DailyChallengeActivity : AppCompatActivity() {
             loadPuzzleToBoard()
             val dailyChallengeId = "daily_${currentPuzzle.date}"
             totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+            initializeMaxMistakes()
             updateMistakesHud(totalMistakes)
         }
     }
@@ -359,9 +363,31 @@ class DailyChallengeActivity : AppCompatActivity() {
                 // Play error sound
                 SoundManager.getInstance(this@DailyChallengeActivity).playError()
                 
-                // Increment mistake counter
+                // Increment mistake counter (mistakes only increment, never decrement)
+                // Even if player corrects a mistake later, the count stays the same
                 val dailyChallengeId = "daily_${currentPuzzle.date}"
+                val previousMistakes = totalMistakes
                 totalMistakes = attemptStore.incrementMistakes(dailyChallengeId)
+                // Ensure max mistakes is initialized
+                if (currentMaxMistakes <= 0) {
+                    initializeMaxMistakes()
+                }
+                // Get fresh max from store (dailyChallengeId already declared above)
+                val defaultMax = getInitialMaxMistakes()
+                val maxMistakes = attemptStore.getMaxMistakes(dailyChallengeId, defaultMax)
+                currentMaxMistakes = if (maxMistakes > 0) maxMistakes else defaultMax
+                Log.d("DailyChallenge", "Mistake detected! Previous: $previousMistakes, New total: $totalMistakes, Max: $currentMaxMistakes")
+                
+                // Update UI immediately - we're already on main thread from conflict detection
+                val text = findViewById<TextView>(R.id.mistakesText)
+                if (text != null) {
+                    text.text = "$totalMistakes / $currentMaxMistakes"
+                    Log.d("DailyChallenge", "Updated TextView directly to: ${text.text}")
+                } else {
+                    Log.e("DailyChallenge", "mistakesText TextView is null!")
+                }
+                
+                // Also call the update function for color changes
                 updateMistakesHud(totalMistakes)
                 
                 // Provide haptic feedback
@@ -375,8 +401,10 @@ class DailyChallengeActivity : AppCompatActivity() {
                     }
                 }
 
-                // Mistakes are unlimited (infinity) - no game over dialog
-                // Player can continue playing regardless of mistake count
+                // Check if mistakes reached the limit
+                if (totalMistakes >= maxMistakes) {
+                    showMistakesExhaustedDialog()
+                }
             }
         })
     }
@@ -834,11 +862,55 @@ class DailyChallengeActivity : AppCompatActivity() {
         }
     }
     
+    private fun getInitialMaxMistakes(): Int {
+        // Daily Challenge is always 9x9
+        return 3
+    }
+    
+    private fun getMaxMistakes(): Int {
+        // Always get fresh value from store to ensure it's up to date
+        val defaultMax = getInitialMaxMistakes()
+        val dailyChallengeId = "daily_${currentPuzzle.date}"
+        val storedMax = attemptStore.getMaxMistakes(dailyChallengeId, defaultMax)
+        // Update cached value
+        currentMaxMistakes = if (storedMax > 0) storedMax else defaultMax
+        return currentMaxMistakes
+    }
+    
+    private fun initializeMaxMistakes() {
+        val defaultMax = getInitialMaxMistakes()
+        val dailyChallengeId = "daily_${currentPuzzle.date}"
+        currentMaxMistakes = attemptStore.getMaxMistakes(dailyChallengeId, defaultMax)
+        // Ensure it's at least the default
+        if (currentMaxMistakes <= 0) {
+            currentMaxMistakes = defaultMax
+            attemptStore.setMaxMistakes(dailyChallengeId, defaultMax)
+        }
+    }
+    
+    private fun incrementMaxMistakes() {
+        val defaultMax = getInitialMaxMistakes()
+        val dailyChallengeId = "daily_${currentPuzzle.date}"
+        currentMaxMistakes = attemptStore.incrementMaxMistakes(dailyChallengeId, defaultMax)
+    }
+    
     private fun updateMistakesHud(count: Int) {
         val text = findViewById<TextView>(R.id.mistakesText)
-        text?.text = "$count / ∞"
+        if (text == null) {
+            Log.e("DailyChallenge", "mistakesText TextView not found!")
+            return
+        }
+        // Always get fresh max from store (don't use cached value)
+        val defaultMax = getInitialMaxMistakes()
+        val dailyChallengeId = "daily_${currentPuzzle.date}"
+        val maxMistakes = attemptStore.getMaxMistakes(dailyChallengeId, defaultMax)
+        // Update cached value
+        currentMaxMistakes = if (maxMistakes > 0) maxMistakes else defaultMax
+        val displayText = "$count / $currentMaxMistakes"
+        Log.d("DailyChallenge", "updateMistakesHud: count=$count, max=$currentMaxMistakes (from store: $maxMistakes), display='$displayText'")
+        text.text = displayText
         when {
-            count >= 4 -> {
+            count >= currentMaxMistakes -> {
                 text?.setTextColor(Color.parseColor("#C62828"))
             }
             count >= 1 -> {
@@ -849,7 +921,7 @@ class DailyChallengeActivity : AppCompatActivity() {
             }
         }
         // Content description for accessibility
-        text?.contentDescription = "Mistakes: $count of infinity"
+        text?.contentDescription = "Mistakes: $count of $currentMaxMistakes"
     }
     
     private fun showPuzzleFailedDialog() {
@@ -867,12 +939,16 @@ class DailyChallengeActivity : AppCompatActivity() {
 
         view.findViewById<Button>(R.id.dialogRetry).setOnClickListener {
             dialog.dismiss()
-            // Reset attempt state and restart puzzle
+            // Reset attempt state and clear user entries (keep same puzzle)
             val dailyChallengeId = "daily_${currentPuzzle.date}"
+            val defaultMax = getInitialMaxMistakes()
             attemptStore.clear(dailyChallengeId)
+            attemptStore.resetMaxMistakes(dailyChallengeId, defaultMax)
+            currentMaxMistakes = defaultMax
             totalMistakes = 0
             updateMistakesHud(0)
-            loadPuzzleToBoard() // Reload the daily puzzle
+            // Reset to initial state (clears user entries, keeps puzzle clues - same game)
+            sudokuBoardView.resetToInitialState()
             sudokuBoardView.clearNumberHighlight()
             gameStartTime = System.currentTimeMillis()
             isGameActive = true
@@ -882,6 +958,139 @@ class DailyChallengeActivity : AppCompatActivity() {
         view.findViewById<Button>(R.id.dialogExit).setOnClickListener {
             dialog.dismiss()
             finish()
+        }
+
+        dialog.show()
+    }
+    
+    private fun showMistakesExhaustedDialog() {
+        isGameActive = false
+        stopGameTimer()
+        val inflater = LayoutInflater.from(this)
+        val view = inflater.inflate(R.layout.dialog_mistakes_exhausted, null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .setCancelable(false)
+            .create()
+
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+
+        view.findViewById<Button>(R.id.btnRestart).setOnClickListener {
+            dialog.dismiss()
+            SoundManager.getInstance(this).playClick()
+            // Reset attempt state and clear user entries (keep same puzzle)
+            val dailyChallengeId = "daily_${currentPuzzle.date}"
+            val defaultMax = getInitialMaxMistakes()
+            attemptStore.clear(dailyChallengeId)
+            attemptStore.resetMaxMistakes(dailyChallengeId, defaultMax)
+            currentMaxMistakes = defaultMax
+            totalMistakes = 0
+            updateMistakesHud(0)
+            // Reset to initial state (clears user entries, keeps puzzle clues - same game)
+            sudokuBoardView.resetToInitialState()
+            sudokuBoardView.clearNumberHighlight()
+            gameStartTime = System.currentTimeMillis()
+            isGameActive = true
+            startGameTimer()
+        }
+
+        view.findViewById<Button>(R.id.btnWatchAd).setOnClickListener {
+            dialog.dismiss()
+            SoundManager.getInstance(this).playClick()
+            // Show rewarded ad to continue playing
+            if (adManager.isRewardedAdLoaded()) {
+                adManager.showRewardedAd(this, onAdClosed = {
+                    // After ad is watched, increment max mistakes only (keep current mistakes)
+                    // Example: 3/3 → 3/4, then if user makes mistake: 4/4
+                    val dailyChallengeId = "daily_${currentPuzzle.date}"
+                    val defaultMax = getInitialMaxMistakes()
+                    // Increment max mistakes only (don't increment mistakes)
+                    val newMax = attemptStore.incrementMaxMistakes(dailyChallengeId, defaultMax)
+                    currentMaxMistakes = newMax
+                    Log.d("DailyChallenge", "Max mistakes incremented to: $newMax")
+                    
+                    // Keep current mistakes (don't increment them)
+                    // totalMistakes is already correct from the store
+                    totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+                    Log.d("DailyChallenge", "After ad: mistakes=$totalMistakes, max=$newMax")
+                    
+                    // Update UI with both values directly
+                    val text = findViewById<TextView>(R.id.mistakesText)
+                    if (text != null) {
+                        text.text = "$totalMistakes / $newMax"
+                        Log.d("DailyChallenge", "Updated TextView to: ${text.text}")
+                    }
+                    updateMistakesHud(totalMistakes)
+                    isGameActive = true
+                    startGameTimer()
+                    // Preload next rewarded ad
+                    adManager.loadRewardedAd()
+                }, onUserEarnedReward = {
+                    // Reward earned - mistakes incremented in onAdClosed
+                })
+            } else {
+                // Ad not loaded - show loading message and load with callback
+                val handler = Handler(Looper.getMainLooper())
+                var adShown = false
+                
+                val onAdLoadedCallback: () -> Unit = {
+                    if (!adShown && adManager.isRewardedAdLoaded()) {
+                        adShown = true
+                        adManager.showRewardedAd(this, onAdClosed = {
+                            // After ad is watched, increment max mistakes only (keep current mistakes)
+                            // Example: 3/3 → 3/4, then if user makes mistake: 4/4
+                            val dailyChallengeId = "daily_${currentPuzzle.date}"
+                            val defaultMax = getInitialMaxMistakes()
+                            // Increment max mistakes only (don't increment mistakes)
+                            val newMax = attemptStore.incrementMaxMistakes(dailyChallengeId, defaultMax)
+                            currentMaxMistakes = newMax
+                            Log.d("DailyChallenge", "Max mistakes incremented to: $newMax")
+                            
+                            // Keep current mistakes (don't increment them)
+                            // totalMistakes is already correct from the store
+                            totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+                            Log.d("DailyChallenge", "After ad: mistakes=$totalMistakes, max=$newMax")
+                            
+                            // Update UI with both values directly
+                            val text = findViewById<TextView>(R.id.mistakesText)
+                            if (text != null) {
+                                text.text = "$totalMistakes / $newMax"
+                                Log.d("DailyChallenge", "Updated TextView to: ${text.text}")
+                            }
+                            updateMistakesHud(totalMistakes)
+                            isGameActive = true
+                            startGameTimer()
+                            adManager.loadRewardedAd()
+                        }, onUserEarnedReward = {
+                            // Reward earned
+                        })
+                    }
+                }
+                
+                adManager.loadRewardedAd(onAdLoadedCallback)
+                
+                // Timeout fallback - if ad doesn't load, restart game
+                handler.postDelayed({
+                    if (!adShown) {
+                        if (adManager.isRewardedAdLoaded()) {
+                            adShown = true
+                            onAdLoadedCallback()
+                        } else {
+                            // Ad failed to load - restart game instead
+                            val dailyChallengeId = "daily_${currentPuzzle.date}"
+                            attemptStore.clear(dailyChallengeId)
+                            totalMistakes = 0
+                            updateMistakesHud(0)
+                            loadPuzzleToBoard()
+                            sudokuBoardView.clearNumberHighlight()
+                            gameStartTime = System.currentTimeMillis()
+                            isGameActive = true
+                            startGameTimer()
+                        }
+                    }
+                }, 10000) // 10 second timeout
+            }
         }
 
         dialog.show()

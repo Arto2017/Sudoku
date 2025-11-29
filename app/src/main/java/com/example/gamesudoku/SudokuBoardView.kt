@@ -839,6 +839,15 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                     val correctValue = solutionBoard!![selectedRow][selectedCol]
                     val isCorrect = (number == correctValue)
                     numberCorrectness[cellKey] = isCorrect
+                    
+                    // Call conflict listener ONLY when placing an incorrect number
+                    // Note: When changing from incorrect to correct, this is NOT called,
+                    // so mistake count remains unchanged (mistakes never decrease)
+                    if (!isCorrect && number != 0) {
+                        onConflictListener?.onConflictDetected()
+                    }
+                    // When placing a correct number (or changing incorrect to correct),
+                    // onConflictDetected() is NOT called, so mistake count stays the same
                 } else {
                     // If no solution available, remove from correctness map
                     numberCorrectness.remove(cellKey)
@@ -1127,6 +1136,45 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
 
     
     fun getInitialBoardState(): Array<IntArray> = initialBoard.map { it.clone() }.toTypedArray()
+    
+    /**
+     * Reset board to initial state (clear only user-entered numbers, keep puzzle clues)
+     * This keeps the same puzzle but clears all player entries
+     */
+    fun resetToInitialState() {
+        // Reset board to initial state (only clues remain)
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                board[row][col] = initialBoard[row][col]
+            }
+        }
+        
+        // Clear number correctness tracking
+        numberCorrectness.clear()
+        
+        // Clear conflicts
+        clearConflicts()
+        clearSuccessAnimation()
+        
+        // Clear pencil marks/candidates
+        for (row in 0 until boardSize) {
+            for (col in 0 until boardSize) {
+                candidates[row][col].clear()
+            }
+        }
+        removedCandidatesMap.clear()
+        
+        // Clear selection
+        selectedRow = -1
+        selectedCol = -1
+        clearNumberHighlight()
+        
+        // Recalculate correctness for remaining cells
+        recalculateCorrectness()
+        
+        invalidate()
+        Log.d("SudokuBoardView", "Reset to initial state - cleared user entries, kept puzzle clues")
+    }
     
     fun isBoardComplete(): Boolean {
         // First check if all cells are filled
