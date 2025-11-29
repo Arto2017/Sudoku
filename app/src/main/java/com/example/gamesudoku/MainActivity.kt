@@ -1585,6 +1585,58 @@ class MainActivity : AppCompatActivity() {
 
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
+        // Check internet connectivity
+        val watchAdButton = view.findViewById<Button>(R.id.btnWatchAd)
+        var connectivityCheckHandler: Handler? = null
+        var connectivityCheckRunnable: Runnable? = null
+        
+        // Function to update button state based on internet connectivity
+        fun updateWatchAdButtonState() {
+            val hasInternet = NetworkUtils.isConnected(this)
+            if (hasInternet) {
+                watchAdButton.isEnabled = true
+                watchAdButton.alpha = 1.0f
+            } else {
+                watchAdButton.isEnabled = false
+                watchAdButton.alpha = 0.5f
+            }
+        }
+        
+        // Initial check
+        updateWatchAdButtonState()
+        
+        // If no internet initially, show message
+        if (!NetworkUtils.isConnected(this)) {
+            Toast.makeText(this, "No internet connection. Connect to internet to watch ad.", Toast.LENGTH_LONG).show()
+        }
+        
+        // Set up periodic connectivity check while dialog is open
+        connectivityCheckHandler = Handler(Looper.getMainLooper())
+        connectivityCheckRunnable = object : Runnable {
+            override fun run() {
+                if (dialog.isShowing) {
+                    val wasDisabled = !watchAdButton.isEnabled
+                    updateWatchAdButtonState()
+                    
+                    // If button was disabled and now enabled, show message
+                    if (wasDisabled && watchAdButton.isEnabled) {
+                        Toast.makeText(this@MainActivity, "Internet connected! You can now watch ad.", Toast.LENGTH_SHORT).show()
+                    }
+                    
+                    // Check again in 1 second
+                    connectivityCheckHandler?.postDelayed(this, 1000)
+                }
+            }
+        }
+        
+        // Start checking connectivity every second
+        connectivityCheckHandler.postDelayed(connectivityCheckRunnable!!, 1000)
+        
+        // Stop checking when dialog is dismissed
+        dialog.setOnDismissListener {
+            connectivityCheckHandler?.removeCallbacks(connectivityCheckRunnable!!)
+        }
+
         view.findViewById<Button>(R.id.btnRestart).setOnClickListener {
             dialog.dismiss()
             SoundManager.getInstance(this).playClick()
@@ -1609,125 +1661,185 @@ class MainActivity : AppCompatActivity() {
             updateProgress()
         }
 
-        view.findViewById<Button>(R.id.btnWatchAd).setOnClickListener {
+        watchAdButton.setOnClickListener {
+            // Check internet again before showing ad
+            if (!NetworkUtils.isConnected(this)) {
+                dialog.dismiss()
+                // Show dialog with retry option
+                showNoInternetDialog()
+                return@setOnClickListener
+            }
+            
             dialog.dismiss()
             SoundManager.getInstance(this).playClick()
             // Show rewarded ad to continue playing
-            if (adManager.isRewardedAdLoaded()) {
-                adManager.showRewardedAd(this, onAdClosed = {
-                    // After ad is watched, increment max mistakes only (keep current mistakes)
-                    // Example: 3/3 → 3/4, then if user makes mistake: 4/4
-                    val defaultMax = getInitialMaxMistakes()
-                    var newMax = defaultMax
-                    
-                    // Increment max mistakes only (don't increment mistakes)
-                    questPuzzleId?.let { id ->
-                        newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
-                        currentMaxMistakes = newMax
-                    } ?: run {
-                        // For non-quest games, increment local variable
-                        currentMaxMistakes++
-                        newMax = currentMaxMistakes
-                    }
-                    Log.d("MainActivity", "Max mistakes incremented to: $newMax")
-                    
-                    // Keep current mistakes (don't increment them)
-                    questPuzzleId?.let { id ->
-                        totalMistakes = attemptStore.getMistakes(id)
-                    }
-                    // For non-quest games, totalMistakes is already correct
-                    Log.d("MainActivity", "After ad: mistakes=$totalMistakes, max=$newMax")
-                    
-                    // Update UI with both values directly
-                    val text = findViewById<TextView>(R.id.mistakesText)
-                    if (text != null) {
-                        text.text = "$totalMistakes / $newMax"
-                        Log.d("MainActivity", "Updated TextView to: ${text.text}")
-                    }
-                    updateMistakesHud(totalMistakes)
-                    // Restart timer to continue playing
-                    startTimer()
-                    // Preload next rewarded ad
-                    adManager.loadRewardedAd()
-                }, onUserEarnedReward = {
-                    // Reward earned - mistakes incremented in onAdClosed
-                })
-            } else {
-                // Ad not loaded - show loading message and load with callback
-                val handler = Handler(Looper.getMainLooper())
-                var adShown = false
-                
-                val onAdLoadedCallback: () -> Unit = {
-                    if (!adShown && adManager.isRewardedAdLoaded()) {
-                        adShown = true
-                        adManager.showRewardedAd(this, onAdClosed = {
-                            // After ad is watched, increment max mistakes only (keep current mistakes)
-                            // Example: 3/3 → 3/4, then if user makes mistake: 4/4
-                            val defaultMax = getInitialMaxMistakes()
-                            var newMax = defaultMax
-                            
-                            // Increment max mistakes only (don't increment mistakes)
-                            questPuzzleId?.let { id ->
-                                newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
-                                currentMaxMistakes = newMax
-                            } ?: run {
-                                // For non-quest games, increment local variable
-                                currentMaxMistakes++
-                                newMax = currentMaxMistakes
-                            }
-                            Log.d("MainActivity", "Max mistakes incremented to: $newMax")
-                            
-                            // Keep current mistakes (don't increment them)
-                            questPuzzleId?.let { id ->
-                                totalMistakes = attemptStore.getMistakes(id)
-                            }
-                            // For non-quest games, totalMistakes is already correct
-                            Log.d("MainActivity", "After ad: mistakes=$totalMistakes, max=$newMax")
-                            
-                            // Update UI with both values directly
-                            val text = findViewById<TextView>(R.id.mistakesText)
-                            if (text != null) {
-                                text.text = "$totalMistakes / $newMax"
-                                Log.d("MainActivity", "Updated TextView to: ${text.text}")
-                            }
-                            updateMistakesHud(totalMistakes)
-                            // Restart timer to continue playing
-                            startTimer()
-                            adManager.loadRewardedAd()
-                        }, onUserEarnedReward = {
-                            // Reward earned
-                        })
-                    }
-                }
-                
-                adManager.loadRewardedAd(onAdLoadedCallback)
-                
-                // Timeout fallback - if ad doesn't load, restart game
-                handler.postDelayed({
-                    if (!adShown) {
-                        if (adManager.isRewardedAdLoaded()) {
-                            adShown = true
-                            onAdLoadedCallback()
-                        } else {
-                            // Ad failed to load - restart game instead
-                            questPuzzleId?.let { id -> attemptStore.clear(id) }
-                            totalMistakes = 0
-                            updateMistakesHud(0)
-                            sudokuBoard.resetPuzzle(currentDifficulty)
-                            sudokuBoard.clearNumberHighlight()
-                            secondsElapsed = 0
-                            totalMistakes = 0
-                            gameResultSaved = false
-                            updateTimerText()
-                            startTimer()
-                            updateProgress()
-                        }
-                    }
-                }, 10000) // 10 second timeout
-            }
+            attemptShowRewardedAd()
         }
 
         dialog.show()
+    }
+    
+    /**
+     * Show dialog when internet is disconnected
+     */
+    private fun showNoInternetDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("No Internet Connection")
+        builder.setMessage("You need an internet connection to watch ads and continue playing.\n\nPlease connect to the internet and try again, or reset the game to start fresh.")
+        builder.setPositiveButton("Retry") { dialog, _ ->
+            SoundManager.getInstance(this).playClick()
+            dialog.dismiss()
+            // Check internet again after a short delay
+            handler.postDelayed({
+                if (NetworkUtils.isConnected(this)) {
+                    // Internet is now available - try to show ad
+                    attemptShowRewardedAd()
+                } else {
+                    // Still no internet - show dialog again
+                    showNoInternetDialog()
+                }
+            }, 500) // Small delay to allow network check
+        }
+        builder.setNeutralButton("Reset Game") { _, _ ->
+            SoundManager.getInstance(this).playClick()
+            // Reset game - lose all changes
+            val defaultMax = getInitialMaxMistakes()
+            questPuzzleId?.let { id -> 
+                attemptStore.clear(id)
+                attemptStore.resetMaxMistakes(id, defaultMax)
+            }
+            currentMaxMistakes = defaultMax
+            totalMistakes = 0
+            updateMistakesHud(0)
+            sudokuBoard.resetToInitialState()
+            sudokuBoard.clearNumberHighlight()
+            secondsElapsed = 0
+            totalMistakes = 0
+            gameResultSaved = false
+            updateTimerText()
+            startTimer()
+            updateProgress()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            SoundManager.getInstance(this).playClick()
+            dialog.dismiss()
+            // Re-show the mistakes exhausted dialog
+            showMistakesExhaustedDialog()
+        }
+        builder.setCancelable(false)
+        builder.show()
+    }
+    
+    /**
+     * Attempt to show rewarded ad (helper method for retry logic)
+     */
+    private fun attemptShowRewardedAd() {
+        if (adManager.isRewardedAdLoaded()) {
+            adManager.showRewardedAd(this, onAdClosed = {
+                // After ad is watched, increment max mistakes only (keep current mistakes)
+                val defaultMax = getInitialMaxMistakes()
+                var newMax = defaultMax
+                
+                // Increment max mistakes only (don't increment mistakes)
+                questPuzzleId?.let { id ->
+                    newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
+                    currentMaxMistakes = newMax
+                } ?: run {
+                    // For non-quest games, increment local variable
+                    currentMaxMistakes++
+                    newMax = currentMaxMistakes
+                }
+                Log.d("MainActivity", "Max mistakes incremented to: $newMax")
+                
+                // Keep current mistakes (don't increment them)
+                questPuzzleId?.let { id ->
+                    totalMistakes = attemptStore.getMistakes(id)
+                }
+                // For non-quest games, totalMistakes is already correct
+                Log.d("MainActivity", "After ad: mistakes=$totalMistakes, max=$newMax")
+                
+                // Update UI with both values directly
+                val text = findViewById<TextView>(R.id.mistakesText)
+                if (text != null) {
+                    text.text = "$totalMistakes / $newMax"
+                    Log.d("MainActivity", "Updated TextView to: ${text.text}")
+                }
+                updateMistakesHud(totalMistakes)
+                // Restart timer to continue playing
+                startTimer()
+                // Preload next rewarded ad
+                adManager.loadRewardedAd()
+            }, onUserEarnedReward = {
+                // Reward earned
+            })
+        } else {
+            // Ad not loaded - try loading it
+            val handler = Handler(Looper.getMainLooper())
+            var adShown = false
+            
+            val onAdLoadedCallback: () -> Unit = {
+                if (!adShown && adManager.isRewardedAdLoaded()) {
+                    adShown = true
+                    attemptShowRewardedAd()
+                }
+            }
+            
+            adManager.loadRewardedAd(onAdLoadedCallback)
+            
+            // Timeout fallback
+            handler.postDelayed({
+                if (!adShown) {
+                    if (adManager.isRewardedAdLoaded()) {
+                        adShown = true
+                        attemptShowRewardedAd()
+                    } else {
+                        // Still failed - check internet again
+                        if (!NetworkUtils.isConnected(this)) {
+                            showNoInternetDialog()
+                        } else {
+                            showAdLoadFailedDialog()
+                        }
+                    }
+                }
+            }, 10000) // 10 second timeout
+        }
+    }
+    
+    /**
+     * Show dialog when ad fails to load (but internet is available)
+     */
+    private fun showAdLoadFailedDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Ad Not Available")
+        builder.setMessage("Unable to load ad at this time. Would you like to reset the game instead?")
+        builder.setPositiveButton("Reset Game") { _, _ ->
+            SoundManager.getInstance(this).playClick()
+            // Reset game - lose all changes
+            val defaultMax = getInitialMaxMistakes()
+            questPuzzleId?.let { id -> 
+                attemptStore.clear(id)
+                attemptStore.resetMaxMistakes(id, defaultMax)
+            }
+            currentMaxMistakes = defaultMax
+            totalMistakes = 0
+            updateMistakesHud(0)
+            sudokuBoard.resetToInitialState()
+            sudokuBoard.clearNumberHighlight()
+            secondsElapsed = 0
+            totalMistakes = 0
+            gameResultSaved = false
+            updateTimerText()
+            startTimer()
+            updateProgress()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            SoundManager.getInstance(this).playClick()
+            dialog.dismiss()
+            // Re-show the mistakes exhausted dialog
+            showMistakesExhaustedDialog()
+        }
+        builder.setCancelable(false)
+        builder.show()
     }
 
     private fun stopTimer() {
