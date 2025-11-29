@@ -8,6 +8,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
@@ -45,6 +46,20 @@ class AdManager(private val context: Context) {
     private var currentBannerAdView: AdView? = null
     
     init {
+        // Configure test devices for debug builds
+        if (USE_TEST_ADS) {
+            val testDeviceIds = listOf(
+                AdRequest.DEVICE_ID_EMULATOR, // Emulator
+                // Add your physical device ID here for testing
+                // Get it from logcat: "To get test ads on this device, set adRequest.testDevices = listOf("XXXXX")"
+            )
+            val requestConfiguration = RequestConfiguration.Builder()
+                .setTestDeviceIds(testDeviceIds)
+                .build()
+            MobileAds.setRequestConfiguration(requestConfiguration)
+            Log.d(TAG, "Test devices configured for debug builds")
+        }
+        
         MobileAds.initialize(context) { initializationStatus ->
             val statusMap = initializationStatus.adapterStatusMap
             for (adapterClass in statusMap.keys) {
@@ -72,8 +87,9 @@ class AdManager(private val context: Context) {
         try {
             Log.d(TAG, "Loading banner ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)${if (bannerAdRetryCount > 0) " [Retry $bannerAdRetryCount/$maxBannerRetries]" else ""}")
             
-            // Only set ad unit ID if it's not already set (from XML or previous call)
-            // The ad unit ID can only be set once, so we check first
+            // Try to set ad unit ID programmatically
+            // Note: If adUnitId is set in XML, it cannot be changed programmatically
+            // XML has test ad unit ID as default - we'll override for release builds if possible
             var currentAdUnitId: String? = null
             try {
                 currentAdUnitId = adView.adUnitId
@@ -81,19 +97,25 @@ class AdManager(private val context: Context) {
                 Log.w(TAG, "Could not read current adUnitId: ${e.message}")
             }
             
-            if (currentAdUnitId == null || currentAdUnitId.isEmpty()) {
+            // Check if we need to override the XML value (for release builds)
+            val needsOverride = currentAdUnitId != null && 
+                                currentAdUnitId == TEST_BANNER_AD_UNIT_ID && 
+                                !USE_TEST_ADS
+            
+            if (currentAdUnitId == null || currentAdUnitId.isEmpty() || needsOverride) {
                 try {
                     adView.adUnitId = adUnitId
                     Log.d(TAG, "Set ad unit ID to: $adUnitId")
                 } catch (e: IllegalStateException) {
-                    Log.w(TAG, "Ad unit ID already set or cannot be changed")
-                    // Try to get the existing ID
-                    try {
-                        val existingId = adView.adUnitId
-                        Log.w(TAG, "Using existing ad unit ID: $existingId")
-                    } catch (ex: Exception) {
-                        Log.e(TAG, "Cannot read ad unit ID: ${ex.message}")
-                        return
+                    // Ad unit ID already set in XML and cannot be changed
+                    // This is OK - XML has test ad unit ID, which is fine for debug builds
+                    // For release builds, we need to ensure XML has the correct ID
+                    if (!USE_TEST_ADS && currentAdUnitId == TEST_BANNER_AD_UNIT_ID) {
+                        Log.w(TAG, "⚠️ WARNING: Cannot override XML adUnitId. Release build should have real ad unit ID in XML!")
+                        Log.w(TAG, "Current adUnitId from XML: $currentAdUnitId")
+                        Log.w(TAG, "Expected adUnitId for release: $adUnitId")
+                    } else {
+                        Log.d(TAG, "Using existing ad unit ID from XML: $currentAdUnitId")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error setting ad unit ID: ${e.message}", e)
@@ -117,6 +139,8 @@ class AdManager(private val context: Context) {
                 return
             }
             
+            // Build ad request
+            // Test devices are configured globally in init() for debug builds
             val adRequest = AdRequest.Builder().build()
             adView.loadAd(adRequest)
         } catch (e: Exception) {
@@ -188,6 +212,8 @@ class AdManager(private val context: Context) {
         val adUnitId = if (USE_TEST_ADS) TEST_INTERSTITIAL_AD_UNIT_ID else REAL_INTERSTITIAL_AD_UNIT_ID
         Log.d(TAG, "Loading interstitial ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)")
         
+        // Build ad request
+        // Test devices are configured globally in init() for debug builds
         val adRequest = AdRequest.Builder().build()
         
         InterstitialAd.load(
@@ -264,6 +290,8 @@ class AdManager(private val context: Context) {
             rewardedAdLoadCallback = onLoaded
         }
         
+        // Build ad request
+        // Test devices are configured globally in init() for debug builds
         val adRequest = AdRequest.Builder().build()
         
         RewardedAd.load(

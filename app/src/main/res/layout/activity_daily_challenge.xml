@@ -307,7 +307,7 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Banner Ad at Bottom -->
-    <!-- Note: adUnitId is set programmatically by AdManager based on build type (test ads in debug, real ads in release) -->
+    <!-- Real ad unit ID for production. For testing, use test device configuration in AdRequest -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/bannerAdView"
         android:layout_width="match_parent"
@@ -316,6 +316,7 @@
         android:layout_marginTop="4dp"
         android:background="#FFFFFF"
         android:visibility="visible"
-        ads:adSize="BANNER" />
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-2049534800625732/8506433174" />
 
 </LinearLayout>
