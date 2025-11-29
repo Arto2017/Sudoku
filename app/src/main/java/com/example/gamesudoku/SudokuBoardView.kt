@@ -264,12 +264,11 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     private fun drawNumberHighlights(canvas: Canvas) {
         if (highlightedNumber == 0 || highlightedCells.isEmpty()) return
 
-        // Use very light, neutral blue-gray color that works beautifully with blue and red numbers
-        // This is a very subtle, elegant highlight that doesn't compete with number colors
-        val highlightColor = Color.parseColor("#E3F2FD") // Very light blue-gray (almost white with hint of blue)
-        // Very light and subtle - almost transparent
-        val baseAlpha = 40 // Very light base transparency
-        val pulseAlpha = (baseAlpha + 15 * Math.sin(System.currentTimeMillis() * 0.0001).toFloat()).toInt()
+        // Use more visible highlight color for better visibility
+        val highlightColor = Color.parseColor("#BBDEFB") // Light blue - more visible than before
+        // More visible highlight
+        val baseAlpha = 80 // Increased from 40 for better visibility
+        val pulseAlpha = (baseAlpha + 20 * Math.sin(System.currentTimeMillis() * 0.0001).toFloat()).toInt()
         
         for ((row, col) in highlightedCells) {
             val cellLeft = boardLeft + col * cellSize
@@ -277,7 +276,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             val cellRight = cellLeft + cellSize
             val cellBottom = cellTop + cellSize
             
-            // Draw very light, subtle highlight background
+            // Draw more visible highlight background
             paint.color = Color.argb(pulseAlpha, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
             canvas.drawRoundRect(
                 cellLeft + 2f, cellTop + 2f,
@@ -285,10 +284,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 6f, 6f, paint
             )
             
-            // Draw very subtle border - almost invisible but provides gentle definition
-            paint.color = Color.argb(60, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            // Draw more visible border for better definition
+            paint.color = Color.argb(120, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1.5f // Very thin, subtle border
+            paint.strokeWidth = 2f // Slightly thicker border for better visibility
             canvas.drawRoundRect(
                 cellLeft + 2f, cellTop + 2f,
                 cellRight - 2f, cellBottom - 2f,
@@ -1390,6 +1389,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 }
             }
         }
+        
+        Log.d("SudokuBoardView", "Highlighting number $number: found ${highlightedCells.size} cells")
         
         invalidate()
     }

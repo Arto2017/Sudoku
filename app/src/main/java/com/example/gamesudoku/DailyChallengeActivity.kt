@@ -271,6 +271,24 @@ class DailyChallengeActivity : AppCompatActivity() {
     }
     
     private fun setupClickListeners() {
+        // Set up cell selection listener to update selected number and highlight when cell is clicked
+        sudokuBoardView.setOnCellSelectedListener(object : SudokuBoardView.OnCellSelectedListener {
+            override fun onCellSelected(row: Int, col: Int, isEditable: Boolean) {
+                // When a cell is clicked, update selected number and highlight all matching numbers
+                val cellValue = sudokuBoardView.getBoardValue(row, col)
+                if (cellValue != 0) {
+                    selectedNumber = cellValue
+                    highlightActiveNumber(cellValue)
+                    // highlightNumber is already called in onTouchEvent, but ensure it's called here too
+                    sudokuBoardView.highlightNumber(cellValue)
+                } else {
+                    // Empty cell - clear number highlighting
+                    selectedNumber = 0
+                    highlightActiveNumber(0)
+                }
+            }
+        })
+        
         hintButton.setOnClickListener {
             // Check if there are incorrect numbers on the board
             if (sudokuBoardView.hasIncorrectUserEnteredNumbers()) {
@@ -888,15 +906,23 @@ class DailyChallengeActivity : AppCompatActivity() {
                 typeface = android.graphics.Typeface.create("serif", android.graphics.Typeface.BOLD)
                 setOnClickListener {
                     SoundManager.getInstance(this@DailyChallengeActivity).playClick()
-                    sudokuBoardView.setNumber(i)
-                    sudokuBoardView.highlightNumber(i) // Highlight all cells with this number
-                    movesCount++
                     selectedNumber = i
+                    
+                    // Always highlight all cells with this number (even if no cell is selected)
+                    sudokuBoardView.highlightNumber(i)
                     highlightActiveNumber(i)
                     
-                    // Check for completion after placing number
-                    if (sudokuBoardView.isBoardComplete()) {
-                        completeGame()
+                    // Only place the number if a cell is selected
+                    val selectedRow = sudokuBoardView.getSelectedRow()
+                    val selectedCol = sudokuBoardView.getSelectedCol()
+                    if (selectedRow != -1 && selectedCol != -1) {
+                        sudokuBoardView.setNumber(i)
+                        movesCount++
+                        
+                        // Check for completion after placing number
+                        if (sudokuBoardView.isBoardComplete()) {
+                            completeGame()
+                        }
                     }
                 }
                 isClickable = true
