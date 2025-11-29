@@ -1934,6 +1934,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
      */
     fun revealHintWithAutoFix(): Boolean {
         // First, remove all incorrect numbers
+        // Use solution board as the primary source of truth to avoid removing correct numbers
         for (row in 0 until boardSize) {
             for (col in 0 until boardSize) {
                 if (board[row][col] != 0) {
@@ -1941,16 +1942,35 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                     if (!fixed[row][col] && !isRevealedByHint[row][col]) {
                         var isIncorrect = false
                         
-                        // Check if this number conflicts with other cells
-                        val conflicts = findConflicts(row, col, board[row][col])
-                        if (conflicts.isNotEmpty()) {
+                        // Primary check: Use numberCorrectness map if available (most reliable)
+                        val cellKey = Pair(row, col)
+                        val correctness = numberCorrectness[cellKey]
+                        if (correctness == true) {
+                            // Number is marked as correct - don't remove it
+                            isIncorrect = false
+                        } else if (correctness == false) {
+                            // Number is marked as incorrect - remove it
                             isIncorrect = true
-                        }
-                        
-                        // Also check if the number is correct according to solution
-                        if (solutionBoard != null) {
-                            if (board[row][col] != solutionBoard!![row][col]) {
-                                isIncorrect = true
+                        } else {
+                            // Not in correctness map - check against solution board
+                            if (solutionBoard != null) {
+                                if (board[row][col] != solutionBoard!![row][col]) {
+                                    // Number doesn't match solution - it's incorrect
+                                    isIncorrect = true
+                                } else {
+                                    // Number matches solution - it's correct, don't remove
+                                    isIncorrect = false
+                                }
+                            } else {
+                                // No solution board - use conflict detection as fallback
+                                // But be careful: only remove if this cell is causing the conflict
+                                // (i.e., if there's a duplicate and this one is wrong)
+                                val conflicts = findConflicts(row, col, board[row][col])
+                                if (conflicts.isNotEmpty()) {
+                                    // Check if this cell is the incorrect one in the conflict
+                                    // If solution exists, use it; otherwise assume conflicts mean incorrect
+                                    isIncorrect = true
+                                }
                             }
                         }
                         

@@ -114,6 +114,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             sudokuBoard.setBoardState(boardArray, fixedArray)
+            
+            // Recalculate correctness after restoring board state
+            // Solution board should already be set from resetPuzzle() call above
+            sudokuBoard.recalculateCorrectness()
+            
             secondsElapsed = savedState.secondsElapsed
             totalMistakes = savedState.mistakes
             attemptStore.setMistakes(puzzleId, totalMistakes)
