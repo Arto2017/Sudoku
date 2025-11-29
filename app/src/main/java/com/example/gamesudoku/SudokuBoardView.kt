@@ -1089,7 +1089,32 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         clearConflicts()
         // Clear removed candidates map when loading new board state
         removedCandidatesMap.clear()
+        // Clear correctness map - will be recalculated after solution is set
+        numberCorrectness.clear()
         invalidate()
+    }
+    
+    /**
+     * Recalculate correctness for all user-entered numbers on the board
+     * This is needed when restoring game state
+     */
+    fun recalculateCorrectness() {
+        // Clear existing correctness map
+        numberCorrectness.clear()
+        
+        // Recalculate correctness for all non-empty, non-fixed cells
+        if (solutionBoard != null) {
+            for (row in 0 until boardSize) {
+                for (col in 0 until boardSize) {
+                    if (board[row][col] != 0 && !fixed[row][col]) {
+                        val cellKey = Pair(row, col)
+                        val correctValue = solutionBoard!![row][col]
+                        val isCorrect = (board[row][col] == correctValue)
+                        numberCorrectness[cellKey] = isCorrect
+                    }
+                }
+            }
+        }
     }
 
     fun setOnCellSelectedListener(listener: OnCellSelectedListener) {
@@ -1529,6 +1554,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         
         solutionBoardExplicitlySet = true // Mark that solution was explicitly set
         
+        // Recalculate correctness for all user-entered numbers now that solution is available
+        recalculateCorrectness()
+        
         Log.d("SudokuBoardView", "Solution board stored in 2D array. Size: ${boardSize}x${boardSize}")
         // Use safe indices based on board size to avoid ArrayIndexOutOfBoundsException
         val lastRow = boardSize - 1
@@ -1822,6 +1850,50 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     private var lastHintErrorMessage: String? = null
     
     fun getLastHintErrorMessage(): String? = lastHintErrorMessage
+    
+    /**
+     * Check if a cell is fixed (pre-filled)
+     */
+    fun isCellFixed(row: Int, col: Int): Boolean {
+        if (row < 0 || row >= boardSize || col < 0 || col >= boardSize) {
+            return false
+        }
+        return fixed[row][col]
+    }
+    
+    /**
+     * Check if a specific cell contains a correct number
+     * Returns true if the number in the cell matches the solution
+     */
+    fun isCellCorrect(row: Int, col: Int): Boolean {
+        if (row < 0 || row >= boardSize || col < 0 || col >= boardSize) {
+            return false
+        }
+        if (board[row][col] == 0) {
+            return false
+        }
+        
+        // Fixed cells are always correct
+        if (fixed[row][col]) {
+            return true
+        }
+        
+        // Hint-revealed cells are always correct
+        if (isRevealedByHint[row][col]) {
+            return true
+        }
+        
+        // Check correctness from the numberCorrectness map
+        val cellKey = Pair(row, col)
+        val isCorrect = numberCorrectness[cellKey]
+        
+        // If not in map, check against solution directly
+        if (isCorrect == null && solutionBoard != null) {
+            return board[row][col] == solutionBoard!![row][col]
+        }
+        
+        return isCorrect == true
+    }
     
     /**
      * Check if there are any incorrect user-entered numbers on the board

@@ -377,13 +377,13 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Banner Ad at Bottom -->
+    <!-- Note: adUnitId is set programmatically by AdManager based on build type (test ads in debug, real ads in release) -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/bannerAdView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:background="#FFFFFF"
-        ads:adSize="BANNER"
-        ads:adUnitId="@string/banner_ad_unit_id" />
+        ads:adSize="BANNER" />
 
 </LinearLayout>

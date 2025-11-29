@@ -79,6 +79,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Initialize AdMob and load banner ad first (like MainActivity)
         adManager = AdManager(this)
+        Log.d("DailyChallenge", "AdManager initialized - Test ads: ${com.artashes.sudoku.BuildConfig.USE_TEST_ADS}")
         bannerAdView = findViewById<AdView>(R.id.bannerAdView)
         if (bannerAdView != null) {
             Log.d("DailyChallenge", "Banner ad view found, loading ad...")
@@ -133,6 +134,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Load other ads (banner ad already loaded in onCreate)
         adManager.loadInterstitialAd()
+        Log.d("DailyChallenge", "Loading rewarded ad (should use test ads in debug builds)")
         adManager.loadRewardedAd()
         
         // Generate today's puzzle

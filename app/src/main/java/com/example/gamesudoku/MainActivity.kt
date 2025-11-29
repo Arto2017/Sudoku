@@ -150,6 +150,8 @@ class MainActivity : AppCompatActivity() {
             val solutionArray = savedState.solution?.toIntArray()
             if (solutionArray != null && solutionArray.size == boardSize * boardSize) {
                 sudokuBoard.setSolutionBoard(solutionArray)
+                // Recalculate correctness after solution is set
+                sudokuBoard.recalculateCorrectness()
             }
 
             sudokuBoard.setHintsState(
@@ -284,10 +286,17 @@ class MainActivity : AppCompatActivity() {
         adManager.loadInterstitialAd()
         adManager.loadRewardedAd()
         
-        // Load banner ad
+        // Load banner ad - delay until view is attached to window
         bannerAdView = findViewById(R.id.bannerAdView)
-        bannerAdView?.let {
-            adManager.loadBannerAd(it)
+        bannerAdView?.let { adView ->
+            // Post to ensure view is fully attached and laid out
+            adView.post {
+                try {
+                    adManager.loadBannerAd(adView)
+                } catch (e: Exception) {
+                    android.util.Log.e("MainActivity", "Error loading banner ad: ${e.message}", e)
+                }
+            }
         }
         
         // Preload rewarded ad if this is a 9x9 Hard/Expert Quick Play game
@@ -700,6 +709,19 @@ class MainActivity : AppCompatActivity() {
         // Reveal Hint button
         val hintButton = findViewById<Button>(R.id.revealHintButton)
         hintButton.setOnClickListener {
+            // Check if selected cell has a correct number - if yes, show message
+            val selectedRow = sudokuBoard.getSelectedRow()
+            val selectedCol = sudokuBoard.getSelectedCol()
+            if (selectedRow != -1 && selectedCol != -1) {
+                val cellValue = sudokuBoard.getBoardValue(selectedRow, selectedCol)
+                // Check if cell is not empty and has a correct number (fixed, hint-revealed, or correct user-entered)
+                if (cellValue != 0 && sudokuBoard.isCellCorrect(selectedRow, selectedCol)) {
+                    // Cell has a correct number - show message
+                    showTooltip(hintButton, "Please choose an empty box")
+                    return@setOnClickListener
+                }
+            }
+            
             // Check if there are incorrect numbers on the board
             if (sudokuBoard.hasIncorrectUserEnteredNumbers()) {
                 // Always show dialog when there are incorrect numbers
@@ -1088,6 +1110,117 @@ class MainActivity : AppCompatActivity() {
                         }
                         // Preload next rewarded ad
                         adManager.loadRewardedAd()
+                    }, onUserEarnedReward = {
+                        // Reward earned callback - hint is granted in onAdClosed
+                    })
+                }
+            }
+            
+            // Load ad with callback
+            adManager.loadRewardedAd(onAdLoadedCallback)
+            
+            // Set up timeout fallback (10 seconds)
+            handler.postDelayed({
+                if (!adShown) {
+                    if (adManager.isRewardedAdLoaded()) {
+                        // Ad loaded but callback didn't fire - show it now
+                        adShown = true
+                        onAdLoadedCallback()
+                    } else {
+                        // Ad failed to load after timeout
+                        showTooltip(hintButton, "Ad failed to load. Please try again.")
+                    }
+                }
+            }, 10000) // 10 second timeout
+        }
+    }
+    
+    private fun showRewardedAdForHintAfterCorrectNumber(hintButton: Button) {
+        // Show rewarded ad after player placed a correct number and wants a hint
+        if (adManager.isRewardedAdLoaded()) {
+            adManager.showRewardedAd(this, onAdClosed = {
+                // After ad is watched, grant 1 hint
+                sudokuBoard.grantHint()
+                
+                // Update badge after granting hint
+                updateHintBadge()
+                
+                // Check if a cell is selected - if yes, use the hint immediately
+                val hasSelectedCell = sudokuBoard.getSelectedRow() != -1 && sudokuBoard.getSelectedCol() != -1
+                if (hasSelectedCell) {
+                    // No incorrect numbers check here - already handled before showing ad
+                    if (sudokuBoard.revealHint()) {
+                        soundManager.playClick()
+                        startTimer() // Start timer when hint is used (player is playing)
+                        updateProgress()
+                        
+                        // Highlight the number that was placed by the hint (same as manual placement)
+                        val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
+                        if (placedNumber > 0) {
+                            sudokuBoard.highlightNumber(placedNumber)
+                            selectedNumber = placedNumber
+                            highlightActiveNumber(placedNumber)
+                        }
+                        
+                        // Update badge after using hint
+                        updateHintBadge()
+                        
+                        // Check for completion after revealing hint (in case hint fills last cell)
+                        if (sudokuBoard.isBoardComplete()) {
+                            checkVictory()
+                        }
+                    }
+                } else {
+                    // No cell selected or hint couldn't be used - badge already updated
+                    // Hint is granted and ready for next use
+                }
+            }, onUserEarnedReward = {
+                // Reward earned callback - hint is granted in onAdClosed
+            })
+        } else {
+            // Ad not loaded - try to load it
+            showTooltip(hintButton, "Loading ad...")
+            
+            var adShown = false
+            val onAdLoadedCallback = {
+                if (!adShown && adManager.isRewardedAdLoaded()) {
+                    adShown = true
+                    adManager.showRewardedAd(this, onAdClosed = {
+                        // After ad is watched, grant 1 hint
+                        sudokuBoard.grantHint()
+                        
+                        // Update badge after granting hint
+                        updateHintBadge()
+                        
+                        // Check if a cell is selected - if yes, use the hint immediately
+                        val hasSelectedCell = sudokuBoard.getSelectedRow() != -1 && sudokuBoard.getSelectedCol() != -1
+                        if (hasSelectedCell) {
+                            // No incorrect numbers check here - already handled before showing ad
+                            if (sudokuBoard.revealHint()) {
+                                soundManager.playClick()
+                                startTimer() // Start timer when hint is used (player is playing)
+                                updateProgress()
+                                
+                                // Highlight the number that was placed by the hint (same as manual placement)
+                                val placedNumber = sudokuBoard.getBoardValue(sudokuBoard.getSelectedRow(), sudokuBoard.getSelectedCol())
+                                if (placedNumber > 0) {
+                                    sudokuBoard.highlightNumber(placedNumber)
+                                    selectedNumber = placedNumber
+                                    highlightActiveNumber(placedNumber)
+                                }
+                                
+                                // Update badge after using hint
+                                updateHintBadge()
+                                
+                                // Check for completion after revealing hint (in case hint fills last cell)
+                                if (sudokuBoard.isBoardComplete()) {
+                                    checkVictory()
+                                }
+                            }
+                        } else {
+                            // No cell selected or hint couldn't be used - badge already updated
+                            // Hint is granted and ready for next use
+                        }
                     }, onUserEarnedReward = {
                         // Reward earned callback - hint is granted in onAdClosed
                     })
