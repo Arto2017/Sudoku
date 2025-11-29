@@ -29,8 +29,9 @@ class AdManager(private val context: Context) {
         private const val REAL_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-2049534800625732/8282964095"
         private const val REAL_REWARDED_AD_UNIT_ID = "ca-app-pub-2049534800625732/6071841522"
         
-        // Set to false to use real ads (make sure to replace the REAL_*_AD_UNIT_ID values above first!)
-        private const val USE_TEST_ADS = false
+        // Use BuildConfig to automatically switch between test and real ads
+        // Debug builds use test ads, Release builds use real ads
+        private val USE_TEST_ADS = com.artashes.sudoku.BuildConfig.USE_TEST_ADS
     }
     
     private var interstitialAd: InterstitialAd? = null

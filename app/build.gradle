@@ -18,14 +18,21 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Use test ads in debug builds for development
+            buildConfigField "boolean", "USE_TEST_ADS", "true"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Use real ads in release builds for production
+            buildConfigField "boolean", "USE_TEST_ADS", "false"
         }
     }
 
     buildFeatures {
         viewBinding true
+        buildConfig true  // Enable BuildConfig to use buildConfigField
     }
 
     compileOptions {

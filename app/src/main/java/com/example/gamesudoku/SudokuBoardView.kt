@@ -86,6 +86,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     // Track manually added candidates that were removed when placing a number
     // Key: (row, col, value) that was placed, Value: Set of (row, col) cells that had this value as a candidate
     private var removedCandidatesMap = mutableMapOf<Triple<Int, Int, Int>, MutableSet<Pair<Int, Int>>>()
+    
+    // Track correctness of user-placed numbers: true = correct (blue), false = incorrect (red)
+    private var numberCorrectness = mutableMapOf<Pair<Int, Int>, Boolean>()
 
     // Colors with theme support - Pure white background
     private var bgColor = Color.parseColor("#FFFFFF") // Pure white background
@@ -261,9 +264,12 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     private fun drawNumberHighlights(canvas: Canvas) {
         if (highlightedNumber == 0 || highlightedCells.isEmpty()) return
 
-        // Use darker green color for all same numbers
-        val highlightColor = Color.parseColor("#439247") // Darker green
-        val pulseAlpha = (120 + 60 * Math.sin(System.currentTimeMillis() * 0.0001).toFloat()).toInt()
+        // Use very light, neutral blue-gray color that works beautifully with blue and red numbers
+        // This is a very subtle, elegant highlight that doesn't compete with number colors
+        val highlightColor = Color.parseColor("#E3F2FD") // Very light blue-gray (almost white with hint of blue)
+        // Very light and subtle - almost transparent
+        val baseAlpha = 40 // Very light base transparency
+        val pulseAlpha = (baseAlpha + 15 * Math.sin(System.currentTimeMillis() * 0.0001).toFloat()).toInt()
         
         for ((row, col) in highlightedCells) {
             val cellLeft = boardLeft + col * cellSize
@@ -271,7 +277,7 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             val cellRight = cellLeft + cellSize
             val cellBottom = cellTop + cellSize
             
-            // Draw highlight with pulsing effect
+            // Draw very light, subtle highlight background
             paint.color = Color.argb(pulseAlpha, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
             canvas.drawRoundRect(
                 cellLeft + 2f, cellTop + 2f,
@@ -279,10 +285,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 6f, 6f, paint
             )
             
-            // Draw border
-            paint.color = Color.argb(200, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
+            // Draw very subtle border - almost invisible but provides gentle definition
+            paint.color = Color.argb(60, Color.red(highlightColor), Color.green(highlightColor), Color.blue(highlightColor))
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 3f
+            paint.strokeWidth = 1.5f // Very thin, subtle border
             canvas.drawRoundRect(
                 cellLeft + 2f, cellTop + 2f,
                 cellRight - 2f, cellBottom - 2f,
@@ -533,16 +539,37 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                         paint.color = fixedNumberColor
                         canvas.drawText(board[row][col].toString(), x, y, paint)
                     } else {
-                        // User numbers: enhanced lighter and normal weight
-                        paint.color = userNumberColor
+                        // User numbers: check if correct or incorrect
+                        val cellKey = Pair(row, col)
+                        val isCorrect = numberCorrectness[cellKey]
+                        
                         paint.isFakeBoldText = false
                         
+                        if (isCorrect == true) {
+                            // Correct number: blue color
+                            val correctColor = Color.parseColor("#2196F3") // Blue
+                            paint.color = correctColor
+                        } else if (isCorrect == false) {
+                            // Incorrect number: red color
+                            val incorrectColor = Color.parseColor("#F44336") // Red
+                            paint.color = incorrectColor
+                        } else {
+                            // Unknown/not checked: use default user number color
+                            paint.color = userNumberColor
+                        }
+                        
                         // Draw subtle shadow for user numbers
-                        paint.color = Color.argb(40, 0, 0, 0)
+                        paint.color = Color.argb(40, Color.red(paint.color), Color.green(paint.color), Color.blue(paint.color))
                         canvas.drawText(board[row][col].toString(), x + 0.5f, y + 0.5f, paint)
                         
-                        // Draw main text
-                        paint.color = userNumberColor
+                        // Draw main text (restore original color)
+                        if (isCorrect == true) {
+                            paint.color = Color.parseColor("#2196F3") // Blue
+                        } else if (isCorrect == false) {
+                            paint.color = Color.parseColor("#F44336") // Red
+                        } else {
+                            paint.color = userNumberColor
+                        }
                         canvas.drawText(board[row][col].toString(), x, y, paint)
                     }
                 }
@@ -682,6 +709,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
         clearConflicts()
         // Clear removed candidates map when resetting puzzle
         removedCandidatesMap.clear()
+        // Clear number correctness tracking when resetting puzzle
+        numberCorrectness.clear()
         // Clear number highlighting when resetting puzzle
         clearNumberHighlight()
         // Clear success animation
@@ -804,6 +833,20 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 candidates[selectedRow][selectedCol].clear()
                 // Ensure we're not keeping stale conflict markers for this cell
                 conflictingCells.remove(Pair(selectedRow, selectedCol))
+                
+                // Check if the number is correct by comparing with solution
+                val cellKey = Pair(selectedRow, selectedCol)
+                if (solutionBoard != null && !fixed[selectedRow][selectedCol]) {
+                    val correctValue = solutionBoard!![selectedRow][selectedCol]
+                    val isCorrect = (number == correctValue)
+                    numberCorrectness[cellKey] = isCorrect
+                } else {
+                    // If no solution available, remove from correctness map
+                    numberCorrectness.remove(cellKey)
+                }
+            } else {
+                // When clearing a number, remove from correctness map
+                numberCorrectness.remove(Pair(selectedRow, selectedCol))
             }
             
             // Update candidates for affected cells
@@ -812,30 +855,10 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 updateCandidatesAfterPlacement(selectedRow, selectedCol, number)
             }
             
-            // Check for conflicts
-            if (number != 0) {
-                val conflicts = findConflicts(selectedRow, selectedCol, number)
-                if (conflicts.isNotEmpty()) {
-                    // Start conflict animation
-                    startConflictAnimation(conflicts)
-                    lastPlacedNumber = number
-
-                    lastPlacedRow = selectedRow
-                    lastPlacedCol = selectedCol
-                    onConflictListener?.onConflictDetected()
-                } else {
-                    // Start success animation for correct placement
-                    startSuccessAnimation(selectedRow, selectedCol)
-                }
-            } else {
-                if (lastPlacedRow == selectedRow && lastPlacedCol == selectedCol) {
-                    lastPlacedRow = -1
-                    lastPlacedCol = -1
-                    lastPlacedNumber = 0
-                }
-            }
-
-            recomputeConflicts()
+            // Don't start conflict animations - we use color coding instead
+            // Clear any existing animations
+            clearConflicts()
+            clearSuccessAnimation()
             
             invalidate()
         }
@@ -863,6 +886,8 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             
             // Clear pencil marks (candidates) when clearing the cell
             candidates[selectedRow][selectedCol].clear()
+            // Remove this cell from correctness tracking
+            numberCorrectness.remove(Pair(selectedRow, selectedCol))
             // Remove this cell from conflict tracking if it was highlighted
             val removedCell = Pair(selectedRow, selectedCol)
             if (conflictingCells.remove(removedCell) && conflictingCells.isEmpty()) {
@@ -1316,37 +1341,12 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
     
     /**
      * Recompute conflict state for the entire board to ensure highlights match actual duplicates.
+     * Disabled conflict animations - we use color coding instead (blue for correct, red for incorrect).
      */
     private fun recomputeConflicts() {
-        pruneConflictingCells()
-
-        val newConflicts = mutableSetOf<Pair<Int, Int>>()
-
-        for (row in 0 until boardSize) {
-            for (col in 0 until boardSize) {
-                val value = board[row][col]
-                if (value != 0) {
-                    val conflicts = findConflicts(row, col, value)
-                    if (conflicts.isNotEmpty()) {
-                        newConflicts.add(Pair(row, col))
-                        newConflicts.addAll(conflicts)
-                    }
-                }
-            }
-        }
-
-        if (newConflicts.isEmpty()) {
-            if (conflictingCells.isNotEmpty()) {
-                clearConflicts()
-            }
-            return
-        }
-
-        if (newConflicts != conflictingCells) {
-            startConflictAnimation(newConflicts)
-        } else if (conflictAnimator?.isRunning != true) {
-            startConflictAnimation(newConflicts)
-        }
+        // Clear any existing conflict animations since we're using color coding now
+        clearConflicts()
+        // No longer starting conflict animations - colors indicate correctness instead
     }
 
     // Number highlighting methods - clean implementation
@@ -1757,6 +1757,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
                 hintsUsed++
                 hintsRemaining--
                 
+                // Mark hint-placed numbers as correct (hints are always correct)
+                numberCorrectness[Pair(selectedRow, selectedCol)] = true
+                
                 // Update candidates for affected cells
                 updateCandidatesAfterPlacement(selectedRow, selectedCol, solutionValue)
                 candidates[selectedRow][selectedCol].clear()
@@ -1786,6 +1789,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             hintsUsed++
             hintsRemaining--
             
+            // Mark hint-placed numbers as correct (hints are always correct)
+            numberCorrectness[Pair(selectedRow, selectedCol)] = true
+            
             updateCandidatesAfterPlacement(selectedRow, selectedCol, solutionValue)
             candidates[selectedRow][selectedCol].clear()
             
@@ -1801,6 +1807,9 @@ class SudokuBoardView(context: Context, attrs: AttributeSet) : View(context, att
             isRevealedByHint[selectedRow][selectedCol] = true
             hintsUsed++
             hintsRemaining--
+            
+            // Mark hint-placed numbers as correct (hints are always correct)
+            numberCorrectness[Pair(selectedRow, selectedCol)] = true
             
             updateCandidatesAfterPlacement(selectedRow, selectedCol, hintResult)
             candidates[selectedRow][selectedCol].clear()
