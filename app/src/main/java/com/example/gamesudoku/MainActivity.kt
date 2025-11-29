@@ -170,6 +170,26 @@ class MainActivity : AppCompatActivity() {
 
             secondsElapsed = savedState.secondsElapsed
             totalMistakes = savedState.mistakes
+            
+            // Restore max mistakes - prioritize AttemptStateStore (most up-to-date) over saved state
+            val playNowPuzzleId = "play_now"
+            val defaultMax = getInitialMaxMistakes()
+            val storedMax = attemptStore.getMaxMistakes(playNowPuzzleId, defaultMax)
+            
+            if (storedMax > defaultMax) {
+                // AttemptStateStore has updated value (e.g., from ad watch)
+                currentMaxMistakes = storedMax
+            } else if (savedState.maxMistakes > 0) {
+                // Use saved state value
+                currentMaxMistakes = savedState.maxMistakes
+                // Also save to AttemptStateStore for consistency
+                attemptStore.setMaxMistakes(playNowPuzzleId, savedState.maxMistakes)
+            } else {
+                // Use default
+                currentMaxMistakes = defaultMax
+                attemptStore.setMaxMistakes(playNowPuzzleId, defaultMax)
+            }
+            
             updateMistakesHud(totalMistakes)
             updateTimerText()
 
@@ -675,6 +695,7 @@ class MainActivity : AppCompatActivity() {
             board = boardState,
             fixed = fixedState,
             solution = sudokuBoard.getSolutionForSaving(),
+            maxMistakes = currentMaxMistakes,
             selectedNumber = selectedNumber,
             gameStarted = gameStarted
         )
@@ -1472,6 +1493,20 @@ class MainActivity : AppCompatActivity() {
     
     private fun initializeMaxMistakes() {
         val defaultMax = getInitialMaxMistakes()
+        
+        // If currentMaxMistakes is already set (e.g., from restored state), use it
+        if (currentMaxMistakes > defaultMax) {
+            // Already set from restored state, just ensure it's saved to store
+            questPuzzleId?.let { id ->
+                attemptStore.setMaxMistakes(id, currentMaxMistakes)
+            } ?: run {
+                val playNowPuzzleId = "play_now"
+                attemptStore.setMaxMistakes(playNowPuzzleId, currentMaxMistakes)
+            }
+            return
+        }
+        
+        // Otherwise, load from store
         currentMaxMistakes = questPuzzleId?.let { id ->
             val max = attemptStore.getMaxMistakes(id, defaultMax)
             if (max <= 0) {
@@ -1480,7 +1515,17 @@ class MainActivity : AppCompatActivity() {
             } else {
                 max
             }
-        } ?: defaultMax
+        } ?: run {
+            // For non-quest games, use "play_now" as puzzleId
+            val playNowPuzzleId = "play_now"
+            val max = attemptStore.getMaxMistakes(playNowPuzzleId, defaultMax)
+            if (max <= 0) {
+                attemptStore.setMaxMistakes(playNowPuzzleId, defaultMax)
+                defaultMax
+            } else {
+                max
+            }
+        }
         // Ensure it's at least the default
         if (currentMaxMistakes <= 0) {
             currentMaxMistakes = defaultMax
@@ -1492,7 +1537,9 @@ class MainActivity : AppCompatActivity() {
         currentMaxMistakes = questPuzzleId?.let { id ->
             attemptStore.incrementMaxMistakes(id, defaultMax)
         } ?: run {
-            currentMaxMistakes + 1
+            // For non-quest games, use "play_now" as puzzleId
+            val playNowPuzzleId = "play_now"
+            attemptStore.incrementMaxMistakes(playNowPuzzleId, defaultMax)
         }
     }
     
@@ -1504,7 +1551,12 @@ class MainActivity : AppCompatActivity() {
             val storedMax = attemptStore.getMaxMistakes(id, defaultMax)
             currentMaxMistakes = if (storedMax > 0) storedMax else defaultMax
             currentMaxMistakes
-        } ?: currentMaxMistakes.let { if (it > 0) it else defaultMax }
+        } ?: run {
+            // For non-quest games, use "play_now" as puzzleId
+            val playNowPuzzleId = "play_now"
+            val storedMax = attemptStore.getMaxMistakes(playNowPuzzleId, defaultMax)
+            if (storedMax > 0) storedMax else currentMaxMistakes.let { if (it > 0) it else defaultMax }
+        }
         // Update cached value
         currentMaxMistakes = maxMistakes
         val displayText = "$count / $maxMistakes"
@@ -1735,34 +1787,50 @@ class MainActivity : AppCompatActivity() {
      */
     private fun attemptShowRewardedAd() {
         if (adManager.isRewardedAdLoaded()) {
+            // Increment max mistakes IMMEDIATELY when ad starts (not when it closes)
+            // This ensures the increment is saved even if user closes game during ad
+            val defaultMax = getInitialMaxMistakes()
+            var newMax = defaultMax
+            
+            // Increment max mistakes only (don't increment mistakes)
+            questPuzzleId?.let { id ->
+                newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
+                currentMaxMistakes = newMax
+            } ?: run {
+                // For non-quest games, use "play_now" as puzzleId
+                val playNowPuzzleId = "play_now"
+                newMax = attemptStore.incrementMaxMistakes(playNowPuzzleId, defaultMax)
+                currentMaxMistakes = newMax
+            }
+            Log.d("MainActivity", "Max mistakes incremented to: $newMax (saved immediately)")
+            
+            // Update UI immediately to show new max
+            val text = findViewById<TextView>(R.id.mistakesText)
+            if (text != null) {
+                text.text = "$totalMistakes / $newMax"
+                Log.d("MainActivity", "Updated TextView to: ${text.text}")
+            }
+            updateMistakesHud(totalMistakes)
+            
+            // Persist state immediately to ensure it's saved
+            persistPlayNowState()
+            persistQuestPuzzleState()
+            
             adManager.showRewardedAd(this, onAdClosed = {
-                // After ad is watched, increment max mistakes only (keep current mistakes)
-                val defaultMax = getInitialMaxMistakes()
-                var newMax = defaultMax
-                
-                // Increment max mistakes only (don't increment mistakes)
-                questPuzzleId?.let { id ->
-                    newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
-                    currentMaxMistakes = newMax
-                } ?: run {
-                    // For non-quest games, increment local variable
-                    currentMaxMistakes++
-                    newMax = currentMaxMistakes
-                }
-                Log.d("MainActivity", "Max mistakes incremented to: $newMax")
+                // Ad closed - just restart timer and reload next ad
+                // Max mistakes already incremented above
+                Log.d("MainActivity", "Ad closed, mistakes=$totalMistakes, max=$newMax")
                 
                 // Keep current mistakes (don't increment them)
                 questPuzzleId?.let { id ->
                     totalMistakes = attemptStore.getMistakes(id)
                 }
                 // For non-quest games, totalMistakes is already correct
-                Log.d("MainActivity", "After ad: mistakes=$totalMistakes, max=$newMax")
                 
-                // Update UI with both values directly
-                val text = findViewById<TextView>(R.id.mistakesText)
-                if (text != null) {
-                    text.text = "$totalMistakes / $newMax"
-                    Log.d("MainActivity", "Updated TextView to: ${text.text}")
+                // Update UI again (in case it changed)
+                val textAfter = findViewById<TextView>(R.id.mistakesText)
+                if (textAfter != null) {
+                    textAfter.text = "$totalMistakes / $newMax"
                 }
                 updateMistakesHud(totalMistakes)
                 // Restart timer to continue playing
@@ -1770,7 +1838,8 @@ class MainActivity : AppCompatActivity() {
                 // Preload next rewarded ad
                 adManager.loadRewardedAd()
             }, onUserEarnedReward = {
-                // Reward earned
+                // Reward earned - max mistakes already incremented above
+                Log.d("MainActivity", "User earned reward, max mistakes already incremented to: $newMax")
             })
         } else {
             // Ad not loaded - try loading it

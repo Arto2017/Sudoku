@@ -296,7 +296,7 @@ class AdManager(private val context: Context) {
     /**
      * Show rewarded ad if loaded
      */
-    fun showRewardedAd(activity: android.app.Activity, onAdClosed: (() -> Unit)? = null, onUserEarnedReward: ((RewardItem) -> Unit)? = null) {
+    fun showRewardedAd(activity: android.app.Activity, onAdClosed: (() -> Unit)? = null, onUserEarnedReward: ((RewardItem) -> Unit)? = null, onAdShowed: (() -> Unit)? = null) {
         rewardedAd?.let { ad ->
             Log.d(TAG, "Showing rewarded ad...")
             ad.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
@@ -317,6 +317,7 @@ class AdManager(private val context: Context) {
                 
                 override fun onAdShowedFullScreenContent() {
                     Log.d(TAG, "✅ Rewarded ad showed successfully (full screen)")
+                    onAdShowed?.invoke()
                 }
             }
             

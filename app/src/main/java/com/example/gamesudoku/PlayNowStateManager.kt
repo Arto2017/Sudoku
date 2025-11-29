@@ -23,6 +23,7 @@ class PlayNowStateManager(context: Context) {
         val solution: List<Int>?,
         val selectedNumber: Int,
         val gameStarted: Boolean,
+        val maxMistakes: Int = 0, // Default to 0 for backwards compatibility
         val savedAt: Long
     )
 
@@ -39,7 +40,8 @@ class PlayNowStateManager(context: Context) {
         fixed: Array<BooleanArray>,
         solution: IntArray?,
         selectedNumber: Int,
-        gameStarted: Boolean
+        gameStarted: Boolean,
+        maxMistakes: Int = 0
     ) {
         val state = PlayNowState(
             boardSize = boardSize,
@@ -55,6 +57,7 @@ class PlayNowStateManager(context: Context) {
             solution = solution?.toList(),
             selectedNumber = selectedNumber,
             gameStarted = gameStarted,
+            maxMistakes = maxMistakes,
             savedAt = System.currentTimeMillis()
         )
 
