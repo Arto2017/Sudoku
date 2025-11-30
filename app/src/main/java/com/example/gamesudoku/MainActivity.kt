@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     private var questPuzzleId: String? = null // Current quest puzzle ID
     private var realmId: String? = null // Current realm ID
     private var isQuickPlay = false // Flag to indicate if this is Quick Play mode
+    private var waitingForShareReturn = false // Flag to track if we're waiting for user to return from share dialog
     
 
     companion object {
@@ -1932,8 +1933,17 @@ class MainActivity : AppCompatActivity() {
         // Re-enable fullscreen mode when resuming
         enableFullscreen()
         
-        if (gameStarted) {
-            startTimer() // Resume timer if game was started
+        // Check if we're waiting for user to return from share dialog
+        if (waitingForShareReturn && sudokuBoard.isBoardComplete()) {
+            waitingForShareReturn = false
+            // Show victory dialog again so user can choose next action
+            val timeText = timerText.text.toString()
+            showVictoryDialog(timeText, totalMistakes)
+            return // Don't resume timer or do other resume actions
+        }
+        
+        if (gameStarted && !sudokuBoard.isBoardComplete()) {
+            startTimer() // Resume timer if game was started and not completed
         }
         
         // Update hint count if settings changed while in settings
@@ -2186,10 +2196,63 @@ class MainActivity : AppCompatActivity() {
         }
         
         dialogView.findViewById<Button>(R.id.btnShare)?.setOnClickListener {
-            shouldShowAdOnDismiss = true
+            shouldShowAdOnDismiss = false // Don't show ad on dismiss, we'll show it manually
             dialog.dismiss()
-            // Share functionality can be added here if needed
-            Toast.makeText(this, "Share feature coming soon!", Toast.LENGTH_SHORT).show()
+            
+            // Show rewarded ad first, then open share after user watches it
+            if (shouldShowRewardedAd) {
+                // For 9x9 Hard/Expert Quick Play, show rewarded ad before share
+                if (adManager.isRewardedAdLoaded()) {
+                    adManager.showRewardedAd(
+                        this,
+                        onAdClosed = {
+                            // Ad closed, but user may not have watched it
+                            // Share will only open if user earned reward
+                        },
+                        onUserEarnedReward = { rewardItem ->
+                            // User watched the ad completely, now open share
+                            Log.d("MainActivity", "User earned reward, opening share dialog")
+                            shareResults()
+                        },
+                        onAdShowed = {
+                            Log.d("MainActivity", "Rewarded ad shown for share")
+                        }
+                    )
+                    // Preload next rewarded ad
+                    adManager.loadRewardedAd()
+                } else {
+                    // Ad not loaded, try to load it first
+                    adManager.loadRewardedAd {
+                        if (adManager.isRewardedAdLoaded()) {
+                            adManager.showRewardedAd(
+                                this,
+                                onAdClosed = {},
+                                onUserEarnedReward = { rewardItem ->
+                                    Log.d("MainActivity", "User earned reward, opening share dialog")
+                                    shareResults()
+                                }
+                            )
+                            adManager.loadRewardedAd()
+                        } else {
+                            // Ad failed to load, open share directly
+                            Log.w("MainActivity", "Rewarded ad not available, opening share directly")
+                            shareResults()
+                        }
+                    }
+                }
+            } else {
+                // For other difficulties, show interstitial ad first, then share
+                if (adManager.isInterstitialAdLoaded()) {
+                    adManager.showInterstitialAd(this) {
+                        // After interstitial ad closes, open share
+                        shareResults()
+                    }
+                    adManager.loadInterstitialAd()
+                } else {
+                    // No ad available, open share directly
+                    shareResults()
+                }
+            }
         }
         
         dialogView.findViewById<Button>(R.id.btnRate)?.setOnClickListener {
@@ -3093,6 +3156,47 @@ class MainActivity : AppCompatActivity() {
                 "Error opening Play Store. Please try again.",
                 android.widget.Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+    
+    /**
+     * Share game results after user watches rewarded ad
+     * After sharing, shows the victory dialog again so user can choose next action
+     */
+    private fun shareResults() {
+        val minutes = secondsElapsed / 60
+        val seconds = secondsElapsed % 60
+        val timeFormatted = String.format("%02d:%02d", minutes, seconds)
+        
+        val difficultyText = currentDifficulty.name.lowercase().replaceFirstChar { 
+            if (it.isLowerCase()) it.titlecase() else it.toString() 
+        }
+        
+        val shareText = "I just completed a ${boardSize}×${boardSize} $difficultyText Sudoku puzzle in $timeFormatted with $totalMistakes mistake${if (totalMistakes != 1) "s" else ""}! Can you beat my time? 🧩"
+        
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
+        }
+        
+        // Launch share chooser
+        val chooserIntent = Intent.createChooser(shareIntent, "Share your achievement")
+        
+        try {
+            // Set flag to show victory dialog when user returns
+            waitingForShareReturn = true
+            
+            // Launch share dialog
+            startActivity(chooserIntent)
+            
+            Log.d("MainActivity", "Share dialog opened, will show victory dialog on return")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error sharing results: ${e.message}", e)
+            waitingForShareReturn = false
+            // If share fails, show victory dialog immediately
+            val timeText = timerText.text.toString()
+            showVictoryDialog(timeText, totalMistakes)
         }
     }
     
