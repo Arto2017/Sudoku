@@ -313,6 +313,9 @@ class MainMenuActivity : AppCompatActivity() {
         // Refresh daily challenge card
         updateDailyChallengeCard()
         updateContinueButton()
+        
+        // Restart daily challenge timer (it was stopped in onPause)
+        startDailyChallengeTimer()
     }
     
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -401,18 +404,34 @@ class MainMenuActivity : AppCompatActivity() {
     }
     
     private fun startDailyChallengeTimer() {
+        // Stop any existing timer first to prevent duplicates
+        stopDailyChallengeTimer()
+        
+        // Update timer immediately
+        val timerText = findViewById<TextView>(R.id.dailyTimerText)
+        if (timerText != null) {
+            timerText.text = dailyChallengeManager.formatTimeRemaining()
+        }
+        
+        // Create new runnable for timer updates
         dailyTimerRunnable = object : Runnable {
             override fun run() {
                 val timerText = findViewById<TextView>(R.id.dailyTimerText)
-                timerText.text = dailyChallengeManager.formatTimeRemaining()
-                dailyTimerHandler.postDelayed(this, 1000) // Update every second
+                if (timerText != null) {
+                    timerText.text = dailyChallengeManager.formatTimeRemaining()
+                    // Schedule next update
+                    dailyTimerHandler.postDelayed(this, 1000) // Update every second
+                }
             }
         }
-        dailyTimerHandler.post(dailyTimerRunnable)
+        // Start the timer
+        dailyTimerHandler.postDelayed(dailyTimerRunnable, 1000) // First update after 1 second
     }
     
     private fun stopDailyChallengeTimer() {
-        dailyTimerHandler.removeCallbacks(dailyTimerRunnable)
+        if (::dailyTimerHandler.isInitialized && ::dailyTimerRunnable.isInitialized) {
+            dailyTimerHandler.removeCallbacks(dailyTimerRunnable)
+        }
     }
 
     private fun updateContinueButton() {
