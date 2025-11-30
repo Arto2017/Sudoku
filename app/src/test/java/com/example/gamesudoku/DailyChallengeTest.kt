@@ -1,16 +1,12 @@
 package com.artashes.sudoku
 
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import org.junit.Assert.*
 import java.util.*
 
 /**
  * Comprehensive test suite for Daily Challenge system
- * Uses Robolectric to provide real Android framework for logging
  */
-@RunWith(RobolectricTestRunner::class)
 class DailyChallengeTest {
     
     @Test
