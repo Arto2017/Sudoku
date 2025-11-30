@@ -1241,6 +1241,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         }
         
         dialogView.findViewById<Button>(R.id.btnRate).setOnClickListener {
+            Log.d("DailyChallenge", "Rate button clicked in daily challenge complete dialog")
             openPlayStoreRating()
         }
         
@@ -1280,11 +1281,21 @@ class DailyChallengeActivity : AppCompatActivity() {
     }
     
     private fun openPlayStoreRating() {
-        // Use Google Play In-App Review API for beautiful native rating dialog
-        val reviewManager = InAppReviewManager(this)
-        reviewManager.requestReview {
-            // Review flow completed
-            Log.d("DailyChallenge", "In-app review completed")
+        Log.d("DailyChallenge", "openPlayStoreRating() called - opening Play Store rating")
+        
+        try {
+            // For reliability, always open Play Store directly
+            // In-App Review API is unreliable during development and may not show the dialog
+            val reviewManager = InAppReviewManager(this)
+            reviewManager.openPlayStoreDirectly()
+            Log.d("DailyChallenge", "Play Store opening initiated")
+        } catch (e: Exception) {
+            Log.e("DailyChallenge", "Error in openPlayStoreRating: ${e.message}", e)
+            android.widget.Toast.makeText(
+                this,
+                "Error opening Play Store. Please try again.",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     }
     

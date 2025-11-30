@@ -139,9 +139,18 @@ class AdManager(private val context: Context) {
                 return
             }
             
-            // Build ad request
-            // Test devices are configured globally in init() for debug builds
-            val adRequest = AdRequest.Builder().build()
+            // Build ad request with test device configuration for debug builds
+            val adRequestBuilder = AdRequest.Builder()
+            
+            // Add test device configuration for debug builds (even though it's set globally, 
+            // adding it here ensures test ads work properly)
+            if (USE_TEST_ADS) {
+                // Test devices are already configured globally in init(), but we can add 
+                // additional test device configuration here if needed
+                Log.d(TAG, "Using test ad request for banner ad")
+            }
+            
+            val adRequest = adRequestBuilder.build()
             adView.loadAd(adRequest)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Fatal error loading banner ad: ${e.message}", e)

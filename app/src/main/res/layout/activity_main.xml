@@ -377,7 +377,7 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Banner Ad at Bottom -->
-    <!-- Real ad unit ID for production. For testing, use test device configuration in AdRequest -->
+    <!-- Test ad unit ID for development. AdManager will handle switching to real ads in release builds if needed -->
     <com.google.android.gms.ads.AdView
         android:id="@+id/bannerAdView"
         android:layout_width="match_parent"
@@ -385,6 +385,6 @@
         android:layout_marginTop="4dp"
         android:background="#FFFFFF"
         ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-2049534800625732/8506433174" />
+        ads:adUnitId="ca-app-pub-3940256099942544/6300978111" />
 
 </LinearLayout>

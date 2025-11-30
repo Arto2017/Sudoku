@@ -2193,6 +2193,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         dialogView.findViewById<Button>(R.id.btnRate)?.setOnClickListener {
+            Log.d("MainActivity", "Rate button clicked in puzzle complete dialog")
             openPlayStoreRating()
         }
         
@@ -2584,6 +2585,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         dialogView.findViewById<Button>(R.id.btnRate)?.setOnClickListener {
+            Log.d("MainActivity", "Rate button clicked in quest victory dialog")
             openPlayStoreRating()
         }
         
@@ -3076,11 +3078,21 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun openPlayStoreRating() {
-        // Use Google Play In-App Review API for beautiful native rating dialog
-        val reviewManager = InAppReviewManager(this)
-        reviewManager.requestReview {
-            // Review flow completed
-            Log.d("MainActivity", "In-app review completed")
+        Log.d("MainActivity", "openPlayStoreRating() called - opening Play Store rating")
+        
+        try {
+            // For reliability, always open Play Store directly
+            // In-App Review API is unreliable during development and may not show the dialog
+            val reviewManager = InAppReviewManager(this)
+            reviewManager.openPlayStoreDirectly()
+            Log.d("MainActivity", "Play Store opening initiated")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error in openPlayStoreRating: ${e.message}", e)
+            android.widget.Toast.makeText(
+                this,
+                "Error opening Play Store. Please try again.",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     }
     
