@@ -24,6 +24,7 @@ import android.widget.PopupWindow
 import android.graphics.drawable.ColorDrawable
 import com.google.android.gms.ads.AdView
 import androidx.appcompat.app.AppCompatActivity
+import com.artashes.sudoku.NetworkUtils
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.WindowCompat
 import java.text.SimpleDateFormat
@@ -1017,6 +1018,58 @@ class DailyChallengeActivity : AppCompatActivity() {
 
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
 
+        // Check internet connectivity
+        val watchAdButton = view.findViewById<Button>(R.id.btnWatchAd)
+        var connectivityCheckHandler: Handler? = null
+        var connectivityCheckRunnable: Runnable? = null
+        
+        // Function to update button state based on internet connectivity
+        fun updateWatchAdButtonState() {
+            val hasInternet = NetworkUtils.isConnected(this)
+            if (hasInternet) {
+                watchAdButton.isEnabled = true
+                watchAdButton.alpha = 1.0f
+            } else {
+                watchAdButton.isEnabled = false
+                watchAdButton.alpha = 0.5f
+            }
+        }
+        
+        // Initial check
+        updateWatchAdButtonState()
+        
+        // If no internet initially, show message
+        if (!NetworkUtils.isConnected(this)) {
+            Toast.makeText(this, "No internet connection. Connect to internet to watch ad.", Toast.LENGTH_LONG).show()
+        }
+        
+        // Set up periodic connectivity check while dialog is open
+        connectivityCheckHandler = Handler(Looper.getMainLooper())
+        connectivityCheckRunnable = object : Runnable {
+            override fun run() {
+                if (dialog.isShowing) {
+                    val wasDisabled = !watchAdButton.isEnabled
+                    updateWatchAdButtonState()
+                    
+                    // If button was disabled and now enabled, show message
+                    if (wasDisabled && watchAdButton.isEnabled) {
+                        Toast.makeText(this@DailyChallengeActivity, "Internet connected! You can now watch ad.", Toast.LENGTH_SHORT).show()
+                    }
+                    
+                    // Check again in 1 second
+                    connectivityCheckHandler?.postDelayed(this, 1000)
+                }
+            }
+        }
+        
+        // Start checking connectivity every second
+        connectivityCheckHandler.postDelayed(connectivityCheckRunnable!!, 1000)
+        
+        // Stop checking when dialog is dismissed
+        dialog.setOnDismissListener {
+            connectivityCheckHandler?.removeCallbacks(connectivityCheckRunnable!!)
+        }
+
         view.findViewById<Button>(R.id.btnRestart).setOnClickListener {
             dialog.dismiss()
             SoundManager.getInstance(this).playClick()
@@ -1036,105 +1089,155 @@ class DailyChallengeActivity : AppCompatActivity() {
             startGameTimer()
         }
 
-        view.findViewById<Button>(R.id.btnWatchAd).setOnClickListener {
+        watchAdButton.setOnClickListener {
+            // Check internet again before showing ad
+            if (!NetworkUtils.isConnected(this)) {
+                dialog.dismiss()
+                // Show dialog with retry option
+                showNoInternetDialog()
+                return@setOnClickListener
+            }
+            
             dialog.dismiss()
             SoundManager.getInstance(this).playClick()
             // Show rewarded ad to continue playing
-            if (adManager.isRewardedAdLoaded()) {
-                adManager.showRewardedAd(this, onAdClosed = {
-                    // After ad is watched, increment max mistakes only (keep current mistakes)
-                    // Example: 3/3 → 3/4, then if user makes mistake: 4/4
-                    val dailyChallengeId = "daily_${currentPuzzle.date}"
-                    val defaultMax = getInitialMaxMistakes()
-                    // Increment max mistakes only (don't increment mistakes)
-                    val newMax = attemptStore.incrementMaxMistakes(dailyChallengeId, defaultMax)
-                    currentMaxMistakes = newMax
-                    Log.d("DailyChallenge", "Max mistakes incremented to: $newMax")
-                    
-                    // Keep current mistakes (don't increment them)
-                    // totalMistakes is already correct from the store
-                    totalMistakes = attemptStore.getMistakes(dailyChallengeId)
-                    Log.d("DailyChallenge", "After ad: mistakes=$totalMistakes, max=$newMax")
-                    
-                    // Update UI with both values directly
-                    val text = findViewById<TextView>(R.id.mistakesText)
-                    if (text != null) {
-                        text.text = "$totalMistakes / $newMax"
-                        Log.d("DailyChallenge", "Updated TextView to: ${text.text}")
-                    }
-                    updateMistakesHud(totalMistakes)
-                    isGameActive = true
-                    startGameTimer()
-                    // Preload next rewarded ad
-                    adManager.loadRewardedAd()
-                }, onUserEarnedReward = {
-                    // Reward earned - mistakes incremented in onAdClosed
-                })
-            } else {
-                // Ad not loaded - show loading message and load with callback
-                val handler = Handler(Looper.getMainLooper())
-                var adShown = false
+            attemptShowRewardedAd()
+        }
+
+        dialog.show()
+    }
+    
+    /**
+     * Show dialog when internet is disconnected
+     */
+    private fun showNoInternetDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("No Internet Connection")
+        builder.setMessage("You need an internet connection to watch ads and continue playing.\n\nPlease connect to the internet and try again, or reset the game to start fresh.")
+        builder.setPositiveButton("Retry") { dialog, _ ->
+            SoundManager.getInstance(this).playClick()
+            dialog.dismiss()
+            // Check internet again after a short delay
+            val handler = Handler(Looper.getMainLooper())
+            handler.postDelayed({
+                if (NetworkUtils.isConnected(this)) {
+                    // Internet is now available - try to show ad
+                    attemptShowRewardedAd()
+                } else {
+                    // Still no internet - show dialog again
+                    showNoInternetDialog()
+                }
+            }, 500) // Small delay to allow network check
+        }
+        builder.setNeutralButton("Reset Game") { _, _ ->
+            SoundManager.getInstance(this).playClick()
+            // Reset game - lose all changes
+            val dailyChallengeId = "daily_${currentPuzzle.date}"
+            val defaultMax = getInitialMaxMistakes()
+            attemptStore.clear(dailyChallengeId)
+            attemptStore.resetMaxMistakes(dailyChallengeId, defaultMax)
+            currentMaxMistakes = defaultMax
+            totalMistakes = 0
+            updateMistakesHud(0)
+            sudokuBoardView.resetToInitialState()
+            sudokuBoardView.clearNumberHighlight()
+            gameStartTime = System.currentTimeMillis()
+            isGameActive = true
+            startGameTimer()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            SoundManager.getInstance(this).playClick()
+            dialog.dismiss()
+            // Re-show the mistakes exhausted dialog
+            showMistakesExhaustedDialog()
+        }
+        builder.show()
+    }
+    
+    private fun attemptShowRewardedAd() {
+        if (adManager.isRewardedAdLoaded()) {
+            // Increment max mistakes IMMEDIATELY when ad starts (not when it closes)
+            // This ensures the increment is saved even if user closes game during ad
+            val dailyChallengeId = "daily_${currentPuzzle.date}"
+            val defaultMax = getInitialMaxMistakes()
+            val newMax = attemptStore.incrementMaxMistakes(dailyChallengeId, defaultMax)
+            currentMaxMistakes = newMax
+            Log.d("DailyChallenge", "Max mistakes incremented to: $newMax (saved immediately)")
+            
+            // Update UI immediately to show new max
+            val text = findViewById<TextView>(R.id.mistakesText)
+            if (text != null) {
+                text.text = "$totalMistakes / $newMax"
+                Log.d("DailyChallenge", "Updated TextView to: ${text.text}")
+            }
+            updateMistakesHud(totalMistakes)
+            
+            adManager.showRewardedAd(this, onAdClosed = {
+                // Ad closed - just restart timer and reload next ad
+                // Max mistakes already incremented above
+                Log.d("DailyChallenge", "Ad closed, mistakes=$totalMistakes, max=$newMax")
                 
-                val onAdLoadedCallback: () -> Unit = {
-                    if (!adShown && adManager.isRewardedAdLoaded()) {
+                // Keep current mistakes (don't increment them)
+                totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+                
+                // Update UI again (in case it changed)
+                val textAfter = findViewById<TextView>(R.id.mistakesText)
+                if (textAfter != null) {
+                    textAfter.text = "$totalMistakes / $newMax"
+                }
+                updateMistakesHud(totalMistakes)
+                // Restart timer to continue playing
+                isGameActive = true
+                startGameTimer()
+                // Preload next rewarded ad
+                adManager.loadRewardedAd()
+            }, onUserEarnedReward = {
+                // Reward earned - max mistakes already incremented above
+                Log.d("DailyChallenge", "User earned reward, max mistakes already incremented to: $newMax")
+            })
+        } else {
+            // Ad not loaded - try loading it
+            val handler = Handler(Looper.getMainLooper())
+            var adShown = false
+            
+            val onAdLoadedCallback: () -> Unit = {
+                if (!adShown && adManager.isRewardedAdLoaded()) {
+                    adShown = true
+                    attemptShowRewardedAd()
+                }
+            }
+            
+            adManager.loadRewardedAd(onAdLoadedCallback)
+            
+            // Timeout fallback
+            handler.postDelayed({
+                if (!adShown) {
+                    if (adManager.isRewardedAdLoaded()) {
                         adShown = true
-                        adManager.showRewardedAd(this, onAdClosed = {
-                            // After ad is watched, increment max mistakes only (keep current mistakes)
-                            // Example: 3/3 → 3/4, then if user makes mistake: 4/4
+                        attemptShowRewardedAd()
+                    } else {
+                        // Still failed - check internet again
+                        if (!NetworkUtils.isConnected(this)) {
+                            showNoInternetDialog()
+                        } else {
+                            // Internet available but ad failed - restart game
                             val dailyChallengeId = "daily_${currentPuzzle.date}"
                             val defaultMax = getInitialMaxMistakes()
-                            // Increment max mistakes only (don't increment mistakes)
-                            val newMax = attemptStore.incrementMaxMistakes(dailyChallengeId, defaultMax)
-                            currentMaxMistakes = newMax
-                            Log.d("DailyChallenge", "Max mistakes incremented to: $newMax")
-                            
-                            // Keep current mistakes (don't increment them)
-                            // totalMistakes is already correct from the store
-                            totalMistakes = attemptStore.getMistakes(dailyChallengeId)
-                            Log.d("DailyChallenge", "After ad: mistakes=$totalMistakes, max=$newMax")
-                            
-                            // Update UI with both values directly
-                            val text = findViewById<TextView>(R.id.mistakesText)
-                            if (text != null) {
-                                text.text = "$totalMistakes / $newMax"
-                                Log.d("DailyChallenge", "Updated TextView to: ${text.text}")
-                            }
-                            updateMistakesHud(totalMistakes)
-                            isGameActive = true
-                            startGameTimer()
-                            adManager.loadRewardedAd()
-                        }, onUserEarnedReward = {
-                            // Reward earned
-                        })
-                    }
-                }
-                
-                adManager.loadRewardedAd(onAdLoadedCallback)
-                
-                // Timeout fallback - if ad doesn't load, restart game
-                handler.postDelayed({
-                    if (!adShown) {
-                        if (adManager.isRewardedAdLoaded()) {
-                            adShown = true
-                            onAdLoadedCallback()
-                        } else {
-                            // Ad failed to load - restart game instead
-                            val dailyChallengeId = "daily_${currentPuzzle.date}"
                             attemptStore.clear(dailyChallengeId)
+                            attemptStore.resetMaxMistakes(dailyChallengeId, defaultMax)
+                            currentMaxMistakes = defaultMax
                             totalMistakes = 0
                             updateMistakesHud(0)
-                            loadPuzzleToBoard()
+                            sudokuBoardView.resetToInitialState()
                             sudokuBoardView.clearNumberHighlight()
                             gameStartTime = System.currentTimeMillis()
                             isGameActive = true
                             startGameTimer()
                         }
                     }
-                }, 10000) // 10 second timeout
-            }
+                }
+            }, 10000) // 10 second timeout
         }
-
-        dialog.show()
     }
     
     private fun setupNumberButtons() {
