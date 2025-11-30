@@ -67,6 +67,10 @@ class DailyChallengeActivity : AppCompatActivity() {
     // Banner ad
     private var bannerAdView: AdView? = null
     
+    // Share return tracking
+    private var waitingForShareReturn = false // Flag to track if we're waiting for user to return from share dialog
+    private var lastCompletionRecord: DailyChallengeManager.DailyRecord? = null // Store last completion record to show dialog again
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -1221,14 +1225,11 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Setup button click listeners
         dialogView.findViewById<Button>(R.id.btnShare).setOnClickListener {
             adShown = true
+            // Store the record so we can show dialog again after sharing
+            lastCompletionRecord = record
             dialog.dismiss()
             shareResults()
-            // Show interstitial ad after sharing
-            if (adManager.isInterstitialAdLoaded()) {
-                adManager.showInterstitialAd(this, null)
-            }
-            // Preload next interstitial ad
-            adManager.loadInterstitialAd()
+            // Note: Ad will be shown after user returns from share (in onResume)
         }
         
         dialogView.findViewById<Button>(R.id.btnDone).setOnClickListener {
@@ -1277,7 +1278,23 @@ class DailyChallengeActivity : AppCompatActivity() {
             type = "text/plain"
         }
         
-        startActivity(Intent.createChooser(shareIntent, "Share your achievement"))
+        // Launch share chooser
+        val chooserIntent = Intent.createChooser(shareIntent, "Share your achievement")
+        
+        try {
+            // Set flag to show completion dialog when user returns
+            waitingForShareReturn = true
+            
+            // Launch share dialog
+            startActivity(chooserIntent)
+            
+            Log.d("DailyChallenge", "Share dialog opened, will show completion dialog on return")
+        } catch (e: Exception) {
+            Log.e("DailyChallenge", "Error sharing results: ${e.message}", e)
+            waitingForShareReturn = false
+            // If share fails, show completion dialog immediately
+            lastCompletionRecord?.let { showCompletionDialog(it) }
+        }
     }
     
     private fun openPlayStoreRating() {
@@ -1417,6 +1434,26 @@ class DailyChallengeActivity : AppCompatActivity() {
         super.onResume()
         // Re-enable fullscreen mode when resuming
         enableFullscreen()
+        
+        // Check if we're waiting for user to return from share dialog
+        if (waitingForShareReturn && lastCompletionRecord != null) {
+            waitingForShareReturn = false
+            val record = lastCompletionRecord!!
+            
+            // Show completion dialog again so user can choose next action
+            showCompletionDialog(record)
+            
+            // Show interstitial ad after dialog is shown (if available)
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (adManager.isInterstitialAdLoaded()) {
+                    adManager.showInterstitialAd(this, null)
+                }
+                // Preload next interstitial ad
+                adManager.loadInterstitialAd()
+            }, 500) // Small delay to let dialog appear first
+            
+            return // Don't do other resume actions
+        }
     }
     
     override fun onWindowFocusChanged(hasFocus: Boolean) {
