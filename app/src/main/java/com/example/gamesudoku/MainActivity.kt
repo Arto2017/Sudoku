@@ -173,7 +173,7 @@ class MainActivity : AppCompatActivity() {
             totalMistakes = savedState.mistakes
             
             // Restore max mistakes - prioritize AttemptStateStore (most up-to-date) over saved state
-            val playNowPuzzleId = "play_now"
+            val playNowPuzzleId = getQuickPlayPuzzleId()
             val defaultMax = getInitialMaxMistakes()
             val storedMax = attemptStore.getMaxMistakes(playNowPuzzleId, defaultMax)
             
@@ -1481,6 +1481,13 @@ class MainActivity : AppCompatActivity() {
         return if (boardSize == 6) 2 else 3
     }
     
+    /**
+     * Get puzzle ID for Quick Play games - unique per board size to prevent max mistakes confusion
+     */
+    private fun getQuickPlayPuzzleId(): String {
+        return "play_now_${boardSize}"
+    }
+    
     private fun getMaxMistakes(): Int {
         // Always get fresh value from store to ensure it's up to date
         val defaultMax = getInitialMaxMistakes()
@@ -1501,7 +1508,7 @@ class MainActivity : AppCompatActivity() {
             questPuzzleId?.let { id ->
                 attemptStore.setMaxMistakes(id, currentMaxMistakes)
             } ?: run {
-                val playNowPuzzleId = "play_now"
+                val playNowPuzzleId = getQuickPlayPuzzleId()
                 attemptStore.setMaxMistakes(playNowPuzzleId, currentMaxMistakes)
             }
             return
@@ -1517,8 +1524,8 @@ class MainActivity : AppCompatActivity() {
                 max
             }
         } ?: run {
-            // For non-quest games, use "play_now" as puzzleId
-            val playNowPuzzleId = "play_now"
+            // For non-quest games, use board-size-specific puzzle ID
+            val playNowPuzzleId = getQuickPlayPuzzleId()
             val max = attemptStore.getMaxMistakes(playNowPuzzleId, defaultMax)
             if (max <= 0) {
                 attemptStore.setMaxMistakes(playNowPuzzleId, defaultMax)
@@ -1538,8 +1545,8 @@ class MainActivity : AppCompatActivity() {
         currentMaxMistakes = questPuzzleId?.let { id ->
             attemptStore.incrementMaxMistakes(id, defaultMax)
         } ?: run {
-            // For non-quest games, use "play_now" as puzzleId
-            val playNowPuzzleId = "play_now"
+            // For non-quest games, use board-size-specific puzzle ID
+            val playNowPuzzleId = getQuickPlayPuzzleId()
             attemptStore.incrementMaxMistakes(playNowPuzzleId, defaultMax)
         }
     }
@@ -1553,8 +1560,8 @@ class MainActivity : AppCompatActivity() {
             currentMaxMistakes = if (storedMax > 0) storedMax else defaultMax
             currentMaxMistakes
         } ?: run {
-            // For non-quest games, use "play_now" as puzzleId
-            val playNowPuzzleId = "play_now"
+            // For non-quest games, use board-size-specific puzzle ID
+            val playNowPuzzleId = getQuickPlayPuzzleId()
             val storedMax = attemptStore.getMaxMistakes(playNowPuzzleId, defaultMax)
             if (storedMax > 0) storedMax else currentMaxMistakes.let { if (it > 0) it else defaultMax }
         }
@@ -1798,8 +1805,8 @@ class MainActivity : AppCompatActivity() {
                 newMax = attemptStore.incrementMaxMistakes(id, defaultMax)
                 currentMaxMistakes = newMax
             } ?: run {
-                // For non-quest games, use "play_now" as puzzleId
-                val playNowPuzzleId = "play_now"
+                // For non-quest games, use board-size-specific puzzle ID
+                val playNowPuzzleId = getQuickPlayPuzzleId()
                 newMax = attemptStore.incrementMaxMistakes(playNowPuzzleId, defaultMax)
                 currentMaxMistakes = newMax
             }
@@ -2189,7 +2196,7 @@ class MainActivity : AppCompatActivity() {
             
             // Reset mistakes UI and max mistakes for new game
             // IMPORTANT: Reset attempt store FIRST, then initialize to ensure correct board size default
-            val puzzleId = questPuzzleId ?: "play_now"
+            val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
             val defaultMax = getInitialMaxMistakes() // Get default based on current boardSize (2 for 6x6, 3 for 9x9)
             
             // Reset currentMaxMistakes to 0 to force re-initialization
