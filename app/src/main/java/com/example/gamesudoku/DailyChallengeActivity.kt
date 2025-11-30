@@ -70,6 +70,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     // Share return tracking
     private var waitingForShareReturn = false // Flag to track if we're waiting for user to return from share dialog
     private var lastCompletionRecord: DailyChallengeManager.DailyRecord? = null // Store last completion record to show dialog again
+    private var isPracticeMode = false // Flag to track if playing in practice mode (already completed challenge)
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -137,6 +138,17 @@ class DailyChallengeActivity : AppCompatActivity() {
         attemptStore = AttemptStateStore(this)
         audioManager = AudioManager.getInstance(this)
         
+        // Check if today's challenge is already completed
+        val hasCompletedToday = dailyChallengeManager.hasCompletedToday()
+        val todayRecord = dailyChallengeManager.getTodayRecord()
+        
+        if (hasCompletedToday && todayRecord != null) {
+            // Challenge already completed - show results dialog instead of starting game
+            Log.d("DailyChallenge", "Today's challenge already completed, showing results")
+            showCompletedChallengeResults(todayRecord)
+            return
+        }
+        
         // Load other ads (banner ad already loaded in onCreate)
         adManager.loadInterstitialAd()
         Log.d("DailyChallenge", "Loading rewarded ad (should use test ads in debug builds)")
@@ -150,19 +162,43 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Try to restore saved state first
         val savedState = dailyChallengeStateManager.loadState()
+        val dailyChallengeId = "daily_${currentPuzzle.date}"
         
         if (savedState != null && savedState.date == currentPuzzle.date) {
-            // Restore saved game state
+            // Restore saved game state (same day, game in progress)
             restoreGameState(savedState)
         } else {
             // No saved state or date changed - start fresh
+            // IMPORTANT: Clear any old attempt state if date changed
+            if (savedState != null && savedState.date != currentPuzzle.date) {
+                // Date changed - clear old attempt state for previous day
+                Log.d("DailyChallenge", "New day detected (${savedState.date} -> ${currentPuzzle.date}), clearing old attempt state")
+                attemptStore.clear("daily_${savedState.date}")
+            }
+            
+            // Reset everything for fresh start
+            totalMistakes = 0
+            currentMaxMistakes = 0
+            hintsUsed = 0
+            
+            // Load puzzle to board (this will initialize hints)
             loadPuzzleToBoard()
             
-            // Load mistakes from store for daily challenge
-            val dailyChallengeId = "daily_${currentPuzzle.date}"
-            totalMistakes = attemptStore.getMistakes(dailyChallengeId)
+            // Initialize hints from settings (resets to max hints)
+            sudokuBoardView.updateHintsFromSettings()
+            
+            // Initialize max mistakes for new day
             initializeMaxMistakes()
-            updateMistakesHud(totalMistakes)
+            
+            // Reset mistakes in store for this date (ensure clean start)
+            attemptStore.resetMistakes(dailyChallengeId)
+            attemptStore.resetMaxMistakes(dailyChallengeId, getInitialMaxMistakes())
+            
+            // Update UI
+            updateMistakesHud(0)
+            updateHintBadge()
+            
+            Log.d("DailyChallenge", "Fresh game started for ${currentPuzzle.date} - hints: ${sudokuBoardView.getHintsRemaining()}/${sudokuBoardView.getMaxHintsPerGame()}, mistakes: 0/$currentMaxMistakes")
         }
         
         // Update UI
@@ -1182,13 +1218,35 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         val timeSeconds = (gameTime / 1000).toInt()
         
+        // If in practice mode, don't save as new completion - just show results
+        if (isPracticeMode) {
+            Log.d("DailyChallenge", "Game completed in practice mode - not saving as new completion")
+            // Show practice completion message
+            val timeFormatted = String.format("%02d:%02d", timeSeconds / 60, timeSeconds % 60)
+            android.widget.Toast.makeText(
+                this,
+                "Practice completed in $timeFormatted! Great job! 🎉",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            
+            // Show the original completion dialog with results
+            lastCompletionRecord?.let { record ->
+                showCompletedChallengeResults(record)
+            } ?: run {
+                // If no record, just finish
+                finish()
+            }
+            return
+        }
+        
         // Save completion record (use hintsUsed from board to ensure accuracy)
         val record = DailyChallengeManager.DailyRecord(
             date = currentPuzzle.date,
             timeSeconds = timeSeconds,
             moves = movesCount,
             difficulty = currentPuzzle.difficulty,
-            hintsUsed = sudokuBoardView.getHintsUsed()
+            hintsUsed = sudokuBoardView.getHintsUsed(),
+            mistakes = totalMistakes // Save mistakes count
         )
         
         dailyChallengeManager.saveDailyRecord(record)
@@ -1198,6 +1256,115 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Show completion dialog
         showCompletionDialog(record)
+    }
+    
+    /**
+     * Show results dialog when user opens an already-completed daily challenge
+     */
+    private fun showCompletedChallengeResults(record: DailyChallengeManager.DailyRecord) {
+        val stats = dailyChallengeManager.getUserStats()
+        val timeFormatted = String.format("%02d:%02d", record.timeSeconds / 60, record.timeSeconds % 60)
+        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_daily_challenge_complete, null)
+        
+        // Set the stats data
+        dialogView.findViewById<TextView>(R.id.completionTime)?.text = timeFormatted
+        dialogView.findViewById<TextView>(R.id.completionMistakes)?.text = record.mistakes.toString() // Use mistakes from record
+        dialogView.findViewById<TextView>(R.id.completionHints)?.text = record.hintsUsed.toString()
+        dialogView.findViewById<TextView>(R.id.completionStreak)?.text = "${stats.streakDays} days"
+        
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true) // Allow canceling since this is just viewing results
+            .create()
+        
+        // Make background transparent around card for nicer presentation
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        
+        var adShown = false
+        
+        // Setup button click listeners
+        dialogView.findViewById<Button>(R.id.btnShare)?.setOnClickListener {
+            adShown = true
+            // Store the record so we can show dialog again after sharing
+            lastCompletionRecord = record
+            dialog.dismiss()
+            shareResults()
+            // Note: Ad will be shown after user returns from share (in onResume)
+        }
+        
+        // Change "Done" button to "Play Again" for practice mode
+        val doneButton = dialogView.findViewById<Button>(R.id.btnDone)
+        doneButton?.text = "Play Again"
+        doneButton?.setOnClickListener {
+            adShown = true
+            dialog.dismiss()
+            // Allow them to play the same puzzle again for practice (won't save as new completion)
+            startPracticeMode()
+        }
+        
+        dialogView.findViewById<Button>(R.id.btnRate)?.setOnClickListener {
+            Log.d("DailyChallenge", "Rate button clicked in daily challenge results dialog")
+            openPlayStoreRating()
+        }
+        
+        // Show interstitial ad when dialog is dismissed (fallback - only if no button was clicked)
+        dialog.setOnDismissListener {
+            if (!adShown && adManager.isInterstitialAdLoaded()) {
+                // Show interstitial ad after dialog closes (only if ad is loaded and not already shown)
+                adManager.showInterstitialAd(this, null)
+            }
+            // Preload next interstitial ad
+            adManager.loadInterstitialAd()
+            
+            // If user just dismissed without clicking anything, go back to menu
+            if (!adShown) {
+                finish()
+            }
+        }
+        
+        dialog.show()
+    }
+    
+    /**
+     * Start practice mode - allows playing the same puzzle again without saving completion
+     */
+    private fun startPracticeMode() {
+        Log.d("DailyChallenge", "Starting practice mode for already-completed challenge")
+        
+        isPracticeMode = true
+        
+        // Load other ads
+        adManager.loadInterstitialAd()
+        adManager.loadRewardedAd()
+        
+        // Generate today's puzzle (same puzzle since it's the same date)
+        currentPuzzle = DailyChallengeGenerator.generateDailyPuzzle()
+        
+        // Setup Sudoku board
+        sudokuBoardView.setBoardSize(9)
+        
+        // Start fresh game (don't restore saved state for practice)
+        loadPuzzleToBoard()
+        
+        // Reset game state for practice
+        gameStartTime = System.currentTimeMillis()
+        gameTime = 0
+        isGameActive = true
+        movesCount = 0
+        hintsUsed = 0
+        totalMistakes = 0
+        currentMaxMistakes = 0
+        gameResultSaved = false
+        selectedNumber = 0
+        
+        // Start game timer
+        startGameTimer()
+        
+        // Update UI
+        updateHeader()
+        updateDifficulty()
+        updateHintBadge()
     }
     
     private fun showCompletionDialog(record: DailyChallengeManager.DailyRecord) {
@@ -1333,6 +1500,12 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Don't save if game is completed or already saved
         if (gameResultSaved || sudokuBoardView.isBoardComplete()) {
             dailyChallengeStateManager.clearState()
+            return
+        }
+        
+        // Check if currentPuzzle is initialized (fix crash when activity paused before initialization)
+        if (!::currentPuzzle.isInitialized) {
+            Log.d("DailyChallenge", "Cannot save state: currentPuzzle not initialized yet")
             return
         }
         

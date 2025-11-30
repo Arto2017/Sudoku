@@ -97,12 +97,29 @@ object DailyChallengeGenerator {
     }
     
     /**
-     * Format date as YYYY-MM-DD in UTC
+     * Format date as YYYY-MM-DD in UTC (or YYYY-MM-DD-HH-mm in debug mode)
+     * 
+     * TO ENABLE TESTING MODE:
+     * Change the line below to: val DEBUG_USE_MINUTES = true
+     * Then the "day" will change every minute instead of every 24 hours
+     * Perfect for testing: Complete challenge → Wait 1 minute → New challenge appears
      */
     private fun formatDate(date: Date): String {
-        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        formatter.timeZone = TimeZone.getTimeZone("UTC")
-        return formatter.format(date)
+        // DEBUG MODE: Use minutes instead of days for testing
+        // Set to true to test daily reset without waiting a full day
+        val DEBUG_USE_MINUTES = com.artashes.sudoku.BuildConfig.DEBUG && false // ⚠️ CHANGE TO true TO ENABLE TESTING
+        
+        if (DEBUG_USE_MINUTES) {
+            // Use minute-based date for testing (changes every minute)
+            val formatter = SimpleDateFormat("yyyy-MM-dd-HH-mm", Locale.US)
+            formatter.timeZone = TimeZone.getTimeZone("UTC")
+            return formatter.format(date)
+        } else {
+            // Normal mode: Use day-based date
+            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            formatter.timeZone = TimeZone.getTimeZone("UTC")
+            return formatter.format(date)
+        }
     }
     
     /**

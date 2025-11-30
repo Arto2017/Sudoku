@@ -33,6 +33,7 @@ class DailyChallengeManager(private val context: Context) {
         val rank: Int = 0,
         val difficulty: DailyChallengeGenerator.Difficulty,
         val hintsUsed: Int = 0,
+        val mistakes: Int = 0, // Add mistakes to record
         val completedAt: Long = System.currentTimeMillis()
     )
     
@@ -59,11 +60,32 @@ class DailyChallengeManager(private val context: Context) {
     
     /**
      * Get today's date string in UTC
+     * In debug mode, uses minutes instead of days for easier testing
+     * 
+     * TO ENABLE TESTING MODE:
+     * Change the line below to: val DEBUG_USE_MINUTES = true
+     * Then the "day" will change every minute instead of every 24 hours
+     * This allows you to test the reset functionality by waiting just 1 minute
+     * Perfect for testing: Complete challenge → Wait 1 minute → New challenge appears
      */
     fun getTodayDateString(): String {
-        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        formatter.timeZone = TimeZone.getTimeZone("UTC")
-        return formatter.format(Date())
+        // DEBUG MODE: Use minutes instead of days for testing
+        // Set to true to test daily reset without waiting a full day
+        val DEBUG_USE_MINUTES = com.artashes.sudoku.BuildConfig.DEBUG && false // ⚠️ CHANGE TO true TO ENABLE TESTING
+        
+        if (DEBUG_USE_MINUTES) {
+            // Use minute-based date for testing (changes every minute)
+            val formatter = SimpleDateFormat("yyyy-MM-dd-HH-mm", Locale.US)
+            formatter.timeZone = TimeZone.getTimeZone("UTC")
+            val dateString = formatter.format(Date())
+            Log.d("DailyChallenge", "🔧 DEBUG MODE: Using minute-based date: $dateString (resets every 1 minute)")
+            return dateString
+        } else {
+            // Normal mode: Use day-based date
+            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            formatter.timeZone = TimeZone.getTimeZone("UTC")
+            return formatter.format(Date())
+        }
     }
     
     /**
