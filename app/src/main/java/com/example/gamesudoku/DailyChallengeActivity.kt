@@ -145,6 +145,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         if (hasCompletedToday && todayRecord != null) {
             // Challenge already completed - show results dialog instead of starting game
             Log.d("DailyChallenge", "Today's challenge already completed, showing results")
+            Log.d("DailyChallenge", "Loaded record: date=${todayRecord.date}, mistakes=${todayRecord.mistakes}, hints=${todayRecord.hintsUsed}, time=${todayRecord.timeSeconds}s")
             showCompletedChallengeResults(todayRecord)
             return
         }
@@ -1249,13 +1250,23 @@ class DailyChallengeActivity : AppCompatActivity() {
             mistakes = totalMistakes // Save mistakes count
         )
         
+        Log.d("DailyChallenge", "Saving completion record: date=${record.date}, mistakes=${record.mistakes}, hints=${record.hintsUsed}")
         dailyChallengeManager.saveDailyRecord(record)
+        
+        // Verify the record was saved correctly
+        val verifiedRecord = dailyChallengeManager.getTodayRecord()
+        Log.d("DailyChallenge", "Record saved and verified: mistakes=${verifiedRecord?.mistakes}, hints=${verifiedRecord?.hintsUsed}")
         
         // Clear saved state since game is completed
         dailyChallengeStateManager.clearState()
         
-        // Show completion dialog
-        showCompletionDialog(record)
+        // Use the verified record from storage to ensure consistency
+        // This ensures we're showing the same data that will be loaded later
+        val recordToShow = verifiedRecord ?: record
+        Log.d("DailyChallenge", "Showing completion dialog with record: mistakes=${recordToShow.mistakes}, hints=${recordToShow.hintsUsed}")
+        
+        // Show completion dialog with the verified record
+        showCompletionDialog(recordToShow)
     }
     
     /**
@@ -1265,11 +1276,16 @@ class DailyChallengeActivity : AppCompatActivity() {
         val stats = dailyChallengeManager.getUserStats()
         val timeFormatted = String.format("%02d:%02d", record.timeSeconds / 60, record.timeSeconds % 60)
         
+        // Log the record data for debugging
+        Log.d("DailyChallenge", "showCompletedChallengeResults - Record data: mistakes=${record.mistakes}, hints=${record.hintsUsed}, time=${record.timeSeconds}s")
+        
         val dialogView = layoutInflater.inflate(R.layout.dialog_daily_challenge_complete, null)
         
         // Set the stats data
         dialogView.findViewById<TextView>(R.id.completionTime)?.text = timeFormatted
-        dialogView.findViewById<TextView>(R.id.completionMistakes)?.text = record.mistakes.toString() // Use mistakes from record
+        val mistakesText = record.mistakes.toString()
+        Log.d("DailyChallenge", "Setting mistakes in dialog to: $mistakesText")
+        dialogView.findViewById<TextView>(R.id.completionMistakes)?.text = mistakesText // Use mistakes from record
         dialogView.findViewById<TextView>(R.id.completionHints)?.text = record.hintsUsed.toString()
         dialogView.findViewById<TextView>(R.id.completionStreak)?.text = "${stats.streakDays} days"
         
@@ -1371,11 +1387,18 @@ class DailyChallengeActivity : AppCompatActivity() {
         val stats = dailyChallengeManager.getUserStats()
         val timeFormatted = String.format("%02d:%02d", record.timeSeconds / 60, record.timeSeconds % 60)
         
+        // Log the record data for debugging
+        Log.d("DailyChallenge", "showCompletionDialog - Record data: mistakes=${record.mistakes}, hints=${record.hintsUsed}, time=${record.timeSeconds}s")
+        
         val dialogView = layoutInflater.inflate(R.layout.dialog_daily_challenge_complete, null)
         
         // Set the stats data
         dialogView.findViewById<TextView>(R.id.completionTime).text = timeFormatted
-        dialogView.findViewById<TextView>(R.id.completionMistakes).text = totalMistakes.toString()
+        // IMPORTANT: Use record.mistakes instead of totalMistakes
+        // totalMistakes may be reset to 0 when viewing results later
+        val mistakesText = record.mistakes.toString()
+        Log.d("DailyChallenge", "Setting mistakes in completion dialog to: $mistakesText (from record)")
+        dialogView.findViewById<TextView>(R.id.completionMistakes).text = mistakesText
         dialogView.findViewById<TextView>(R.id.completionHints).text = record.hintsUsed.toString()
         dialogView.findViewById<TextView>(R.id.completionStreak).text = "${stats.streakDays} days"
         

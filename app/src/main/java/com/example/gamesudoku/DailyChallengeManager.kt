@@ -127,7 +127,15 @@ class DailyChallengeManager(private val context: Context) {
         // Award coins
         awardCoins(record.difficulty)
         
-        Log.d("DailyChallenge", "Saved record for ${record.date}: ${record.timeSeconds}s, streak: ${getStreakDays()}")
+        Log.d("DailyChallenge", "Saved record for ${record.date}: time=${record.timeSeconds}s, mistakes=${record.mistakes}, hints=${record.hintsUsed}, streak: ${getStreakDays()}")
+        
+        // Verify the record was saved correctly by reading it back
+        val savedRecord = getTodayRecord()
+        if (savedRecord != null) {
+            Log.d("DailyChallenge", "Verification: Saved record has mistakes=${savedRecord.mistakes}, hints=${savedRecord.hintsUsed}")
+        } else {
+            Log.w("DailyChallenge", "Warning: Could not verify saved record")
+        }
     }
     
     /**
