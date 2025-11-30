@@ -2176,14 +2176,39 @@ class MainActivity : AppCompatActivity() {
         dialogView.findViewById<Button>(R.id.btnNewGame)?.setOnClickListener {
             shouldShowAdOnDismiss = true
             dialog.dismiss()
+            
+            // Stop timer first
+            stopTimer()
+            
             // Start new game with same settings
             sudokuBoard.resetPuzzle(currentDifficulty) // This now clears selection, highlighting, and animations
             secondsElapsed = 0
             totalMistakes = 0
             gameResultSaved = false
             gameStarted = false // Reset game started flag for new game
+            
+            // Reset mistakes UI and max mistakes for new game
+            // IMPORTANT: Reset attempt store FIRST, then initialize to ensure correct board size default
+            val puzzleId = questPuzzleId ?: "play_now"
+            val defaultMax = getInitialMaxMistakes() // Get default based on current boardSize (2 for 6x6, 3 for 9x9)
+            
+            // Reset currentMaxMistakes to 0 to force re-initialization
+            currentMaxMistakes = 0
+            
+            // Reset mistakes in attempt store for new game
+            attemptStore.resetMistakes(puzzleId)
+            attemptStore.resetMaxMistakes(puzzleId, defaultMax)
+            
+            // Now initialize max mistakes (will use the reset value from store)
+            initializeMaxMistakes()
+            updateMistakesHud(0) // Update UI to show 0/max
+            
+            Log.d("MainActivity", "New game reset - boardSize=$boardSize, defaultMax=$defaultMax, currentMaxMistakes=$currentMaxMistakes")
+            
             updateTimerText()
             updateProgress()
+            
+            Log.d("MainActivity", "New game started - mistakes reset to 0/$currentMaxMistakes")
         }
         
         dialogView.findViewById<Button>(R.id.btnMenu)?.setOnClickListener {
