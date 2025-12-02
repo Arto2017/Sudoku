@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var soundManager: SoundManager
     private lateinit var audioManager: AudioManager
     private lateinit var adManager: AdManager
+    private lateinit var adRateLimiter: AdRateLimiter
     private var bannerAdView: AdView? = null
     private var secondsElapsed = 0
     private val handler = Handler(Looper.getMainLooper())
@@ -311,6 +312,7 @@ class MainActivity : AppCompatActivity() {
         
         // Initialize AdMob and load ads
         adManager = AdManager(this)
+        adRateLimiter = AdRateLimiter(this)
         adManager.loadInterstitialAd()
         adManager.loadRewardedAd()
         
@@ -360,15 +362,27 @@ class MainActivity : AppCompatActivity() {
         
         // Generate puzzle with appropriate difficulty
         // For quest puzzles, use puzzle ID as seed to ensure same puzzle every time
-        if (questPuzzleId != null) {
+        val currentQuestPuzzleId = questPuzzleId
+        if (currentQuestPuzzleId != null) {
             // Use puzzle ID as seed for deterministic generation
-            sudokuBoard.resetPuzzle(currentDifficulty, questPuzzleId)
+            sudokuBoard.resetPuzzle(currentDifficulty, currentQuestPuzzleId)
+            // Reset puzzle tracking for rate limiter
+            adRateLimiter.resetPuzzleTracking(currentQuestPuzzleId)
         } else if (restoredPlayNowState != null) {
             // State restoration will handle the board setup
+            // Reset puzzle tracking for rate limiter
+            val puzzleId = getQuickPlayPuzzleId()
+            adRateLimiter.resetPuzzleTracking(puzzleId)
         } else if (isQuickPlay) {
             sudokuBoard.resetPuzzle(currentDifficulty)
+            // Reset puzzle tracking for rate limiter
+            val puzzleId = getQuickPlayPuzzleId()
+            adRateLimiter.resetPuzzleTracking(puzzleId)
         } else {
             sudokuBoard.resetPuzzle()
+            // Reset puzzle tracking for rate limiter
+            val puzzleId = getQuickPlayPuzzleId()
+            adRateLimiter.resetPuzzleTracking(puzzleId)
         }
 
         restoreQuestPuzzleStateIfNeeded()
@@ -846,8 +860,15 @@ class MainActivity : AppCompatActivity() {
                         showTooltip(hintButton, message)
                     }
                 } else {
-                    // No free hints remaining - show ad directly
-                    showRewardedAdForHint(hintButton)
+                    // No free hints remaining - check rate limiter and show ad
+                    val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                    if (adRateLimiter.canShowAd(boardSize, puzzleId)) {
+                        showRewardedAdForHint(hintButton)
+                    } else {
+                        // Rate limited - show message
+                        val message = adRateLimiter.getBlockedMessage(boardSize, puzzleId)
+                        showTooltip(hintButton, message)
+                    }
                 }
             }
         }
@@ -1062,8 +1083,15 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                // No free hints remaining - show ad first, then remove incorrect numbers and place hint
-                showRewardedAdForHintWithAutoFix()
+                // No free hints remaining - check rate limiter and show ad
+                val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                if (adRateLimiter.canShowAd(boardSize, puzzleId)) {
+                    showRewardedAdForHintWithAutoFix()
+                } else {
+                    // Rate limited - show message
+                    val message = adRateLimiter.getBlockedMessage(boardSize, puzzleId)
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+                }
             }
         }
         
@@ -1127,6 +1155,10 @@ class MainActivity : AppCompatActivity() {
         val hintButton = findViewById<Button>(R.id.revealHintButton)
         if (adManager.isRewardedAdLoaded()) {
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                adRateLimiter.recordAdShown(boardSize, puzzleId)
+                
                 // After ad is watched, grant 1 hint
                 sudokuBoard.grantHint()
                 
@@ -1168,6 +1200,10 @@ class MainActivity : AppCompatActivity() {
                     adShown = true
                     // Automatically show the ad when it's loaded
                     adManager.showRewardedAd(this, onAdClosed = {
+                        // Record that ad was shown
+                        val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                        adRateLimiter.recordAdShown(boardSize, puzzleId)
+                        
                         // After ad is watched, grant 1 hint
                         sudokuBoard.grantHint()
                         
@@ -1222,6 +1258,10 @@ class MainActivity : AppCompatActivity() {
         // Show rewarded ad after player placed a correct number and wants a hint
         if (adManager.isRewardedAdLoaded()) {
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                adRateLimiter.recordAdShown(boardSize, puzzleId)
+                
                 // After ad is watched, grant 1 hint
                 sudokuBoard.grantHint()
                 
@@ -1269,6 +1309,10 @@ class MainActivity : AppCompatActivity() {
                 if (!adShown && adManager.isRewardedAdLoaded()) {
                     adShown = true
                     adManager.showRewardedAd(this, onAdClosed = {
+                        // Record that ad was shown
+                        val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                        adRateLimiter.recordAdShown(boardSize, puzzleId)
+                        
                         // After ad is watched, grant 1 hint
                         sudokuBoard.grantHint()
                         
@@ -1333,6 +1377,10 @@ class MainActivity : AppCompatActivity() {
         // Show rewarded ad directly (no dialog)
         if (adManager.isRewardedAdLoaded()) {
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                adRateLimiter.recordAdShown(boardSize, puzzleId)
+                
                 // After ad is watched, grant 1 hint
                 sudokuBoard.grantHint()
                 
@@ -1385,6 +1433,10 @@ class MainActivity : AppCompatActivity() {
                     adShown = true
                     // Automatically show the ad when it's loaded
                     adManager.showRewardedAd(this, onAdClosed = {
+                        // Record that ad was shown
+                        val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                        adRateLimiter.recordAdShown(boardSize, puzzleId)
+                        
                         // After ad is watched, grant 1 hint
                         sudokuBoard.grantHint()
                         
@@ -1730,6 +1782,14 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
+            // Check rate limiter before showing ad
+            val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+            if (!adRateLimiter.canShowAd(boardSize, puzzleId)) {
+                val message = adRateLimiter.getBlockedMessage(boardSize, puzzleId)
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            
             dialog.dismiss()
             SoundManager.getInstance(this).playClick()
             // Show rewarded ad to continue playing
@@ -1752,8 +1812,14 @@ class MainActivity : AppCompatActivity() {
             // Check internet again after a short delay
             handler.postDelayed({
                 if (NetworkUtils.isConnected(this)) {
-                    // Internet is now available - try to show ad
-                    attemptShowRewardedAd()
+                    // Internet is now available - check rate limiter and try to show ad
+                    val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                    if (adRateLimiter.canShowAd(boardSize, puzzleId)) {
+                        attemptShowRewardedAd()
+                    } else {
+                        val message = adRateLimiter.getBlockedMessage(boardSize, puzzleId)
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    }
                 } else {
                     // Still no internet - show dialog again
                     showNoInternetDialog()
@@ -1825,6 +1891,10 @@ class MainActivity : AppCompatActivity() {
             persistQuestPuzzleState()
             
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = questPuzzleId ?: getQuickPlayPuzzleId()
+                adRateLimiter.recordAdShown(boardSize, puzzleId)
+                
                 // Ad closed - just restart timer and reload next ad
                 // Max mistakes already incremented above
                 Log.d("MainActivity", "Ad closed, mistakes=$totalMistakes, max=$newMax")

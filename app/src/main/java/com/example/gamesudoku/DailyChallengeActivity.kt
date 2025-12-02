@@ -38,6 +38,7 @@ class DailyChallengeActivity : AppCompatActivity() {
     private lateinit var currentPuzzle: DailyChallengeGenerator.DailyPuzzle
     private lateinit var audioManager: AudioManager
     private lateinit var adManager: AdManager
+    private lateinit var adRateLimiter: AdRateLimiter
     
     // UI Elements
     private lateinit var headerTitle: TextView
@@ -86,6 +87,7 @@ class DailyChallengeActivity : AppCompatActivity() {
         
         // Initialize AdMob and load banner ad first (like MainActivity)
         adManager = AdManager(this)
+        adRateLimiter = AdRateLimiter(this)
         Log.d("DailyChallenge", "AdManager initialized - Test ads: ${com.artashes.sudoku.BuildConfig.USE_TEST_ADS}")
         bannerAdView = findViewById<AdView>(R.id.bannerAdView)
         if (bannerAdView != null) {
@@ -162,9 +164,12 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Setup Sudoku board
         sudokuBoardView.setBoardSize(9)
         
+        // Reset puzzle tracking for rate limiter
+        val dailyChallengeId = "daily_${currentPuzzle.date}"
+        adRateLimiter.resetPuzzleTracking(dailyChallengeId)
+        
         // Try to restore saved state first
         val savedState = dailyChallengeStateManager.loadState()
-        val dailyChallengeId = "daily_${currentPuzzle.date}"
         
         if (savedState != null && savedState.date == currentPuzzle.date) {
             // Restore saved game state (same day, game in progress)
@@ -376,8 +381,15 @@ class DailyChallengeActivity : AppCompatActivity() {
                         showTooltip(hintButton, message)
                     }
                 } else {
-                    // No free hints remaining - show ad directly
-                    showRewardedAdForHint(hintButton)
+                    // No free hints remaining - check rate limiter and show ad
+                    val puzzleId = "daily_${currentPuzzle.date}"
+                    if (adRateLimiter.canShowAd(9, puzzleId)) {
+                        showRewardedAdForHint(hintButton)
+                    } else {
+                        // Rate limited - show message
+                        val message = adRateLimiter.getBlockedMessage(9, puzzleId)
+                        showTooltip(hintButton, message)
+                    }
                 }
             }
         }
@@ -594,8 +606,15 @@ class DailyChallengeActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                // No free hints remaining - show ad first, then remove incorrect numbers and place hint
-                showRewardedAdForHintWithAutoFix()
+                // No free hints remaining - check rate limiter and show ad
+                val puzzleId = "daily_${currentPuzzle.date}"
+                if (adRateLimiter.canShowAd(9, puzzleId)) {
+                    showRewardedAdForHintWithAutoFix()
+                } else {
+                    // Rate limited - show message
+                    val message = adRateLimiter.getBlockedMessage(9, puzzleId)
+                    showTooltip(hintButton, message)
+                }
             }
         }
         
@@ -611,6 +630,10 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Show rewarded ad, then remove incorrect numbers and place hint after ad is watched
         if (adManager.isRewardedAdLoaded()) {
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = "daily_${currentPuzzle.date}"
+                adRateLimiter.recordAdShown(9, puzzleId)
+                
                 // After ad is watched, grant 1 hint
                 sudokuBoardView.grantHint()
                 
@@ -650,6 +673,10 @@ class DailyChallengeActivity : AppCompatActivity() {
                     adShown = true
                     // Automatically show the ad when it's loaded
                     adManager.showRewardedAd(this, onAdClosed = {
+                        // Record that ad was shown
+                        val puzzleId = "daily_${currentPuzzle.date}"
+                        adRateLimiter.recordAdShown(9, puzzleId)
+                        
                         // After ad is watched, grant 1 hint
                         sudokuBoardView.grantHint()
                         
@@ -702,6 +729,10 @@ class DailyChallengeActivity : AppCompatActivity() {
         // Show rewarded ad directly (no dialog)
         if (adManager.isRewardedAdLoaded()) {
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = "daily_${currentPuzzle.date}"
+                adRateLimiter.recordAdShown(9, puzzleId)
+                
                 // After ad is watched, grant 1 hint
                 sudokuBoardView.grantHint()
                 
@@ -753,6 +784,10 @@ class DailyChallengeActivity : AppCompatActivity() {
                     adShown = true
                     // Automatically show the ad when it's loaded
                     adManager.showRewardedAd(this, onAdClosed = {
+                        // Record that ad was shown
+                        val puzzleId = "daily_${currentPuzzle.date}"
+                        adRateLimiter.recordAdShown(9, puzzleId)
+                        
                         // After ad is watched, grant 1 hint
                         sudokuBoardView.grantHint()
                         
@@ -1098,6 +1133,14 @@ class DailyChallengeActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
+            // Check rate limiter before showing ad
+            val puzzleId = "daily_${currentPuzzle.date}"
+            if (!adRateLimiter.canShowAd(9, puzzleId)) {
+                val message = adRateLimiter.getBlockedMessage(9, puzzleId)
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            
             dialog.dismiss()
             SoundManager.getInstance(this).playClick()
             // Show rewarded ad to continue playing
@@ -1173,6 +1216,10 @@ class DailyChallengeActivity : AppCompatActivity() {
             updateMistakesHud(totalMistakes)
             
             adManager.showRewardedAd(this, onAdClosed = {
+                // Record that ad was shown
+                val puzzleId = "daily_${currentPuzzle.date}"
+                adRateLimiter.recordAdShown(9, puzzleId)
+                
                 // Ad closed - just restart timer and reload next ad
                 // Max mistakes already incremented above
                 Log.d("DailyChallenge", "Ad closed, mistakes=$totalMistakes, max=$newMax")
