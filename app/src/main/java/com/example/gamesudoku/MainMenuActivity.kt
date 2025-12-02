@@ -41,6 +41,7 @@ class MainMenuActivity : AppCompatActivity() {
     private lateinit var continueButton: View
     private lateinit var ctaSubtext: TextView
     private lateinit var adManager: AdManager
+    private lateinit var appUpdateManager: AppUpdateManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +73,13 @@ class MainMenuActivity : AppCompatActivity() {
         
         // Initialize AdMob
         adManager = AdManager(this)
+        
+        // Initialize and check for app updates
+        appUpdateManager = AppUpdateManager(this)
+        // Check for updates after a short delay to not interrupt startup
+        Handler(Looper.getMainLooper()).postDelayed({
+            appUpdateManager.checkForUpdate()
+        }, 2000) // Check after 2 seconds
 
         // Start entrance animations
         startEntranceAnimations()
@@ -308,6 +316,11 @@ class MainMenuActivity : AppCompatActivity() {
         // Re-enable fullscreen mode when resuming
         enableFullscreen()
         
+        // Check if update is ready to install (for flexible updates)
+        if (::appUpdateManager.isInitialized) {
+            appUpdateManager.checkUpdateStatus()
+        }
+        
         // Refresh quest progress when returning to main menu
         updateQuestProgress()
         // Refresh daily challenge card
@@ -441,6 +454,15 @@ class MainMenuActivity : AppCompatActivity() {
             "Resume where you left off or start fresh"
         } else {
             "Choose your challenge"
+        }
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        // Handle app update result
+        if (::appUpdateManager.isInitialized) {
+            appUpdateManager.handleUpdateResult(requestCode, resultCode)
         }
     }
 }
