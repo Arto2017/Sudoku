@@ -8,15 +8,15 @@ import java.util.*
  * Implements AdMob best practices: 2 ads per 30 minutes maximum.
  * 
  * 6×6 Puzzles:
- * - Cooldown: 10 minutes (AdMob compliant - allows 6 ads/hour max)
+ * - Cooldown: 5 minutes
  * - Max per puzzle: 2 ads (very conservative limit)
- * - Max per hour: 6 ads
+ * - Max per hour: 12 ads (5 min cooldown allows this)
  * - Max per day: 30 ads (conservative limit)
  * 
  * 9×9 Puzzles:
- * - Cooldown: 15 minutes (AdMob best practice - allows 4 ads/hour max)
+ * - Cooldown: 5 minutes
  * - Max per puzzle: 4 ads (conservative limit)
- * - Max per hour: 4 ads
+ * - Max per hour: 12 ads (5 min cooldown allows this)
  * - Max per day: 40 ads (conservative limit)
  * 
  * Note: These limits apply to ALL rewarded ads (hints + mistake recovery)
@@ -26,18 +26,17 @@ class AdRateLimiter(context: Context) {
     
     companion object {
         // 6×6 Puzzle limits
-        // AdMob best practice: 2 ads per 30 minutes = 15 minutes cooldown
-        // Using 10 minutes for 6×6 to allow slightly more flexibility
-        private const val COOLDOWN_6X6_MS = 10 * 60 * 1000L // 10 minutes (AdMob compliant)
+        // 5 minutes cooldown between ads
+        private const val COOLDOWN_6X6_MS = 5 * 60 * 1000L // 5 minutes
         private const val MAX_ADS_PER_PUZZLE_6X6 = 2 // Limited to 2 ads per puzzle
-        private const val MAX_ADS_PER_HOUR_6X6 = 6 // Max 6 ads per hour (10 min cooldown allows this)
+        private const val MAX_ADS_PER_HOUR_6X6 = 12 // Max 12 ads per hour (5 min cooldown allows this)
         private const val MAX_ADS_PER_DAY_6X6 = 30 // Reduced from 40 to be more conservative
         
         // 9×9 Puzzle limits
-        // AdMob best practice: 2 ads per 30 minutes = 15 minutes cooldown
-        private const val COOLDOWN_9X9_MS = 15 * 60 * 1000L // 15 minutes (AdMob best practice)
+        // 5 minutes cooldown between ads
+        private const val COOLDOWN_9X9_MS = 5 * 60 * 1000L // 5 minutes
         private const val MAX_ADS_PER_PUZZLE_9X9 = 4 // Limited to 4 ads per puzzle
-        private const val MAX_ADS_PER_HOUR_9X9 = 4 // Max 4 ads per hour (15 min cooldown allows this)
+        private const val MAX_ADS_PER_HOUR_9X9 = 12 // Max 12 ads per hour (5 min cooldown allows this)
         private const val MAX_ADS_PER_DAY_9X9 = 40 // Reduced from 50 to be more conservative
         
         // Storage keys
@@ -263,12 +262,9 @@ class AdRateLimiter(context: Context) {
         val cooldownSeconds = getCooldownRemainingSeconds(boardSize)
         if (cooldownSeconds > 0) {
             val minutes = cooldownSeconds / 60
-            val seconds = cooldownSeconds % 60
-            if (minutes > 0) {
-                return "Please wait ${minutes}m ${seconds}s before watching another ad."
-            } else {
-                return "Please wait ${seconds}s before watching another ad."
-            }
+            val secs = cooldownSeconds % 60
+            val formattedTime = String.format("%d:%02d", minutes, secs)
+            return "Please wait $formattedTime before watching another ad."
         }
         
         return "Ad is not available right now."
@@ -296,3 +292,4 @@ class AdRateLimiter(context: Context) {
             .apply()
     }
 }
+

@@ -381,7 +381,15 @@ class DailyChallengeActivity : AppCompatActivity() {
                         showTooltip(hintButton, message)
                     }
                 } else {
-                    // No free hints remaining - check rate limiter and show ad
+                    // No free hints remaining - check ad cooldown first
+                    if (adManager.isRewardedAdInCooldown()) {
+                        val formattedTime = adManager.getRewardedAdCooldownFormatted()
+                        val message = "Ads are currently unavailable. Please wait $formattedTime or continue playing."
+                        showTooltip(hintButton, message)
+                        return@setOnClickListener
+                    }
+                    
+                    // Check rate limiter and show ad
                     val puzzleId = "daily_${currentPuzzle.date}"
                     if (adRateLimiter.canShowAd(9, puzzleId)) {
                         showRewardedAdForHint(hintButton)
@@ -606,14 +614,22 @@ class DailyChallengeActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                // No free hints remaining - check rate limiter and show ad
+                // No free hints remaining - check ad cooldown first
+                if (adManager.isRewardedAdInCooldown()) {
+                    val formattedTime = adManager.getRewardedAdCooldownFormatted()
+                    val message = "Ads are currently unavailable. Please wait $formattedTime or continue playing."
+                    Toast.makeText(this@DailyChallengeActivity, message, Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                
+                // Check rate limiter and show ad
                 val puzzleId = "daily_${currentPuzzle.date}"
                 if (adRateLimiter.canShowAd(9, puzzleId)) {
                     showRewardedAdForHintWithAutoFix()
                 } else {
                     // Rate limited - show message
                     val message = adRateLimiter.getBlockedMessage(9, puzzleId)
-                    showTooltip(hintButton, message)
+                    Toast.makeText(this@DailyChallengeActivity, message, Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -661,7 +677,15 @@ class DailyChallengeActivity : AppCompatActivity() {
                 // Reward earned callback - hint is granted in onAdClosed
             })
         } else {
-            // Ad not loaded - show loading message and load with callback
+            // Ad not loaded - check cooldown first
+            if (adManager.isRewardedAdInCooldown()) {
+                val formattedTime = adManager.getRewardedAdCooldownFormatted()
+                val message = "Ads are currently unavailable. Please wait $formattedTime or continue playing."
+                Toast.makeText(this@DailyChallengeActivity, message, Toast.LENGTH_LONG).show()
+                return
+            }
+            
+            // Show loading message and load with callback
             showTooltip(hintButton, "Loading ad...")
             
             // Track if ad was shown to prevent multiple callbacks
@@ -698,7 +722,7 @@ class DailyChallengeActivity : AppCompatActivity() {
                                 completeGame()
                             }
                         }
-                        // Preload next rewarded ad
+                        // Preload next rewarded ad (without failure callback to avoid cooldown on preload)
                         adManager.loadRewardedAd()
                     }, onUserEarnedReward = {
                         // Reward earned callback - hint is granted in onAdClosed
@@ -706,8 +730,17 @@ class DailyChallengeActivity : AppCompatActivity() {
                 }
             }
             
-            // Load ad with callback
-            adManager.loadRewardedAd(onAdLoadedCallback)
+            // Create failure callback
+            val onAdFailureCallback: (String) -> Unit = { errorMessage ->
+                if (!adShown) {
+                    adShown = true
+                    // Show user-friendly error message
+                    Toast.makeText(this@DailyChallengeActivity, errorMessage, Toast.LENGTH_LONG).show()
+                }
+            }
+            
+            // Load ad with callbacks
+            adManager.loadRewardedAd(onAdLoadedCallback, onAdFailureCallback)
             
             // Set up timeout fallback (10 seconds)
             Handler(Looper.getMainLooper()).postDelayed({
@@ -772,7 +805,15 @@ class DailyChallengeActivity : AppCompatActivity() {
                 // Reward earned callback - hint is granted in onAdClosed
             })
         } else {
-            // Ad not loaded - show loading message and load with callback
+            // Ad not loaded - check cooldown first
+            if (adManager.isRewardedAdInCooldown()) {
+                val formattedTime = adManager.getRewardedAdCooldownFormatted()
+                val message = "Ads are currently unavailable. Please wait $formattedTime or continue playing."
+                showTooltip(hintButton, message)
+                return
+            }
+            
+            // Show loading message and load with callback
             showTooltip(hintButton, "Loading ad...")
             
             // Track if ad was shown to prevent multiple callbacks
@@ -823,7 +864,7 @@ class DailyChallengeActivity : AppCompatActivity() {
                         } else {
                             // No cell selected or hint couldn't be used - badge already updated
                         }
-                        // Preload next rewarded ad
+                        // Preload next rewarded ad (without failure callback to avoid cooldown on preload)
                         adManager.loadRewardedAd()
                     }, onUserEarnedReward = {
                         // Reward earned callback - hint is granted in onAdClosed
@@ -831,8 +872,17 @@ class DailyChallengeActivity : AppCompatActivity() {
                 }
             }
             
-            // Load ad with callback
-            adManager.loadRewardedAd(onAdLoadedCallback)
+            // Create failure callback
+            val onAdFailureCallback: (String) -> Unit = { errorMessage ->
+                if (!adShown) {
+                    adShown = true
+                    // Show user-friendly error message
+                    showTooltip(hintButton, errorMessage)
+                }
+            }
+            
+            // Load ad with callbacks
+            adManager.loadRewardedAd(onAdLoadedCallback, onAdFailureCallback)
             
             // Set up timeout fallback (10 seconds)
             Handler(Looper.getMainLooper()).postDelayed({

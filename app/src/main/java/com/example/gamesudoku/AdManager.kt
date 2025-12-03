@@ -45,6 +45,11 @@ class AdManager(private val context: Context) {
     private val bannerRetryHandler = Handler(Looper.getMainLooper())
     private var currentBannerAdView: AdView? = null
     
+    // Ad failure tracking and cooldown
+    private var rewardedAdFailureTime: Long = 0
+    private val rewardedAdCooldownMs = 5 * 60 * 1000L // 5 minutes cooldown after failure
+    private var rewardedAdFailureCallback: ((String) -> Unit)? = null // Callback for failure notification
+    
     init {
         // Configure test devices for debug builds
         if (USE_TEST_ADS) {
@@ -289,14 +294,35 @@ class AdManager(private val context: Context) {
     
     /**
      * Load a rewarded ad
+     * @param onLoaded Callback when ad loads successfully
+     * @param onFailure Callback when ad fails to load (receives error message)
      */
-    fun loadRewardedAd(onLoaded: (() -> Unit)? = null) {
+    fun loadRewardedAd(onLoaded: (() -> Unit)? = null, onFailure: ((String) -> Unit)? = null) {
+        // Check if we're in cooldown period
+        val timeSinceFailure = System.currentTimeMillis() - rewardedAdFailureTime
+        if (rewardedAdFailureTime > 0 && timeSinceFailure < rewardedAdCooldownMs) {
+            val remainingSeconds = (rewardedAdCooldownMs - timeSinceFailure) / 1000
+            val formattedTime = formatTimeAsMinutesSeconds(remainingSeconds)
+            val errorMessage = "Ads are currently unavailable. Please wait $formattedTime or continue playing."
+            Log.w(TAG, "⚠️ Ad load blocked - still in cooldown period (${remainingSeconds}s remaining)")
+            onFailure?.invoke(errorMessage)
+            return
+        }
+        
+        // Reset failure time if cooldown has passed
+        if (timeSinceFailure >= rewardedAdCooldownMs) {
+            rewardedAdFailureTime = 0
+        }
+        
         val adUnitId = if (USE_TEST_ADS) TEST_REWARDED_AD_UNIT_ID else REAL_REWARDED_AD_UNIT_ID
         Log.d(TAG, "Loading rewarded ad with ID: $adUnitId (Test mode: $USE_TEST_ADS)")
         
-        // Store callback if provided
+        // Store callbacks if provided
         if (onLoaded != null) {
             rewardedAdLoadCallback = onLoaded
+        }
+        if (onFailure != null) {
+            rewardedAdFailureCallback = onFailure
         }
         
         // Build ad request
@@ -311,9 +337,12 @@ class AdManager(private val context: Context) {
                 override fun onAdLoaded(ad: RewardedAd) {
                     Log.d(TAG, "✅ Rewarded ad loaded successfully! Ad Unit ID: $adUnitId")
                     rewardedAd = ad
+                    // Reset failure time on successful load
+                    rewardedAdFailureTime = 0
                     // Notify callback if set
                     rewardedAdLoadCallback?.invoke()
                     rewardedAdLoadCallback = null
+                    rewardedAdFailureCallback = null
                 }
                 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
@@ -323,8 +352,25 @@ class AdManager(private val context: Context) {
                     Log.e(TAG, "   Error Domain: ${loadAdError.domain}")
                     Log.e(TAG, "   Ad Unit ID: $adUnitId")
                     rewardedAd = null
-                    // Clear callback on failure
+                    
+                    // Record failure time and start cooldown
+                    rewardedAdFailureTime = System.currentTimeMillis()
+                    Log.d(TAG, "Ad failure cooldown started. Will not retry for ${rewardedAdCooldownMs / 60000} minutes")
+                    
+                    // Notify callback about failure
+                    // The cooldown will be set, so the next call will show the formatted time
+                    val errorMessage = when (loadAdError.code) {
+                        0 -> "Ads are currently unavailable. Please wait 5:00 or continue playing."
+                        1 -> "Ads are not available now. Please try again later."
+                        2 -> "Network error. Please check your connection and try again."
+                        3 -> "No ads available. Please wait 5:00 or continue playing."
+                        else -> "Ads are currently unavailable. Please wait 5:00 or continue playing."
+                    }
+                    rewardedAdFailureCallback?.invoke(errorMessage)
+                    
+                    // Clear callbacks on failure
                     rewardedAdLoadCallback = null
+                    rewardedAdFailureCallback = null
                 }
             }
         )
@@ -373,6 +419,40 @@ class AdManager(private val context: Context) {
      */
     fun isRewardedAdLoaded(): Boolean {
         return rewardedAd != null
+    }
+    
+    /**
+     * Check if rewarded ad is in cooldown period (after failure)
+     */
+    fun isRewardedAdInCooldown(): Boolean {
+        val timeSinceFailure = System.currentTimeMillis() - rewardedAdFailureTime
+        return rewardedAdFailureTime > 0 && timeSinceFailure < rewardedAdCooldownMs
+    }
+    
+    /**
+     * Get remaining cooldown time in seconds
+     */
+    fun getRewardedAdCooldownRemainingSeconds(): Long {
+        if (!isRewardedAdInCooldown()) return 0
+        val timeSinceFailure = System.currentTimeMillis() - rewardedAdFailureTime
+        return (rewardedAdCooldownMs - timeSinceFailure) / 1000
+    }
+    
+    /**
+     * Format seconds as "M:SS" (e.g., "4:59")
+     */
+    private fun formatTimeAsMinutesSeconds(seconds: Long): String {
+        val minutes = seconds / 60
+        val secs = seconds % 60
+        return String.format("%d:%02d", minutes, secs)
+    }
+    
+    /**
+     * Get formatted cooldown time as "M:SS"
+     */
+    fun getRewardedAdCooldownFormatted(): String {
+        val seconds = getRewardedAdCooldownRemainingSeconds()
+        return formatTimeAsMinutesSeconds(seconds)
     }
     
     /**

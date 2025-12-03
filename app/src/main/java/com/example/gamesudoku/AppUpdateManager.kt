@@ -106,3 +106,4 @@ class AppUpdateManager(private val activity: Activity) {
         const val UPDATE_REQUEST_CODE = 100
     }
 }
+

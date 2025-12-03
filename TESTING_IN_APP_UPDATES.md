@@ -132,3 +132,4 @@ AppUpdateManager: Update downloaded, ready to install
 ---
 
 **Note**: The update system is now integrated. When you release version 5, users with version 4 will be prompted to update automatically!
+
